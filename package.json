@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "check": "pnpm --filter web check"
+    "check": "pnpm --filter web check",
+    "explain": "packages/core/node_modules/.bin/tsx packages/core/scripts/explain.ts",
+    "test": "pnpm -r --if-present test"
   }
 }

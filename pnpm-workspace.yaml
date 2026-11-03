@@ -8,3 +8,5 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: false
+  # We only use the prebuilt .wasm, not the native Node binding.
+  tree-sitter-bash: false
