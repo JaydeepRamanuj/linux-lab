@@ -3,7 +3,7 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://shellgyan.netlify.app',
+  site: 'https://linux-lab-jd.vercel.app',
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()]
