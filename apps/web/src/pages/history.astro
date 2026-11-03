@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import HistoryView from '../components/explainer/HistoryView';
+---
+
+<Base title="Explainer history" description="Commands you've explained, saved in this browser with secrets masked." current="explain">
+  <div class="max-w-4xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Explain', href: '/explain' }, { label: 'History' }]} back={{ href: '/explain', label: 'Explainer' }} />
+    <div class="space-y-2">
+      <h1 class="text-3xl sm:text-4xl font-bold">History</h1>
+      <p class="text-on-surface-variant max-w-2xl">Every command you've explained, newest first. It never leaves this browser.</p>
+    </div>
+    <HistoryView client:load />
+  </div>
+</Base>

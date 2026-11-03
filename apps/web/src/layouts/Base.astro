@@ -5,7 +5,7 @@ import Header from '../components/layout/Header.astro';
 interface Props {
   title: string;
   description?: string;
-  current?: 'scenarios' | 'library';
+  current?: 'scenarios' | 'library' | 'explain';
 }
 
 const { title, current, description = 'Problem-first Linux walkthroughs and a command explainer that tells you how dangerous a command is.' } = Astro.props;

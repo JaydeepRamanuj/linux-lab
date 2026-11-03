@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { Prose } from '../ui/ui';
 import { SEVERITY } from '../../lib/theme';
-import type { AnatomyToken } from '../../lib/anatomy';
+import type { AnatomyToken } from '../../lib/anatomyTokens';
 
 const KIND_CLASS: Record<AnatomyToken['kind'], string> = {
   wrapper: 'text-elevated',
@@ -24,7 +24,7 @@ const KIND_LABEL: Record<AnatomyToken['kind'], string> = {
   assignment: 'variable'
 };
 
-// Hover or tap each part of a command to see what it does. Tokens are computed at build time (lib/anatomy.ts).
+// Hover or tap each part of a command to see what it does. Tokens come from lib/anatomyTokens.ts (at build time, or in the browser on /explain).
 export default function Anatomy({ tokens }: { tokens: AnatomyToken[] }) {
   const [active, setActive] = useState<number | null>(null);
   const tok = active !== null ? tokens[active] : undefined;

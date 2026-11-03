@@ -3,14 +3,14 @@ import { SquareTerminal } from 'lucide-react';
 import SearchBar from '../search/SearchBar';
 
 interface Props {
-  current?: 'scenarios' | 'library';
+  current?: 'scenarios' | 'library' | 'explain';
 }
 const { current } = Astro.props;
 
 const NAV = [
   { id: 'scenarios', label: 'Scenarios', href: '/' },
   { id: 'library', label: 'Library', href: '/library' },
-  { id: 'explain', label: 'Explain', href: null },
+  { id: 'explain', label: 'Explain', href: '/explain' },
   { id: 'sandbox', label: 'Sandbox', href: null }
 ];
 ---
