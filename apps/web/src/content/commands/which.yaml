@@ -1,0 +1,16 @@
+name: which
+title: Find where a program is installed
+category: shell
+level: everyday
+summary: Prints the full path of the program the shell would run for a name, by searching `PATH`.
+syntax: which [-a] name…
+flags:
+  - { flag: "-a", meaning: "Show every match in `PATH`, not just the first." }
+examples:
+  - { command: "which node", explain: "Which node am I running? (system, nvm, …)", severity: readonly }
+  - { command: "which -a python3", explain: "All the python3 binaries on PATH, in priority order.", severity: readonly }
+  - { command: "type ll", explain: "`type` also knows aliases, functions and builtins, which `which` doesn't.", severity: readonly }
+gotchas:
+  - "No output means the name isn't on `PATH`: not installed, or installed somewhere `PATH` doesn't include."
+  - "`command -v name` is the portable version to use in scripts."
+related: [source]

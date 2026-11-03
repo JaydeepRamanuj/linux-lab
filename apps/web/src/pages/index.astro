@@ -1,15 +1,151 @@
 ---
+import { getCollection } from 'astro:content';
+import { ArrowRight, Zap, Shapes, BookOpen, ShieldAlert } from 'lucide-react';
 import Base from '../layouts/Base.astro';
+import SearchBar from '../components/search/SearchBar';
+import { CategoryIcon, CommandText, CopyButton } from '../components/ui/ui';
+import { ACCENTS, SEVERITY, SEVERITY_LEVELS } from '../lib/theme';
+import { MODULES } from '../data/modules';
+
+const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).sort((a, b) => a.data.number - b.data.number);
+const commands = await getCollection('commands');
+const total = scenarios.length;
 ---
 
-<Base title="ShellGyan">
-  <section class="max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24 space-y-6">
-    <span class="label-caps text-tertiary">Linux command survival guide</span>
-    <h1 class="text-4xl sm:text-display font-bold max-w-3xl">Stop searching for the same commands. Know what they do before you run them.</h1>
-    <p class="text-on-surface-variant max-w-2xl">
-      Problem-first walkthroughs, a safe sandbox, and an explainer that rates any command from read-only to destructive.
-      Under construction.
-    </p>
-    <a href="/preview" class="btn-primary inline-flex px-5 py-2.5 rounded-lg text-sm font-semibold">See the component preview</a>
-  </section>
+<Base title="ShellGyan" current="scenarios">
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-14 space-y-16">
+    <section class="text-center max-w-3xl mx-auto space-y-6">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-low border border-white/8 label-caps text-on-surface-variant">
+        <Zap className="h-3.5 w-3.5 text-caution" />
+        Linux command survival guide
+        <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+      </div>
+      <h1 class="text-[2.25rem] sm:text-display font-bold tracking-[-0.02em] leading-[1.1]">
+        Stop searching for the same command.
+        <br />
+        <span class="text-transparent bg-clip-text bg-linear-to-r from-secondary via-primary to-tertiary">Know what it does first.</span>
+      </h1>
+      <p class="text-base sm:text-lg text-on-surface-variant leading-relaxed">
+        Problem-first walkthroughs for the Linux tasks you do once a month, and a breakdown of every command, from read-only to
+        destructive, before you run it.
+      </p>
+      <div class="max-w-xl mx-auto pt-2 text-left">
+        <SearchBar variant="hero" client:idle />
+      </div>
+    </section>
+
+    <section class="space-y-6">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="flex items-center gap-2 label-caps text-on-surface">
+          <Shapes className="h-4 w-4 text-primary" />
+          Modules
+        </h2>
+        <span class="font-mono text-[11px] text-outline">
+          {MODULES.length} modules <span class="text-outline-variant mx-1">•</span>
+          <span class="text-tertiary">{total} scenarios</span>
+        </span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {
+          MODULES.map((m, i) => {
+            const accent = ACCENTS[m.color];
+            const count = scenarios.filter((s) => s.data.module === m.id).length;
+            return (
+              <a
+                href={`/m/${m.id}`}
+                class:list={['group card card-hover p-6 flex flex-col hover:-translate-y-0.5', i === MODULES.length - 1 && MODULES.length % 3 === 2 && 'lg:col-span-2']}
+              >
+                <div class="flex items-center justify-between">
+                  <div class={`w-10 h-10 rounded-lg border flex items-center justify-center ${accent.bg} ${accent.ring}`}>
+                    <CategoryIcon name={m.icon} className={`h-5 w-5 ${accent.text}`} />
+                  </div>
+                  <span class={`px-2.5 py-1 rounded-full bg-surface-lowest font-mono text-[11px] ${accent.text}`}>
+                    {count} {count === 1 ? 'scenario' : 'scenarios'}
+                  </span>
+                </div>
+                <h3 class="mt-5 text-lg font-semibold text-on-surface">{m.name}</h3>
+                <p class="mt-2 text-sm text-on-surface-variant leading-relaxed flex-1">{m.description}</p>
+                <div class="mt-6 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5 text-xs text-outline group-hover:text-on-surface transition">
+                    Explore scenarios
+                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition" />
+                  </span>
+                  <span class="label-caps text-outline-variant">Module 0{i + 1}</span>
+                </div>
+              </a>
+            );
+          })
+        }
+      </div>
+    </section>
+
+    <section class="relative overflow-hidden rounded-2xl p-6 sm:p-8 border border-white/8 bg-linear-to-br from-surface-high via-surface-container to-surface-container shadow-xl">
+      <div class="absolute -right-24 -top-24 w-72 h-72 bg-primary-container/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative flex flex-col lg:flex-row lg:items-center gap-6">
+        <div class="flex-1 space-y-2">
+          <span class="inline-block px-2 py-0.5 rounded bg-primary-deep/30 border border-primary/20 label-caps text-primary">Severity scale</span>
+          <h2 class="text-xl sm:text-2xl font-semibold">Every command gets one of four levels</h2>
+          <p class="text-sm text-on-surface-variant max-w-xl leading-relaxed">
+            A local rule engine reads the command the way the shell does, including chains, pipes, <code class="font-mono text-primary">sudo</code> and
+            <code class="font-mono text-primary">bash -c</code>, and rates it. No AI involved, so a comment like
+            <code class="font-mono text-primary"># this is safe</code> can't talk it down.
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 shrink-0">
+          {
+            SEVERITY_LEVELS.map((level) => (
+              <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-lowest/80 border border-white/5 font-mono text-[11px] text-on-surface-variant">
+                <span class={`w-2 h-2 rounded-full ${SEVERITY[level].dot}`} />
+                {SEVERITY[level].label}
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="flex items-center gap-2 label-caps text-on-surface">
+          <Zap className="h-4 w-4 text-secondary" />
+          Quick reference
+        </h2>
+        <span class="font-mono text-[11px] text-outline hidden sm:block">Click a command to open its scenario</span>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {
+          scenarios.map((s) => (
+            <div class="group flex items-center rounded-lg bg-surface-container border border-white/6 hover:border-primary-container/40 transition">
+              <a href={`/s/${s.id}`} class="pl-3 pr-1 py-2 text-[12px]" title={s.data.title}>
+                <CommandText command={s.data.primaryCommand} />
+              </a>
+              <CopyButton text={s.data.primaryCommand} compact className="mr-1" client:visible />
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <a href="/library" class="group card card-hover p-6 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-lg bg-tertiary-container/20 border border-tertiary/30 flex items-center justify-center shrink-0">
+          <BookOpen className="h-5 w-5 text-tertiary" />
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-on-surface">Command library</h3>
+          <p class="text-sm text-on-surface-variant mt-1">{commands.length} commands with their common flags, examples, gotchas and severity.</p>
+        </div>
+        <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition mt-1" />
+      </a>
+      <div class="card p-6 flex items-start gap-4 opacity-70">
+        <div class="w-10 h-10 rounded-lg bg-elevated-surface border border-elevated-border/60 flex items-center justify-center shrink-0">
+          <ShieldAlert className="h-5 w-5 text-elevated" />
+        </div>
+        <div>
+          <h3 class="font-semibold text-on-surface">Command explainer <span class="label-caps text-outline ml-1">soon</span></h3>
+          <p class="text-sm text-on-surface-variant mt-1">Paste what your coding agent wants to run and see every part explained, with a severity verdict.</p>
+        </div>
+      </div>
+    </section>
+  </div>
 </Base>

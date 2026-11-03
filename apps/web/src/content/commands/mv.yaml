@@ -1,0 +1,19 @@
+name: mv
+title: Move or rename files
+category: files
+level: everyday
+summary: Moves files and folders, or renames them. Like `cp`, it silently replaces a file that already exists at the destination.
+syntax: mv [options] source… destination
+flags:
+  - { flag: "-i, --interactive", meaning: "Ask before overwriting." }
+  - { flag: "-n, --no-clobber", meaning: "Never overwrite an existing file." }
+  - { flag: "-v, --verbose", meaning: "Print what was moved." }
+  - { flag: "-t DIR", meaning: "Move everything into `DIR` (handy with `xargs`)." }
+examples:
+  - { command: "mv ~/Downloads/Obsidian-1.7.7.AppImage ~/Applications/obsidian.AppImage", explain: "Move and rename in one go.", severity: modifies }
+  - { command: "mv -n *.log logs/", explain: "Move all log files into a folder without overwriting any already there.", severity: modifies }
+gotchas:
+  - "There is no undo, and an overwritten file is gone. `-i` or `-n` is cheap insurance."
+  - "Renaming a folder that a program or `.desktop` file points to breaks that link."
+related: [cp, rm]
+scenarios: [appimage-install]

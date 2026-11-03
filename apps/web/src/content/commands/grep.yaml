@@ -1,0 +1,22 @@
+name: grep
+title: Search text for a pattern
+category: text
+level: everyday
+summary: Prints the lines that match a pattern, in files or in piped input. With `-r` it searches whole folders.
+syntax: grep [options] pattern [file…]
+flags:
+  - { flag: "-r, --recursive", meaning: "Search every file under a folder." }
+  - { flag: "-n, --line-number", meaning: "Show line numbers." }
+  - { flag: "-i, --ignore-case", meaning: "Ignore upper/lower case." }
+  - { flag: "-v, --invert-match", meaning: "Show lines that do NOT match." }
+  - { flag: "-l", meaning: "Only print the names of files that match." }
+  - { flag: "-E", meaning: "Extended regex: `a|b`, `+`, `?` without backslashes." }
+  - { flag: "-F", meaning: "Treat the pattern as plain text, not a regex." }
+  - { flag: "--include=GLOB", meaning: "Only search files matching the glob, like `--include=\"*.ts\"`." }
+examples:
+  - { command: "grep -rn \"TODO\" src", explain: "Every TODO in the source tree, with file and line number.", severity: readonly }
+  - { command: "ps aux | grep -i firefox", explain: "Find a running process by name.", severity: readonly }
+gotchas:
+  - "`ps aux | grep x` also lists the grep itself. `pgrep -a x` avoids that."
+  - "`rg` (ripgrep) does the same job faster and skips `.gitignore`d files automatically."
+related: [find, ps]

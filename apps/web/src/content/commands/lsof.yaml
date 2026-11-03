@@ -1,0 +1,26 @@
+name: lsof
+title: List open files (and network connections)
+category: networking
+level: intermediate
+summary: Shows which processes have which files or sockets open. The fastest way to find out what's using a port.
+syntax: lsof [options] [file]
+flags:
+  - { flag: "-i :PORT", meaning: "Only network connections on that port." }
+  - { flag: "-i TCP", meaning: "Only TCP connections." }
+  - { flag: "-t", meaning: "Print only PIDs, for use with `kill`." }
+  - { flag: "-p PID", meaning: "Only files opened by that process." }
+  - { flag: "-P", meaning: "Show port numbers instead of service names." }
+  - { flag: "-n", meaning: "Don't look up host names (faster)." }
+examples:
+  - { command: "lsof -i :3000", explain: "What is using port 3000?", severity: readonly }
+  - { command: "sudo lsof -i -P -n | grep LISTEN", explain: "Every listening port on the machine, for all users.", severity: elevated }
+  - { command: "lsof +D ~/Downloads", explain: "Which programs have files in a folder open (why can't I delete it?).", severity: readonly }
+gotchas:
+  - "Without `sudo` you only see your own processes."
+  - "Not installed by default on some systems; `ss -ltnp` gives the same answer for ports."
+related: [ss, kill, ps]
+scenarios: [port-in-use]
+distros:
+  apt: sudo apt install lsof
+  dnf: sudo dnf install lsof
+  pacman: sudo pacman -S lsof

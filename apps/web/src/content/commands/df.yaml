@@ -1,0 +1,17 @@
+name: df
+title: Show free disk space
+category: disk
+level: everyday
+summary: Shows how full each mounted filesystem is.
+syntax: df [options] [path]
+flags:
+  - { flag: "-h, --human-readable", meaning: "Sizes like `120G`." }
+  - { flag: "-T", meaning: "Show the filesystem type (ext4, btrfs, tmpfs…)." }
+  - { flag: "-i", meaning: "Show inodes (file count) instead of bytes. A disk can be \"full\" of tiny files." }
+  - { flag: "-x TYPE", meaning: "Hide a filesystem type, like `-x tmpfs`." }
+examples:
+  - { command: "df -h", explain: "How full every drive is.", severity: readonly }
+  - { command: "df -h .", explain: "Just the drive the current folder is on.", severity: readonly }
+gotchas:
+  - "Snap packages show up as many small `/dev/loop` mounts at 100%. That's normal; they're read-only images."
+related: [du]

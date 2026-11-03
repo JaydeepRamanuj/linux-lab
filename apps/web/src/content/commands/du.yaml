@@ -1,0 +1,19 @@
+name: du
+title: See how much space folders use
+category: disk
+level: everyday
+summary: Adds up the size of files and folders, so you can find what's filling your disk.
+syntax: du [options] [path…]
+flags:
+  - { flag: "-s, --summarize", meaning: "One total per argument instead of every subfolder." }
+  - { flag: "-h, --human-readable", meaning: "Sizes like `1.2G`." }
+  - { flag: "-d N, --max-depth=N", meaning: "Show folders only N levels deep." }
+  - { flag: "-x", meaning: "Stay on one filesystem (skip other drives and mounts)." }
+  - { flag: "-c", meaning: "Add a grand total at the end." }
+examples:
+  - { command: "du -sh * | sort -h", explain: "Size of everything in this folder, biggest last.", severity: readonly }
+  - { command: "du -h -d 1 ~ 2>/dev/null | sort -h | tail -15", explain: "The biggest folders in your home, hiding permission errors.", severity: readonly }
+gotchas:
+  - "`*` skips hidden folders like `.cache` and `.local`, which are often the biggest. Use `du -sh .[!.]* *` to include them."
+  - "`ncdu` gives the same information as an interactive, navigable list."
+related: [df, find]

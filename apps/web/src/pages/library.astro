@@ -1,0 +1,32 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/ui/Breadcrumbs.astro';
+import LibraryIndex from '../components/library/LibraryIndex';
+import type { LibraryEntry } from '../components/library/LibraryIndex';
+
+const commands = await getCollection('commands');
+const entries: LibraryEntry[] = commands.map((c) => ({
+  slug: c.id,
+  name: c.data.name,
+  title: c.data.title,
+  summary: c.data.summary.replace(/`/g, ''),
+  category: c.data.category,
+  level: c.data.level,
+  flags: c.data.flags.map((f) => f.flag)
+}));
+---
+
+<Base title="Command library" description="Curated Linux commands with their common flags, examples, gotchas and how risky each usage is." current="library">
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Library' }]} />
+    <div class="space-y-2">
+      <h1 class="text-3xl sm:text-4xl font-bold">Command library</h1>
+      <p class="text-on-surface-variant max-w-2xl">
+        The commands that come up in real work, with the flags you actually use and what can go wrong. Every example is rated by the rule
+        engine.
+      </p>
+    </div>
+    <LibraryIndex entries={entries} client:load />
+  </div>
+</Base>

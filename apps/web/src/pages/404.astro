@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found">
+  <section class="max-w-xl mx-auto px-4 sm:px-8 py-24 text-center space-y-5">
+    <p class="font-mono text-sm text-outline">
+      <span class="text-secondary">$</span> cd {Astro.url.pathname}
+    </p>
+    <p class="font-mono text-sm text-danger">bash: cd: No such file or directory</p>
+    <h1 class="text-3xl font-bold">That page doesn't exist</h1>
+    <a href="/" class="btn-primary inline-flex px-5 py-2.5 rounded-lg text-sm font-semibold">Back to the guide</a>
+  </section>
+</Base>

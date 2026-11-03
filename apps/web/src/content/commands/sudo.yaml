@@ -1,0 +1,20 @@
+name: sudo
+title: Run a command as root
+category: system
+level: everyday
+summary: Runs one command with superuser rights. That command can then change anything on the system, so it's worth knowing exactly what it does first.
+syntax: sudo [options] command…
+flags:
+  - { flag: "-u USER", meaning: "Run as another user instead of root." }
+  - { flag: "-E", meaning: "Keep your environment variables." }
+  - { flag: "-i", meaning: "Open a login shell as root. Everything you type next runs as root." }
+  - { flag: "-k", meaning: "Forget the cached password, so the next sudo asks again." }
+  - { flag: "-l", meaning: "List what you're allowed to run." }
+examples:
+  - { command: "sudo apt install htop", explain: "Installing system packages needs root.", severity: elevated }
+  - { command: "echo \"127.0.0.1 dev.local\" | sudo tee -a /etc/hosts", explain: "Append to a root-owned file. `sudo echo … >> /etc/hosts` doesn't work: the redirect runs as you.", severity: elevated }
+gotchas:
+  - "Don't use sudo for tools in your project (`npm`, `pip`, `git`). It leaves root-owned files behind that you then can't change."
+  - "`curl … | sudo bash` runs an unread script as root. Download it, read it, then run it."
+  - "After you type the password, sudo stays unlocked for about 15 minutes in that terminal."
+related: [chown, apt]

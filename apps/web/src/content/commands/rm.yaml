@@ -1,0 +1,23 @@
+name: rm
+title: Delete files and folders
+category: files
+level: everyday
+summary: Deletes files, or folders with `-r`. There's no trash and no undo.
+syntax: rm [options] path…
+flags:
+  - { flag: "-r, -R, --recursive", meaning: "Delete folders and everything inside them." }
+  - { flag: "-f, --force", meaning: "Never ask, and don't complain about missing files." }
+  - { flag: "-i", meaning: "Ask before every deletion." }
+  - { flag: "-I", meaning: "Ask once before deleting more than three files or recursing." }
+  - { flag: "-v, --verbose", meaning: "Print each file as it's deleted." }
+  - { flag: "--no-preserve-root", meaning: "Turn off the safety check that refuses to delete `/`. Never needed." }
+  - { flag: "--", meaning: "Everything after this is a file name, even if it starts with `-`." }
+examples:
+  - { command: "rm -rf node_modules && npm install", explain: "Reinstall dependencies from scratch. node_modules can always be regenerated.", severity: modifies }
+  - { command: "rm -I *.tmp", explain: "Delete temp files, with one confirmation if there are many.", severity: modifies }
+  - { command: "rm -rf \"${BUILD_DIR:?}/\"", explain: "Delete a build folder from a variable, aborting if the variable is empty.", severity: modifies }
+gotchas:
+  - "`rm -rf $DIR/` with an empty `DIR` becomes `rm -rf /`. Quote variables and use `${DIR:?}` so an empty value stops the command."
+  - "A space in the wrong place matters: `rm -rf ./build /` deletes `./build` and then tries to delete everything."
+  - "`-f` hides mistakes. If you aren't sure what a glob matches, run `ls` with the same pattern first."
+related: [find, mv, trash]

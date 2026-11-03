@@ -1,0 +1,23 @@
+name: chmod
+title: Change file permissions
+category: permissions
+level: everyday
+summary: Changes who can read, write or execute a file. Takes symbolic modes like `+x` or octal numbers like `755`.
+syntax: chmod [options] mode file…
+flags:
+  - { flag: "+x", meaning: "Add execute permission (makes a script or AppImage runnable)." }
+  - { flag: "u+x", meaning: "Add execute for the owner (u) only." }
+  - { flag: "-R, --recursive", meaning: "Apply to a folder and everything inside it." }
+  - { flag: "755", meaning: "Owner rwx, group r-x, others r-x. Typical for scripts and folders." }
+  - { flag: "644", meaning: "Owner rw-, everyone else r--. Typical for normal files." }
+  - { flag: "600", meaning: "Owner rw-, nobody else anything. Required for SSH private keys." }
+examples:
+  - { command: "chmod +x deploy.sh", explain: "Make a script runnable.", severity: modifies }
+  - { command: "chmod 600 ~/.ssh/id_ed25519", explain: "Lock down an SSH key so ssh will accept it.", severity: elevated }
+  - { command: "chmod -R u+w ./build", explain: "Give yourself write access to everything in a folder.", severity: modifies }
+gotchas:
+  - "`chmod 777` lets every user on the machine change the file. It almost never fixes the real problem."
+  - "`chmod -R` on your home folder or a system folder can stop `ssh`, `sudo` or your desktop from working, and there's no undo."
+  - "Octal digits are read/write/execute added up: r=4, w=2, x=1. So 7 = rwx, 5 = r-x, 6 = rw-."
+related: [chown, ls]
+scenarios: [permission-denied-script, appimage-install]

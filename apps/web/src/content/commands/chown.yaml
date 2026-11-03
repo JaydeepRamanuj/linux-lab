@@ -1,0 +1,17 @@
+name: chown
+title: Change who owns a file
+category: permissions
+level: intermediate
+summary: Changes the owner (and optionally the group) of files. Usually needs `sudo`, because you can't give your files away or take other people's.
+syntax: chown [options] user[:group] file…
+flags:
+  - { flag: "-R, --recursive", meaning: "Apply to a folder and everything inside it." }
+  - { flag: "user:group", meaning: "New owner and group, like `jd:jd`." }
+  - { flag: "--reference=FILE", meaning: "Copy the owner and group from another file." }
+examples:
+  - { command: "sudo chown -R $USER:$USER ./node_modules", explain: "Take back a folder that `sudo npm install` left owned by root.", severity: elevated }
+  - { command: "ls -l package-lock.json", explain: "Check the owner first: it's the third column.", severity: readonly }
+gotchas:
+  - "Files owned by root in your project usually mean a command ran with `sudo` by mistake. Fix the ownership, then stop using `sudo` for that tool."
+  - "Never `chown -R` a system folder like `/usr` or `/etc`. Many programs check ownership and refuse to run when it's wrong."
+related: [chmod, sudo, ls]

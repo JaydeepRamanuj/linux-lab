@@ -1,0 +1,28 @@
+name: apt
+title: Install and remove packages (Debian/Ubuntu)
+category: packages
+level: everyday
+summary: The package manager front-end on Ubuntu and Debian. Installing, upgrading and removing need `sudo`; searching doesn't.
+syntax: apt <command> [package…]
+flags:
+  - { flag: "install", meaning: "Install packages and their dependencies." }
+  - { flag: "remove", meaning: "Uninstall packages but keep their system config files." }
+  - { flag: "purge", meaning: "Uninstall packages and delete their system config files." }
+  - { flag: "autoremove", meaning: "Remove dependencies nothing needs any more." }
+  - { flag: "update", meaning: "Refresh the package lists. Installs nothing." }
+  - { flag: "upgrade", meaning: "Install newer versions of everything installed." }
+  - { flag: "search", meaning: "Search package names and descriptions." }
+  - { flag: "show", meaning: "Details about one package." }
+  - { flag: "list --installed", meaning: "Everything installed." }
+  - { flag: "-y", meaning: "Answer yes to the confirmation prompt." }
+  - { flag: "--fix-broken", meaning: "Try to repair missing dependencies." }
+examples:
+  - { command: "sudo apt update && sudo apt upgrade", explain: "Refresh the lists, then upgrade everything.", severity: elevated }
+  - { command: "apt search ripgrep", explain: "Find a package by name or description.", severity: readonly }
+  - { command: "sudo apt install ./app_1.2.0_amd64.deb", explain: "Install a downloaded .deb and pull in its dependencies. Note the `./`.", severity: elevated }
+gotchas:
+  - "Read the list of packages to be REMOVED before you confirm. Removing one package can take your desktop with it."
+  - "`apt` is for people; scripts should use `apt-get`, whose output doesn't change between versions."
+  - "\"Could not get lock\" means another install is running. Wait for it."
+related: [dpkg, sudo]
+scenarios: [apt-lock]

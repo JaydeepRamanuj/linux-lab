@@ -1,0 +1,27 @@
+---
+import { AlertTriangle, OctagonAlert } from 'lucide-react';
+import { Prose } from '../ui/ui';
+
+interface Props {
+  type: 'caution' | 'danger';
+  text: string;
+}
+const { type, text } = Astro.props;
+const danger = type === 'danger';
+const Icon = danger ? OctagonAlert : AlertTriangle;
+---
+
+<div
+  class:list={[
+    'rounded-xl border p-4 sm:p-5 flex items-start gap-4',
+    danger ? 'bg-danger-surface/70 border-danger-border/50' : 'bg-caution-surface/50 border-caution-border/40'
+  ]}
+>
+  <div class:list={['w-9 h-9 rounded-lg flex items-center justify-center shrink-0', danger ? 'bg-danger/15' : 'bg-caution/15']}>
+    <Icon className={`h-5 w-5 ${danger ? 'text-danger' : 'text-caution'}`} />
+  </div>
+  <div>
+    <div class:list={['font-display font-semibold', danger ? 'text-danger' : 'text-caution']}>{danger ? 'Danger' : 'Caution'}</div>
+    <p class="text-sm text-on-surface-variant mt-1 leading-relaxed"><Prose text={text} /></p>
+  </div>
+</div>

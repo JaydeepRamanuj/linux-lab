@@ -1,0 +1,17 @@
+name: mkdir
+title: Create folders
+category: files
+level: everyday
+summary: Creates one or more directories. With `-p` it creates missing parents too and doesn't complain if the folder already exists.
+syntax: mkdir [options] dir…
+flags:
+  - { flag: "-p, --parents", meaning: "Create parent folders as needed; no error if the folder already exists." }
+  - { flag: "-m MODE", meaning: "Set permissions on the new folder, like `-m 700`." }
+  - { flag: "-v, --verbose", meaning: "Print each folder created." }
+examples:
+  - { command: "mkdir -p ~/Applications", explain: "Make sure the folder exists, whether or not it did before.", severity: modifies }
+  - { command: "mkdir -p src/{components,lib,pages}", explain: "Create three folders at once with brace expansion.", severity: modifies }
+gotchas:
+  - "Without `-p`, `mkdir a/b/c` fails if `a/b` doesn't exist yet."
+related: [cd, ls, rm]
+scenarios: [appimage-install]

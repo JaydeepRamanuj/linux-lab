@@ -1,0 +1,26 @@
+name: curl
+title: Make HTTP requests and download files
+category: networking
+level: everyday
+summary: Fetches a URL and prints the response. It can also send data, set headers and save to a file.
+syntax: curl [options] URL
+flags:
+  - { flag: "-f, --fail", meaning: "Exit with an error on HTTP errors (404, 500) instead of printing the error page." }
+  - { flag: "-s, --silent", meaning: "No progress bar." }
+  - { flag: "-S, --show-error", meaning: "Still show errors when `-s` is used." }
+  - { flag: "-L, --location", meaning: "Follow redirects." }
+  - { flag: "-o FILE", meaning: "Save the response to a file." }
+  - { flag: "-O", meaning: "Save to a file named like the URL." }
+  - { flag: "-I, --head", meaning: "Fetch only the response headers." }
+  - { flag: "-H HEADER", meaning: "Add a request header, like `-H \"Authorization: Bearer …\"`." }
+  - { flag: "-X METHOD", meaning: "HTTP method: POST, PUT, DELETE…" }
+  - { flag: "-d DATA", meaning: "Send data in the request body (implies POST)." }
+examples:
+  - { command: "curl -I https://example.com", explain: "Is the site up, and what does it return?", severity: readonly }
+  - { command: "curl -fsSL https://get.example.sh -o install.sh", explain: "Download an install script so you can read it first.", severity: modifies }
+  - { command: "curl -fsSL https://get.example.sh | bash", explain: "The common one-liner: runs a script straight from the internet without showing it.", severity: elevated }
+gotchas:
+  - "`-fsSL` is the usual combination for scripts: fail on errors, silent, but show errors, follow redirects."
+  - "Piping into `bash` (worse: `sudo bash`) runs code you haven't seen. Save it with `-o`, read it, then run it."
+  - "Commands with tokens in `-H` end up in your shell history. Use an environment variable instead."
+related: [sudo]

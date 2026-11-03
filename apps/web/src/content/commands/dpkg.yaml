@@ -1,0 +1,20 @@
+name: dpkg
+title: Low-level Debian package tool
+category: packages
+level: intermediate
+summary: The tool `apt` uses underneath. Handy for listing what's installed and for fixing an interrupted install.
+syntax: dpkg [options] [package|file]
+flags:
+  - { flag: "-l", meaning: "List installed packages (pipe into `grep`)." }
+  - { flag: "-L PACKAGE", meaning: "List the files a package installed." }
+  - { flag: "-S FILE", meaning: "Which package owns this file?" }
+  - { flag: "-i FILE.deb", meaning: "Install a .deb file, without resolving dependencies." }
+  - { flag: "--configure -a", meaning: "Finish setting up every package left half-configured." }
+examples:
+  - { command: "dpkg -l | grep nginx", explain: "Is nginx installed, and which version?", severity: readonly }
+  - { command: "dpkg -S $(which rg)", explain: "Which package installed this program?", severity: readonly }
+  - { command: "sudo dpkg --configure -a", explain: "Recover after an install was interrupted.", severity: elevated }
+gotchas:
+  - "`dpkg -i` doesn't install dependencies. Prefer `sudo apt install ./file.deb`."
+related: [apt]
+scenarios: [apt-lock]

@@ -2,6 +2,10 @@
   "name": "shellgyan",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",

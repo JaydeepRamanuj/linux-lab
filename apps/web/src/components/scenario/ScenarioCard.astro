@@ -1,0 +1,38 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { ChevronRight } from 'lucide-react';
+import { SeverityBadge, CommandText, CopyButton } from '../ui/ui';
+
+interface Props {
+  scenario: CollectionEntry<'scenarios'>;
+}
+const { scenario } = Astro.props;
+const s = scenario.data;
+const destructive = s.severity === 'destructive';
+---
+
+<div class="group card card-hover p-5 sm:p-6 flex flex-col gap-4 relative">
+  <a href={`/s/${scenario.id}`} class="absolute inset-0 rounded-2xl" aria-label={s.title}></a>
+  <div class="flex items-center justify-between gap-3">
+    <span class="px-2.5 py-1 rounded-md bg-surface-high label-caps text-on-surface-variant">Scenario {String(s.number).padStart(2, '0')}</span>
+    <SeverityBadge severity={s.severity} />
+  </div>
+  <div class="space-y-1.5 flex-1">
+    <h3 class="text-lg font-semibold text-on-surface group-hover:text-white transition">{s.title}</h3>
+    <p class="text-sm text-on-surface-variant leading-relaxed">“{s.quote}”</p>
+  </div>
+  <div class="space-y-2">
+    <div class="flex items-center justify-between label-caps">
+      <span class={destructive ? 'text-danger' : 'text-outline'}>{destructive ? 'Destructive action' : 'Primary command'}</span>
+      <span class="text-outline normal-case tracking-normal font-sans text-[11px]">{s.steps.length} steps</span>
+    </div>
+    <div class="well flex items-center gap-2 pl-4 pr-2 py-2.5 relative">
+      <div class="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar text-[13px]">
+        <span class="font-mono text-secondary">$</span>
+        <CommandText command={s.primaryCommand} className="whitespace-nowrap" />
+      </div>
+      <CopyButton text={s.primaryCommand} compact className="relative z-10" client:visible />
+      <ChevronRight className="h-4 w-4 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0" />
+    </div>
+  </div>
+</div>

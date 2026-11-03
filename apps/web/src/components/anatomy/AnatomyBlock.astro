@@ -1,0 +1,37 @@
+---
+// Rule-engine verdict plus interactive anatomy for one command. Everything is computed at build time.
+import { ShieldAlert } from 'lucide-react';
+import Anatomy from './Anatomy';
+import { SeverityBadge, Prose } from '../ui/ui';
+import { SEVERITY } from '../../lib/theme';
+import type { AnatomyData } from '../../lib/anatomy';
+
+interface Props {
+  data: AnatomyData;
+  label?: string;
+}
+const { data, label = 'Command anatomy' } = Astro.props;
+---
+
+<div class="flex flex-col gap-2">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="label-caps text-outline">{label}</div>
+    <div class="flex items-center gap-2">
+      <span class="label-caps text-outline-variant">Rule engine</span>
+      <SeverityBadge severity={data.severity} />
+    </div>
+  </div>
+  <Anatomy tokens={data.tokens} client:visible />
+  {
+    data.findings.length > 0 && (
+      <ul class="space-y-1.5 pt-1">
+        {data.findings.map((f) => (
+          <li class="flex items-start gap-2 text-[13px] text-on-surface-variant">
+            <ShieldAlert className={`h-4 w-4 mt-0.5 shrink-0 ${SEVERITY[f.severity].text}`} />
+            <Prose text={f.message} />
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>

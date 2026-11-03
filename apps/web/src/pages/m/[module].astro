@@ -1,0 +1,54 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import ScenarioCard from '../../components/scenario/ScenarioCard.astro';
+import { CategoryIcon } from '../../components/ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { MODULES } from '../../data/modules';
+import type { Module } from '../../data/modules';
+
+export function getStaticPaths() {
+  return MODULES.map((module, index) => ({ params: { module: module.id }, props: { module, index } }));
+}
+
+interface Props {
+  module: Module;
+  index: number;
+}
+const { module, index } = Astro.props;
+const accent = ACCENTS[module.color];
+const scenarios = (await getCollection('scenarios', (s) => !s.data.draft && s.data.module === module.id)).sort((a, b) => a.data.number - b.data.number);
+---
+
+<Base title={module.name} description={module.description} current="scenarios">
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 space-y-8">
+    <Breadcrumbs items={[{ label: module.name }]} back={{ href: '/', label: 'All modules' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-primary-container/12"></div>
+      <div class="relative flex items-start gap-5">
+        <div class={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${accent.bg} ${accent.ring}`}>
+          <CategoryIcon name={module.icon} className={`h-6 w-6 ${accent.text}`} />
+        </div>
+        <div class="space-y-2">
+          <span class="label-caps text-outline">Module 0{index + 1}</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">{module.name}</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">{module.description}</p>
+        </div>
+      </div>
+    </section>
+
+    {
+      scenarios.length ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {scenarios.map((scenario) => (
+            <ScenarioCard scenario={scenario} />
+          ))}
+        </div>
+      ) : (
+        <p class="card p-8 text-center text-on-surface-variant">Scenarios for this module are on the way.</p>
+      )
+    }
+  </div>
+</Base>

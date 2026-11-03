@@ -1,0 +1,20 @@
+name: cp
+title: Copy files and folders
+category: files
+level: everyday
+summary: Copies files, or whole folders with `-r`. By default it silently overwrites files at the destination.
+syntax: cp [options] source… destination
+flags:
+  - { flag: "-r, --recursive", meaning: "Copy folders and everything inside them." }
+  - { flag: "-i, --interactive", meaning: "Ask before overwriting an existing file." }
+  - { flag: "-n, --no-clobber", meaning: "Never overwrite existing files." }
+  - { flag: "-a, --archive", meaning: "Copy recursively and keep permissions, owners and timestamps. Best for backups." }
+  - { flag: "-v, --verbose", meaning: "Print each file as it's copied." }
+  - { flag: "-u, --update", meaning: "Only copy when the source is newer than the destination." }
+examples:
+  - { command: "cp .env.example .env", explain: "Start a local config from the template.", severity: modifies }
+  - { command: "cp -a ~/projects/site ~/backups/site-2026-11-04", explain: "A full copy of a folder, keeping permissions and dates.", severity: modifies }
+gotchas:
+  - "`cp a b` replaces `b` without asking. Add `-i` when you aren't sure."
+  - "`cp -r src dest` behaves differently depending on whether `dest` already exists: it copies into it if it does, or creates it as the copy if it doesn't."
+related: [mv, rm, mkdir]

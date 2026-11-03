@@ -1,0 +1,14 @@
+name: update-desktop-database
+title: Refresh the app menu
+category: system
+level: intermediate
+summary: Rebuilds the cache that maps `.desktop` files to the file types they open, so new menu entries show up right away.
+syntax: update-desktop-database [folder]
+flags:
+  - { flag: "-v", meaning: "Print what it's doing." }
+examples:
+  - { command: "update-desktop-database ~/.local/share/applications", explain: "Refresh your own menu entries; no sudo needed.", severity: modifies }
+gotchas:
+  - "Most desktops notice new `.desktop` files on their own. If an entry still doesn't appear, check it with `desktop-file-validate`."
+related: [chmod]
+scenarios: [appimage-install]

@@ -1,0 +1,33 @@
+---
+import Zones from '../widgets/Zones';
+import type { ZonesSpec } from '../widgets/Zones';
+import { Prose } from '../ui/ui';
+
+interface Props {
+  spec: ZonesSpec;
+  which: 'before' | 'after';
+  label?: string;
+}
+const { spec, which, label } = Astro.props;
+const before = which === 'before';
+---
+
+<div class="well p-4 flex flex-col gap-3 min-w-0">
+  <div class="flex items-center justify-between gap-2">
+    <span class:list={['flex items-center gap-2 font-mono text-[11px]', before ? 'text-danger' : 'text-tertiary']}>
+      <span class:list={['w-2 h-2 rounded-full', before ? 'bg-danger' : 'bg-tertiary']}></span>
+      {(label ?? (before ? 'Before' : 'After')).toUpperCase()}
+    </span>
+    {spec.title && <span class="label-caps text-outline truncate">{spec.title}</span>}
+  </div>
+  <div class="flex-1 flex items-center rounded-lg bg-surface-container/30 p-2 min-h-32">
+    <div class="w-full"><Zones spec={spec} /></div>
+  </div>
+  {
+    spec.caption && (
+      <p class="text-xs text-on-surface-variant leading-relaxed">
+        <Prose text={spec.caption} />
+      </p>
+    )
+  }
+</div>

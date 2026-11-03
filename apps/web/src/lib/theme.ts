@@ -1,5 +1,6 @@
 import { LifeBuoy, Activity, FolderLock, Package, Bot, AlertTriangle, ShieldAlert, X, Circle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { Severity } from '@shellgyan/core/severity';
 
 export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   LifeBuoy,
@@ -20,9 +21,9 @@ export const ACCENTS: Record<Accent, { text: string; bg: string; ring: string; d
   rose: { text: 'text-danger', bg: 'bg-danger/10', ring: 'border-danger/30', dot: 'bg-danger' }
 };
 
-// The four severity levels from the plan (§5.3). Order matters: later = more severe.
-export const SEVERITY_LEVELS = ['readonly', 'modifies', 'elevated', 'destructive'] as const;
-export type Severity = (typeof SEVERITY_LEVELS)[number];
+// The four severity levels (plan §5.3) are defined once, in the rule engine.
+export { SEVERITY_LEVELS } from '@shellgyan/core/severity';
+export type { Severity };
 
 export const SEVERITY: Record<
   Severity,

@@ -1,0 +1,21 @@
+name: ps
+title: List running processes
+category: processes
+level: everyday
+summary: Shows the processes running right now, with their PID, owner, CPU and memory use.
+syntax: ps [options]
+flags:
+  - { flag: "aux", meaning: "Every process from every user, with owner and resource use (BSD style, no dash)." }
+  - { flag: "-ef", meaning: "Every process with its parent PID (System V style)." }
+  - { flag: "-p PID", meaning: "Only the process with this ID." }
+  - { flag: "-o COLUMNS", meaning: "Pick the columns, like `-o pid,etime,cmd`." }
+  - { flag: "--sort=-%mem", meaning: "Sort by memory use, highest first (`-%cpu` for CPU)." }
+examples:
+  - { command: "ps aux | grep node", explain: "Find node processes.", severity: readonly }
+  - { command: "ps aux --sort=-%mem | head", explain: "The ten biggest memory users.", severity: readonly }
+  - { command: "ps -p 2841 -o pid,etime,cmd", explain: "What one PID is, and how long it has been running.", severity: readonly }
+gotchas:
+  - "`ps aux` and `ps -aux` are different: the first is BSD syntax and the one you want."
+  - "For a live view, use `top` or `htop`."
+related: [kill, pkill, lsof]
+scenarios: [apt-lock]

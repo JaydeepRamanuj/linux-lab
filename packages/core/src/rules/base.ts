@@ -14,7 +14,7 @@ const READONLY = new Set([
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
-  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'update-desktop-database'
+  'curl', 'wget', 'gpg', 'ncdu', 'hash'
 ]);
 
 // Programs that change files in the project or user space, recoverably.
@@ -22,7 +22,7 @@ const MODIFIES = new Set([
   'mkdir', 'rmdir', 'touch', 'cp', 'mv', 'ln', 'rm', 'chmod', 'chown', 'chgrp', 'tee', 'tar', 'zip', 'unzip', 'gunzip',
   'npm', 'pnpm', 'yarn', 'bun', 'npx', 'pnpx', 'bunx', 'pip', 'pip3', 'pipx', 'uv', 'poetry', 'cargo', 'go', 'make', 'cmake',
   'docker', 'podman', 'git', 'source', '.', 'kill', 'pkill', 'killall', 'nohup', 'disown', 'bg', 'fg', 'ssh', 'scp', 'rsync',
-  'truncate', 'patch', 'install', 'mktemp', 'nvm', 'fnm', 'corepack', 'xargs', 'dd', 'sqlite3', 'psql', 'mysql'
+  'truncate', 'patch', 'install', 'mktemp', 'update-desktop-database', 'nvm', 'fnm', 'corepack', 'xargs', 'dd', 'sqlite3', 'psql', 'mysql'
 ]);
 
 export interface Basis {

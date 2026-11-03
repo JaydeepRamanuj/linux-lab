@@ -1,0 +1,22 @@
+name: ls
+title: List files in a folder
+category: files
+level: everyday
+summary: Lists the files and folders in a directory, optionally with sizes, owners, permissions and dates.
+syntax: ls [options] [path…]
+flags:
+  - { flag: "-l", meaning: "Long format: permissions, owner, size and date on one line per file." }
+  - { flag: "-a, --all", meaning: "Include hidden files (names starting with `.`)." }
+  - { flag: "-h, --human-readable", meaning: "Sizes like `4.0K` and `118M` instead of bytes (use with `-l`)." }
+  - { flag: "-t", meaning: "Sort by modification time, newest first." }
+  - { flag: "-r, --reverse", meaning: "Reverse the sort order." }
+  - { flag: "-S", meaning: "Sort by size, largest first." }
+  - { flag: "-d", meaning: "Show the folder itself, not what's inside it." }
+examples:
+  - { command: "ls -la", explain: "Everything in the current folder, hidden files included, with details.", severity: readonly }
+  - { command: "ls -lht ~/Downloads | head", explain: "The ten most recent downloads with readable sizes.", severity: readonly }
+gotchas:
+  - "`ll` is an alias for `ls -alF` on Ubuntu, not a separate program."
+  - "Don't parse `ls` output in scripts: file names with spaces break it. Use globs or `find` instead."
+related: [find, du, chmod]
+scenarios: [appimage-install, permission-denied-script]

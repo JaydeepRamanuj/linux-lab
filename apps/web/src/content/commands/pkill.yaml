@@ -1,0 +1,17 @@
+name: pkill
+title: Stop processes by name
+category: processes
+level: intermediate
+summary: Sends a signal to every process whose name matches a pattern, so you don't need the PID.
+syntax: pkill [options] pattern
+flags:
+  - { flag: "-f", meaning: "Match against the full command line, not just the program name." }
+  - { flag: "-9", meaning: "Send SIGKILL instead of SIGTERM." }
+  - { flag: "-u USER", meaning: "Only processes of this user." }
+  - { flag: "-x", meaning: "The name must match exactly." }
+examples:
+  - { command: "pkill -f \"next dev\"", explain: "Stop a Next.js dev server.", severity: modifies }
+  - { command: "pgrep -af node", explain: "Preview what would match first: same pattern, no signal.", severity: readonly }
+gotchas:
+  - "Patterns are partial matches: `pkill node` also stops `nodemon` and anything else with node in its name. Check with `pgrep -a` first."
+related: [kill, ps]

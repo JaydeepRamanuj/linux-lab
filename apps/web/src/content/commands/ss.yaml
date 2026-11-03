@@ -1,0 +1,19 @@
+name: ss
+title: Show sockets and listening ports
+category: networking
+level: intermediate
+summary: Lists network connections and listening ports. The modern replacement for `netstat`, installed everywhere.
+syntax: ss [options] [filter]
+flags:
+  - { flag: "-l", meaning: "Only listening sockets." }
+  - { flag: "-t", meaning: "TCP." }
+  - { flag: "-u", meaning: "UDP." }
+  - { flag: "-n", meaning: "Numbers instead of names (`:3000` not `:hbci`)." }
+  - { flag: "-p", meaning: "Show the process that owns each socket." }
+examples:
+  - { command: "ss -ltnp", explain: "Every TCP port something is listening on, with the process.", severity: readonly }
+  - { command: "ss -ltnp 'sport = :3000'", explain: "Just port 3000.", severity: readonly }
+gotchas:
+  - "`-p` shows processes of other users only with `sudo`."
+related: [lsof]
+scenarios: [port-in-use]

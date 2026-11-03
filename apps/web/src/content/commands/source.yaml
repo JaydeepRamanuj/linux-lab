@@ -1,0 +1,13 @@
+name: source
+title: Run a file in the current shell
+category: shell
+level: everyday
+summary: Runs the commands in a file inside your current shell, so variables and PATH changes stick. `.` does the same.
+syntax: "source FILE   (or: . FILE)"
+examples:
+  - { command: "source ~/.bashrc", explain: "Apply changes to your shell config without opening a new terminal.", severity: modifies }
+  - { command: "source .venv/bin/activate", explain: "Activate a Python virtual environment.", severity: modifies }
+gotchas:
+  - "Running the file as `./file` or `bash file` starts a new shell, so its `export`s vanish when it ends. That's why config files are sourced."
+  - "Only source files you trust: they run with full access to your current shell."
+related: [which]

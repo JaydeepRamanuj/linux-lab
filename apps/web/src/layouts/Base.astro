@@ -1,12 +1,14 @@
 ---
 import '../styles/global.css';
+import Header from '../components/layout/Header.astro';
 
 interface Props {
   title: string;
   description?: string;
+  current?: 'scenarios' | 'library';
 }
 
-const { title, description = 'Problem-first Linux walkthroughs and a command explainer that tells you how dangerous a command is.' } = Astro.props;
+const { title, current, description = 'Problem-first Linux walkthroughs and a command explainer that tells you how dangerous a command is.' } = Astro.props;
 const fullTitle = title === 'ShellGyan' ? 'ShellGyan | Linux Command Survival Guide' : `${title} · ShellGyan`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -35,14 +37,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     />
   </head>
   <body class="min-h-screen flex flex-col">
-    <header class="border-b border-white/5 bg-surface-lowest/80">
-      <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center gap-3">
-        <a href="/" class="flex items-center gap-2 font-display font-semibold">
-          <span class="w-2 h-2 rounded-full bg-primary-container"></span>
-          ShellGyan
-        </a>
-      </div>
-    </header>
+    <Header current={current} />
 
     <main class="flex-1 w-full animate-fade-in">
       <slot />
