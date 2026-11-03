@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"primary-container":"#8083ff","inverse-primary":"#494bd6","surface-container":"#1c1f29","secondary":"#ddb7ff","on-tertiary-container":"#002f38","on-tertiary-fixed":"#001f26","on-secondary-fixed":"#2c0051","surface-bright":"#353943","on-primary-fixed":"#07006c","on-primary":"#1000a9","on-secondary-container":"#d6a9ff","surface-container-lowest":"#0a0e17","tertiary-container":"#009eb9","tertiary-fixed":"#acedff","on-tertiary-fixed-variant":"#004e5c","on-primary-fixed-variant":"#2f2ebe","on-secondary-fixed-variant":"#6900b3","surface-variant":"#31353f","outline":"#908fa0","primary-fixed":"#e1e0ff","on-background":"#dfe2ef","primary":"#c0c1ff","background":"#0f131c","on-error-container":"#ffdad6","surface":"#0f131c","inverse-on-surface":"#2c303a","outline-variant":"#464554","tertiary":"#4cd7f6","tertiary-fixed-dim":"#4cd7f6","surface-container-highest":"#31353f","secondary-container":"#6f00be","surface-container-high":"#262a34","on-tertiary":"#003640","on-error":"#690005","primary-fixed-dim":"#c0c1ff","on-secondary":"#490080","surface-tint":"#c0c1ff","on-surface":"#dfe2ef","on-surface-variant":"#c7c4d7","surface-container-low":"#181b25","secondary-fixed-dim":"#ddb7ff","inverse-surface":"#dfe2ef","error":"#ffb4ab","surface-dim":"#0f131c","secondary-fixed":"#f0dbff","on-primary-container":"#0d0096","error-container":"#93000a"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-lg":"1.5rem","space-sm":"0.5rem","gutter":"1.5rem","space-xl":"2.5rem","space-xs":"0.25rem","margin":"2rem","space-md":"1rem"},fontFamily:{"headline-lg":["Geist"],"code-sm":["JetBrains Mono"],"code-md":["JetBrains Mono"],"display":["Geist"],"body-md":["Inter"],"body-sm":["Inter"],"label-caps":["JetBrains Mono"],"display-mobile":["Geist"],"body-lg":["Inter"],"code-lg":["JetBrains Mono"],"headline-sm":["Geist"],"headline-lg-mobile":["Geist"],"headline-md":["Geist"]},fontSize:{"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"600"}],"code-sm":["11px",{"lineHeight":"16px","fontWeight":"500"}],"code-md":["13px",{"lineHeight":"20px","fontWeight":"400"}],"display":["48px",{"lineHeight":"56px","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"body-sm":["12px",{"lineHeight":"18px","fontWeight":"400"}],"label-caps":["11px",{"lineHeight":"14px","fontWeight":"600"}],"display-mobile":["32px",{"lineHeight":"40px","fontWeight":"700"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"code-lg":["15px",{"lineHeight":"24px","fontWeight":"500"}],"headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","fontWeight":"600"}],"headline-md":["22px",{"lineHeight":"28px","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/85 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"><div class="h-16 max-w-7xl mx-auto px-margin flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-sm group" data-path="emergency-guide" href="#"><div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-container via-inverse-primary to-tertiary flex items-center justify-center p-[1px] shadow-[0_0_16px_rgba(128,131,255,0.3)] group-hover:shadow-[0_0_24px_rgba(76,215,246,0.5)] transition-all"><div class="w-full h-full bg-surface-container-lowest rounded-[7px] flex items-center justify-center"><span class="material-symbols-outlined text-tertiary text-[20px]">account_tree</span></div></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface flex items-center gap-1.5">GitGyan<span class="px-1.5 py-0.5 rounded bg-tertiary-container/30 border border-tertiary/30 text-tertiary font-code-sm text-code-sm">v2.4</span></span></div></a><nav class="hidden md:flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low border border-outline-variant/20" data-active-classes="bg-surface-container-high text-primary font-bold rounded-lg shadow-inner"><a aria-current="page" class="px-space-md py-1.5 transition-colors bg-surface-container-high text-primary font-bold rounded-lg shadow-inner" data-path="emergency-guide" href="#">Emergency Guide</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-body-sm text-body-sm" data-path="interactive-sandbox" href="#">Interactive Sandbox</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-body-sm text-body-sm" data-path="git-basics" href="#">Git Basics</a><a class="px-space-md py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors font-body-sm text-body-sm" data-path="recipe-matrix" href="#">Recipe Matrix</a></nav></div><div class="flex items-center gap-space-md"><div class="relative hidden lg:flex items-center"><button class="w-72 h-9 px-space-md rounded-lg bg-surface-container-low border border-outline-variant/30 text-on-surface-variant hover:border-primary/50 flex items-center justify-between text-body-sm transition-all shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]" type="button"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-outline">search</span><span class="text-outline font-body-sm">Search emergency scenario...</span></span><kbd class="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant/40 font-code-sm text-code-sm text-on-surface-variant shadow-sm">⌘K</kbd></button></div><div class="flex items-center gap-space-sm pl-space-sm border-l border-outline-variant/30"><div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container-low border border-outline-variant/30"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-code-sm text-code-sm text-tertiary">Engine Ready</span></div><a aria-label="Repository Updates" class="w-9 h-9 rounded-lg bg-surface-container-low border border-outline-variant/30 hover:border-primary/40 hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-all" href="#"><span class="material-symbols-outlined text-[18px]">code</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 flex-1 bg-surface"><div class="flex flex-col w-full">
+<div class="w-full max-w-5xl mx-auto px-margin py-space-xl flex flex-col gap-space-xl">
+<!-- Top Action / Context Breadcrumbs -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm">
+<nav class="flex items-center gap-space-xs font-code-sm text-code-sm text-outline">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[14px]">home</span>
+          Home
+        </a>
+<span class="text-outline-variant">/</span>
+<a class="hover:text-primary transition-colors" href="#">Branch Problems</a>
+<span class="text-outline-variant">/</span>
+<span class="text-tertiary">#09: Unmerge a Branch with Wrong Code</span>
+</nav>
+<a class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface text-body-sm font-body-sm transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        Back to Category
+      </a>
+</div>
+<!-- Main Scenario Hero Card -->
+<div class="w-full rounded-xl bg-surface-container p-space-lg sm:p-space-xl shadow-xl relative overflow-hidden flex flex-col gap-space-lg">
+<div class="absolute -right-16 -top-16 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex flex-wrap items-center justify-between gap-space-sm relative z-10">
+<div class="flex items-center gap-space-sm">
+<span class="px-2.5 py-1 rounded-md bg-surface-container-high text-primary font-label-caps text-label-caps uppercase tracking-wider">
+            Scenario 09
+          </span>
+<span class="px-2.5 py-1 rounded-full bg-surface-container-lowest text-tertiary font-code-sm text-code-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrows_outward</span>
+            Merge Recovery
+          </span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest text-tertiary font-code-sm text-code-sm shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+          SAFE • Non-Destructive
+        </div>
+</div>
+<div class="flex flex-col gap-space-xs relative z-10">
+<h1 class="font-display text-display text-on-surface tracking-tight">
+          Unmerge a Branch with Wrong Code
+        </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant italic">
+          “A feature was merged into main but the code is broken or unstable — safely undo it without rewriting shared history.”
+        </p>
+</div>
+<!-- Hero Command Banner -->
+<div class="relative z-10 flex flex-col gap-space-xs pt-space-xs">
+<div class="flex items-center justify-between">
+<span class="flex items-center gap-1.5 font-label-caps text-label-caps text-secondary uppercase tracking-widest">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+            Primary Recovery Action
+          </span>
+<span class="font-code-sm text-code-sm text-outline">Revert parent 1</span>
+</div>
+<div class="w-full rounded-lg bg-surface-container-lowest p-space-md sm:p-space-lg flex items-center justify-between gap-space-md shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)]">
+<div class="flex items-center gap-3 overflow-x-auto min-w-0 py-1">
+<span class="font-code-lg text-code-lg text-secondary select-none">$</span>
+<span class="font-code-lg text-code-lg text-tertiary font-semibold whitespace-nowrap">git revert -m 1</span>
+<span class="font-code-lg text-code-lg text-on-surface-variant whitespace-nowrap"><merge-commit-hash></span>
+</div>
+<button class="shrink-0 px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-body-sm font-body-sm flex items-center gap-1.5 transition-all shadow-sm" id="copy-primary-btn" onclick="copySnippet('git revert -m 1 <merge-commit-hash>', this)">
+<span class="material-symbols-outlined text-[16px] text-tertiary">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Amber Caution Required Callout -->
+<div class="w-full rounded-xl bg-surface-container-low p-space-md sm:p-space-lg flex items-start gap-space-md shadow-md">
+<div class="w-9 h-9 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-[22px]">warning</span>
+</div>
+<div class="flex flex-col gap-1 text-on-surface">
+<span class="font-headline-sm text-headline-sm text-secondary tracking-tight">
+          Caution Required • Future Re-merges
+        </span>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          After reverting a merge, simply merging the repaired feature branch later will result in an empty commit. Git remembers the commits were already accepted! To re-merge later, you must first <span class="font-code-sm text-code-sm text-tertiary">revert the revert</span>, or cherry-pick the revised commits.
+        </p>
+</div>
+</div>
+<!-- The Situation & Diagram Component -->
+<div class="w-full rounded-xl bg-surface-container p-space-lg sm:p-space-xl flex flex-col gap-space-lg shadow-xl">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">troubleshoot</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">The Situation</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+          A pull request was approved and integrated into <code class="font-code-sm text-code-sm text-primary px-1.5 py-0.5 rounded bg-surface-container-high">main</code>. CI pipelines or QA tests detected a critical regression. Because team members have likely already pulled or branched off <code class="font-code-sm text-code-sm text-primary px-1.5 py-0.5 rounded bg-surface-container-high">main</code>, resetting with <code class="font-code-sm text-code-sm text-error px-1.5 py-0.5 rounded bg-surface-container-high">git reset --hard</code> would break everyone’s local clone.
+        </p>
+</div>
+<!-- State Visualization Split View -->
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center gap-2 font-label-caps text-label-caps text-outline uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px] text-tertiary">schema</span>
+          Repository Commit Topology
+        </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Before Box -->
+<div class="rounded-lg bg-surface-container-lowest p-space-md flex flex-col gap-space-sm shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]">
+<div class="flex items-center justify-between">
+<span class="flex items-center gap-2 font-code-sm text-code-sm text-error">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+                BEFORE RESOLUTION
+              </span>
+<span class="font-label-caps text-label-caps text-outline">Broken Main</span>
+</div>
+<!-- SVG Graph Visualization (Before) -->
+<div class="w-full h-32 flex items-center justify-center p-2 rounded bg-surface-container/40">
+<svg class="w-full h-full text-on-surface" fill="none" viewbox="0 0 380 90">
+<!-- Main branch baseline -->
+<line stroke="currentColor" stroke-opacity="0.2" stroke-width="2" x1="30" x2="330" y1="35" y2="35"></line>
+<!-- Feature branch divergence -->
+<path d="M 100 35 C 130 35, 140 70, 180 70 L 230 70 C 260 70, 270 35, 290 35" stroke="currentColor" stroke-dasharray="3 3" stroke-opacity="0.4" stroke-width="2"></path>
+<!-- Nodes -->
+<!-- Commit A -->
+<circle class="fill-surface-container-high stroke-outline" cx="50" cy="35" r="7" stroke-width="2"></circle>
+<text class="fill-outline text-[10px] font-code-sm" text-anchor="middle" x="50" y="20">A</text>
+<!-- Commit B -->
+<circle class="fill-surface-container-high stroke-outline" cx="120" cy="35" r="7" stroke-width="2"></circle>
+<text class="fill-outline text-[10px] font-code-sm" text-anchor="middle" x="120" y="20">B</text>
+<!-- Feature commit X -->
+<circle class="fill-error-container stroke-error" cx="205" cy="70" r="7" stroke-width="2"></circle>
+<text class="fill-error text-[10px] font-code-sm" text-anchor="middle" x="205" y="86">X (buggy)</text>
+<!-- Merge Commit M -->
+<circle class="fill-error-container stroke-error" cx="290" cy="35" r="9" stroke-width="2"></circle>
+<text class="fill-error text-[10px] font-code-sm" text-anchor="middle" x="290" y="18">M [HEAD]</text>
+</svg>
+</div>
+<div class="font-code-sm text-code-sm text-outline-variant pt-1">
+<code>(main) A — B — M [HEAD] (Bad merge)</code>
+</div>
+</div>
+<!-- After Box -->
+<div class="rounded-lg bg-surface-container-lowest p-space-md flex flex-col gap-space-sm shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]">
+<div class="flex items-center justify-between">
+<span class="flex items-center gap-2 font-code-sm text-code-sm text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                AFTER RESOLUTION
+              </span>
+<span class="font-label-caps text-label-caps text-outline">History Preserved</span>
+</div>
+<!-- SVG Graph Visualization (After) -->
+<div class="w-full h-32 flex items-center justify-center p-2 rounded bg-surface-container/40">
+<svg class="w-full h-full text-on-surface" fill="none" viewbox="0 0 400 90">
+<!-- Main branch baseline -->
+<line stroke="currentColor" stroke-opacity="0.3" stroke-width="2" x1="20" x2="360" y1="35" y2="35"></line>
+<!-- Feature branch divergence -->
+<path d="M 80 35 C 105 35, 115 70, 150 70 L 190 70 C 220 70, 230 35, 250 35" stroke="currentColor" stroke-opacity="0.2" stroke-width="2"></path>
+<!-- Nodes -->
+<circle class="fill-surface-container-high stroke-outline" cx="40" cy="35" r="6" stroke-width="2"></circle>
+<text class="fill-outline text-[10px] font-code-sm" text-anchor="middle" x="40" y="20">A</text>
+<circle class="fill-surface-container-high stroke-outline" cx="100" cy="35" r="6" stroke-width="2"></circle>
+<text class="fill-outline text-[10px] font-code-sm" text-anchor="middle" x="100" y="20">B</text>
+<circle class="fill-surface-variant stroke-outline" cx="170" cy="70" r="6" stroke-width="2"></circle>
+<!-- Commit M -->
+<circle class="fill-surface-container-high stroke-outline" cx="250" cy="35" r="6" stroke-width="2"></circle>
+<text class="fill-outline text-[10px] font-code-sm" text-anchor="middle" x="250" y="20">M</text>
+<!-- Inverted commit M' (Revert) -->
+<circle class="fill-tertiary-container stroke-tertiary" cx="340" cy="35" r="9" stroke-width="2.5"></circle>
+<text class="fill-tertiary text-[10px] font-code-sm" text-anchor="middle" x="340" y="18">M' [HEAD]</text>
+</svg>
+</div>
+<div class="font-code-sm text-code-sm text-outline-variant pt-1">
+<code>(main) A — B — M — M' [HEAD] (Inverts M)</code>
+</div>
+</div>
+</div>
+</div>
+<!-- Collapsible 'How It Works' Section -->
+<details class="group rounded-lg bg-surface-container-low p-space-md transition-all cursor-pointer">
+<summary class="flex items-center justify-between text-on-surface font-headline-sm text-headline-sm select-none list-none">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">psychology</span>
+            How <span class="font-code-md text-code-md text-primary px-1.5 py-0.5 rounded bg-surface-container-high">git revert -m 1</span> Works
+          </span>
+<span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="pt-space-md flex flex-col gap-space-sm text-body-md text-on-surface-variant border-t border-transparent mt-space-sm">
+<p>
+            A merge commit has two (or more) parent commits. Git does not automatically know which side of the merge represents the mainline you want to preserve and which branch brought in the offending changes.
+          </p>
+<ul class="flex flex-col gap-2 pl-4 list-disc marker:text-primary">
+<li><strong class="text-on-surface">-m 1 (Parent 1):</strong> Specifies the branch that was merged <em class="text-primary">into</em> (usually <code class="font-code-sm text-code-sm">main</code>). Git computes a patch that returns your codebase to Parent 1's exact tree state.</li>
+<li><strong class="text-on-surface">-m 2 (Parent 2):</strong> Specifies the branch that was merged in (e.g., <code class="font-code-sm text-code-sm">feature/checkout</code>). Reverting against Parent 2 would discard main's commits instead!</li>
+</ul>
+</div>
+</details>
+</div>
+<!-- Step-by-Step Interactive Resolver -->
+<div class="w-full rounded-xl bg-surface-container p-space-lg sm:p-space-xl flex flex-col gap-space-lg shadow-xl" id="walkthrough-section">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[22px]">route</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Step-by-Step Walkthrough</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Solve the scenario in guided interactive steps</p>
+</div>
+<button class="inline-flex items-center gap-1.5 font-code-sm text-code-sm text-outline hover:text-on-surface transition-colors" onclick="resetWalkthrough()">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+          Reset Walkthrough
+        </button>
+</div>
+<!-- Step Indicator Bar -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-wider" id="step-label">Step 1 of 4</span>
+<span class="font-code-sm text-code-sm text-outline" id="step-progress-percent">25% Completed</span>
+</div>
+<div class="flex items-center gap-2">
+<!-- Step 1 -->
+<button class="step-pill flex-1 h-2.5 rounded-full bg-primary shadow-sm transition-all" id="pill-step-0" onclick="goToStep(0)"></button>
+<!-- Step 2 -->
+<button class="step-pill flex-1 h-2.5 rounded-full bg-surface-container-highest transition-all" id="pill-step-1" onclick="goToStep(1)"></button>
+<!-- Step 3 -->
+<button class="step-pill flex-1 h-2.5 rounded-full bg-surface-container-highest transition-all" id="pill-step-2" onclick="goToStep(2)"></button>
+<!-- Step 4 -->
+<button class="step-pill flex-1 h-2.5 rounded-full bg-surface-container-highest transition-all" id="pill-step-3" onclick="goToStep(3)"></button>
+</div>
+</div>
+<!-- Step Content Dynamic Area -->
+<div class="rounded-xl bg-surface-container-low p-space-lg flex flex-col gap-space-md shadow-inner">
+<div class="flex items-center justify-between">
+<span class="px-2.5 py-1 rounded bg-surface-container text-tertiary font-code-sm text-code-sm" id="step-instruction-badge">
+            Instruction
+          </span>
+<span class="font-code-sm text-code-sm text-tertiary flex items-center gap-1" id="step-safety-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            Inspection Phase
+          </span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface" id="step-title">
+          Find the merge commit SHA hash
+        </h3>
+<!-- Terminal Prompt Box -->
+<div class="rounded-lg bg-surface-container-lowest p-space-md flex flex-col gap-space-xs shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)]">
+<div class="flex items-center justify-between font-label-caps text-label-caps text-outline pb-1">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+              Terminal Command
+            </span>
+<button class="hover:text-primary transition-colors flex items-center gap-1" id="step-copy-btn" onclick="copyStepCommand()">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+              Copy Command
+            </button>
+</div>
+<div class="flex items-center gap-2 overflow-x-auto py-1">
+<span class="font-code-md text-code-md text-secondary select-none">$</span>
+<code class="font-code-md text-code-md text-tertiary font-semibold" id="step-command-text">git log --oneline --merges -10</code>
+</div>
+</div>
+<!-- Simulated Output Box -->
+<div class="flex flex-col gap-1.5">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Simulated Output</span>
+<div class="rounded-lg bg-surface-container-lowest p-space-md font-code-sm text-code-sm text-on-surface-variant overflow-x-auto shadow-inner" id="step-simulated-output">
+<div class="text-tertiary font-bold">a9f3c21 <span class="text-on-surface">Merge branch 'feature/new-checkout' into main</span></div>
+<div class="text-outline">4b01e38 Merge pull request #112 from chore/deps</div>
+<div class="text-outline">62cd881 Merge branch 'hotfix/patch-2.4' into main</div>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant" id="step-explanation">
+          Run this to list the last 10 merge commits. Note down the short SHA of the bad merge (here: <code class="font-code-sm text-code-sm text-tertiary">a9f3c21</code>).
+        </p>
+<!-- Step Navigation Controls -->
+<div class="flex items-center justify-between pt-space-xs">
+<button class="px-space-md py-2 rounded-lg bg-surface-container text-outline opacity-40 cursor-not-allowed font-body-sm text-body-sm flex items-center gap-1.5 transition-all" disabled="" id="step-prev-btn" onclick="prevStep()">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+            Back
+          </button>
+<button class="px-space-lg py-2 rounded-lg bg-gradient-to-r from-primary-container to-inverse-primary hover:from-primary-container hover:to-primary text-on-primary font-body-sm text-body-sm font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_16px_rgba(128,131,255,0.3)]" id="step-next-btn" onclick="nextStep()">
+<span>Next Step</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Live Terminal Replay Component -->
+<div class="w-full rounded-xl bg-surface-container p-space-lg sm:p-space-xl flex flex-col gap-space-lg shadow-xl">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[22px]">play_circle</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Live Terminal Replay</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Watch automated step-by-step shell execution</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-code-sm text-code-sm flex items-center gap-1.5 transition-all" onclick="copyAllInputs()">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+            Copy Inputs
+          </button>
+</div>
+</div>
+<!-- Terminal Window Box -->
+<div class="w-full rounded-xl bg-surface-container-lowest overflow-hidden shadow-[inset_0_2px_12px_rgba(0,0,0,0.8)]">
+<!-- Title bar -->
+<div class="h-10 px-4 bg-surface-container-high/60 flex items-center justify-between select-none">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+</div>
+<span class="font-code-sm text-code-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+            bash — gitgyan [main]
+          </span>
+<div class="w-12"></div>
+</div>
+<!-- Terminal Body -->
+<div class="p-space-lg font-code-md text-code-md min-h-[220px] flex flex-col gap-2 text-on-surface overflow-x-auto" id="terminal-screen">
+<!-- Terminal lines injected via JS -->
+</div>
+<!-- Terminal Playback Footer Controls -->
+<div class="px-4 py-3 bg-surface-container-high/40 flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-2">
+<button class="px-3.5 py-1.5 rounded-md bg-primary-container text-on-primary-container font-code-sm text-code-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm" id="term-play-btn" onclick="togglePlayTerminal()">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+<span>Play</span>
+</button>
+<button class="px-3 py-1.5 rounded-md bg-surface-container text-on-surface-variant hover:text-on-surface font-code-sm text-code-sm transition-all" onclick="resetTerminal()">
+              Reset
+            </button>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-outline uppercase mr-1">Speed:</span>
+<div class="inline-flex rounded-lg bg-surface-container p-0.5">
+<button class="speed-btn px-2.5 py-1 rounded font-code-sm text-code-sm text-outline hover:text-on-surface transition-all" onclick="setSpeed(1200, this)">Slow</button>
+<button class="speed-btn px-2.5 py-1 rounded font-code-sm text-code-sm bg-surface-container-high text-primary font-semibold transition-all" onclick="setSpeed(700, this)">Normal</button>
+<button class="speed-btn px-2.5 py-1 rounded font-code-sm text-code-sm text-outline hover:text-on-surface transition-all" onclick="setSpeed(300, this)">Fast</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Avoid in Future & Best Practices -->
+<div class="w-full rounded-xl bg-surface-container p-space-lg sm:p-space-xl flex flex-col gap-space-md shadow-xl">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[22px]">verified</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">How to Avoid This in the Future</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-tertiary shrink-0 text-[20px] mt-0.5">check_circle</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">Mandate Staging Verification</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Deploy pull requests to an ephemeral preview or staging environment before approving the merge to <code class="font-code-sm text-code-sm text-primary">main</code>.</p>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-tertiary shrink-0 text-[20px] mt-0.5">check_circle</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-sm text-headline-sm text-on-surface">Decouple with Feature Flags</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Wrap volatile features in remote config or feature toggles so you can disable regressions in seconds without needing Git reverts.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Related Scenarios Bento -->
+<div class="w-full flex flex-col gap-space-sm">
+<div class="flex items-center gap-2 font-label-caps text-label-caps text-outline uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px] text-primary">hub</span>
+        Related Emergency Recipes
+      </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Related 1 -->
+<a class="group p-space-lg rounded-xl bg-surface-container hover:bg-surface-container-high transition-all shadow-md flex items-center justify-between" href="#">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]">undo</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-primary">#03</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest font-code-sm text-code-sm text-tertiary">Safe</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate group-hover:text-primary transition-colors">Revert a Pushed Commit Safely</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">When the bad code is a single standard commit</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</a>
+<!-- Related 2 -->
+<a class="group p-space-lg rounded-xl bg-surface-container hover:bg-surface-container-high transition-all shadow-md flex items-center justify-between" href="#">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary shrink-0 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]">cancel</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-label-caps text-secondary">#15</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container-lowest font-code-sm text-code-sm text-error">Caution</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate group-hover:text-secondary transition-colors">Abort a Merge in Progress</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Stuck halfway in conflict state before committing</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-secondary group-hover:translate-x-1 transition-all">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Quick Feedback / Status Footer -->
+<div class="py-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm text-outline font-code-sm text-code-sm border-t border-surface-container-high/40">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>Guide verified for Git v2.4+</span>
+</div>
+<div class="flex items-center gap-space-md">
+<span>Was this recipe effective?</span>
+<div class="flex items-center gap-1.5">
+<button class="p-1 hover:text-on-surface transition-colors flex items-center" onclick="this.classList.toggle('text-tertiary')">
+<span class="material-symbols-outlined text-[16px]">thumb_up</span>
+</button>
+<button class="p-1 hover:text-on-surface transition-colors flex items-center" onclick="this.classList.toggle('text-error')">
+<span class="material-symbols-outlined text-[16px]">thumb_down</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Walkthrough State Engine
+  const walkthroughSteps = [
+    {
+      label: "Step 1 of 4",
+      progress: "25% Completed",
+      safety: "Inspection Phase",
+      title: "Find the merge commit SHA hash",
+      command: "git log --oneline --merges -10",
+      output: [
+        { type: "highlight", text: "a9f3c21 Merge branch 'feature/new-checkout' into main" },
+        { type: "dim", text: "4b01e38 Merge pull request #112 from chore/deps" },
+        { type: "dim", text: "62cd881 Merge branch 'hotfix/patch-2.4' into main" }
+      ],
+      explanation: "Run this command to inspect the latest merge operations. Identify and copy the commit hash of the merge you need to roll back (here: a9f3c21)."
+    },
+    {
+      label: "Step 2 of 4",
+      progress: "50% Completed",
+      safety: "Safe Working Tree Check",
+      title: "Verify clean local workspace",
+      command: "git status",
+      output: [
+        { type: "text", text: "On branch main" },
+        { type: "text", text: "Your branch is up to date with 'origin/main'." },
+        { type: "highlight", text: "nothing to commit, working tree clean" }
+      ],
+      explanation: "Ensure there are no unstaged modifications or half-baked edits in progress. A revert creates a new commit and needs a clean worktree."
+    },
+    {
+      label: "Step 3 of 4",
+      progress: "75% Completed",
+      safety: "Action Phase",
+      title: "Execute the parent-aware merge revert",
+      command: "git revert -m 1 a9f3c21",
+      output: [
+        { type: "text", text: "[main 7c4e2f9] Revert \"Merge branch 'feature/new-checkout' into main\"" },
+        { type: "highlight", text: " 6 files changed, 14 insertions(+), 184 deletions(-)" }
+      ],
+      explanation: "'-m 1' informs Git to preserve Parent 1 (mainline). Git reverses all changes introduced by the feature branch and commits the inverse with a clean message."
+    },
+    {
+      label: "Step 4 of 4",
+      progress: "100% Completed",
+      safety: "Remote Sync",
+      title: "Push the inverted commit to the remote repo",
+      command: "git push origin main",
+      output: [
+        { type: "text", text: "Enumerating objects: 7, done." },
+        { type: "text", text: "To github.com:org/repo.git" },
+        { type: "highlight", text: "   a9f3c21..7c4e2f9  main -> main" }
+      ],
+      explanation: "Because this creates a brand new forward commit (7c4e2f9), pushing does NOT require --force and will not interfere with coworkers' checkouts."
+    }
+  ];
+
+  let currentStepIndex = 0;
+
+  function renderStep(idx) {
+    const data = walkthroughSteps[idx];
+    document.getElementById("step-label").innerText = data.label;
+    document.getElementById("step-progress-percent").innerText = data.progress;
+    document.getElementById("step-title").innerText = data.title;
+    document.getElementById("step-command-text").innerText = data.command;
+    document.getElementById("step-explanation").innerText = data.explanation;
+
+    // Output box
+    const outBox = document.getElementById("step-simulated-output");
+    outBox.innerHTML = "";
+    data.output.forEach(line => {
+      const lineDiv = document.createElement("div");
+      if (line.type === "highlight") {
+        lineDiv.className = "text-tertiary font-bold";
+      } else if (line.type === "dim") {
+        lineDiv.className = "text-outline";
+      } else {
+        lineDiv.className = "text-on-surface";
+      }
+      lineDiv.textContent = line.text;
+      outBox.appendChild(lineDiv);
+    });
+
+    // Pills
+    for (let i = 0; i < 4; i++) {
+      const pill = document.getElementById("pill-step-" + i);
+      if (i <= idx) {
+        pill.className = "step-pill flex-1 h-2.5 rounded-full bg-primary shadow-sm transition-all";
+      } else {
+        pill.className = "step-pill flex-1 h-2.5 rounded-full bg-surface-container-highest transition-all";
+      }
+    }
+
+    // Buttons
+    const prevBtn = document.getElementById("step-prev-btn");
+    const nextBtn = document.getElementById("step-next-btn");
+
+    if (idx === 0) {
+      prevBtn.disabled = true;
+      prevBtn.className = "px-space-md py-2 rounded-lg bg-surface-container text-outline opacity-40 cursor-not-allowed font-body-sm text-body-sm flex items-center gap-1.5 transition-all";
+    } else {
+      prevBtn.disabled = false;
+      prevBtn.className = "px-space-md py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-body-sm text-body-sm flex items-center gap-1.5 transition-all";
+    }
+
+    if (idx === 3) {
+      nextBtn.innerHTML = `<span>Complete</span><span class="material-symbols-outlined text-[16px]">done_all</span>`;
+    } else {
+      nextBtn.innerHTML = `<span>Next Step</span><span class="material-symbols-outlined text-[16px]">arrow_forward</span>`;
+    }
+  }
+
+  function nextStep() {
+    if (currentStepIndex < 3) {
+      currentStepIndex++;
+      renderStep(currentStepIndex);
+    } else {
+      // Finished
+      const nextBtn = document.getElementById("step-next-btn");
+      nextBtn.innerHTML = `<span>All Done!</span><span class="material-symbols-outlined text-[16px]">celebration</span>`;
+    }
+  }
+
+  function prevStep() {
+    if (currentStepIndex > 0) {
+      currentStepIndex--;
+      renderStep(currentStepIndex);
+    }
+  }
+
+  function goToStep(idx) {
+    currentStepIndex = idx;
+    renderStep(currentStepIndex);
+  }
+
+  function resetWalkthrough() {
+    currentStepIndex = 0;
+    renderStep(0);
+  }
+
+  function copyStepCommand() {
+    const cmd = walkthroughSteps[currentStepIndex].command;
+    navigator.clipboard.writeText(cmd);
+    const btn = document.getElementById("step-copy-btn");
+    btn.innerHTML = `<span class="material-symbols-outlined text-[14px] text-tertiary">check</span> Copied!`;
+    setTimeout(() => {
+      btn.innerHTML = `<span class="material-symbols-outlined text-[14px]">content_copy</span> Copy Command`;
+    }, 1800);
+  }
+
+  function copySnippet(text, buttonEl) {
+    navigator.clipboard.writeText(text);
+    const original = buttonEl.innerHTML;
+    buttonEl.innerHTML = `<span class="material-symbols-outlined text-[16px] text-tertiary">check</span><span>Copied!</span>`;
+    setTimeout(() => {
+      buttonEl.innerHTML = original;
+    }, 1800);
+  }
+
+  // Live Terminal Simulator Engine
+  const terminalLinesData = [
+    { type: "cmd", text: "git log --oneline --merges -5" },
+    { type: "out", text: "a9f3c21 Merge branch 'feature/new-checkout' into main" },
+    { type: "out", text: "3c8821d Merge branch 'hotfix/logging' into main" },
+    { type: "cmd", text: "git revert -m 1 --no-edit a9f3c21" },
+    { type: "out", text: "[main 7c4e2f9] Revert \"Merge branch 'feature/new-checkout' into main\"" },
+    { type: "out", text: " 4 files changed, 20 insertions(+), 112 deletions(-)" },
+    { type: "cmd", text: "git push origin main" },
+    { type: "out", text: "To github.com:org/platform-repo.git" },
+    { type: "success", text: "   a9f3c21..7c4e2f9  main -> main (SUCCESS)" }
+  ];
+
+  let termIndex = 0;
+  let termTimer = null;
+  let termSpeed = 700;
+  let isPlaying = false;
+
+  function printNextTerminalLine() {
+    if (termIndex >= terminalLinesData.length) {
+      isPlaying = false;
+      document.getElementById("term-play-btn").innerHTML = `<span class="material-symbols-outlined text-[16px]">replay</span><span>Replay</span>`;
+      return;
+    }
+
+    const screen = document.getElementById("terminal-screen");
+    const item = terminalLinesData[termIndex];
+    const row = document.createElement("div");
+
+    if (item.type === "cmd") {
+      row.className = "flex items-center gap-2 text-on-surface";
+      row.innerHTML = `<span class="text-secondary select-none">$</span><span class="text-tertiary font-semibold">${item.text}</span>`;
+    } else if (item.type === "success") {
+      row.className = "text-tertiary font-bold pl-5";
+      row.textContent = item.text;
+    } else {
+      row.className = "text-on-surface-variant pl-5";
+      row.textContent = item.text;
+    }
+
+    screen.appendChild(row);
+    screen.scrollTop = screen.scrollHeight;
+    termIndex++;
+
+    if (isPlaying) {
+      termTimer = setTimeout(printNextTerminalLine, termSpeed);
+    }
+  }
+
+  function togglePlayTerminal() {
+    const playBtn = document.getElementById("term-play-btn");
+    if (!isPlaying) {
+      if (termIndex >= terminalLinesData.length) {
+        resetTerminal();
+      }
+      isPlaying = true;
+      playBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">pause</span><span>Pause</span>`;
+      printNextTerminalLine();
+    } else {
+      isPlaying = false;
+      clearTimeout(termTimer);
+      playBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">play_arrow</span><span>Play</span>`;
+    }
+  }
+
+  function resetTerminal() {
+    isPlaying = false;
+    clearTimeout(termTimer);
+    termIndex = 0;
+    const screen = document.getElementById("terminal-screen");
+    screen.innerHTML = `
+      <div class="flex items-center gap-2 text-outline">
+        <span class="text-secondary">$</span>
+        <span>Ready. Press “Play” to simulate execution.</span>
+      </div>
+    `;
+    document.getElementById("term-play-btn").innerHTML = `<span class="material-symbols-outlined text-[16px]">play_arrow</span><span>Play</span>`;
+  }
+
+  function setSpeed(ms, el) {
+    termSpeed = ms;
+    document.querySelectorAll(".speed-btn").forEach(btn => {
+      btn.className = "speed-btn px-2.5 py-1 rounded font-code-sm text-code-sm text-outline hover:text-on-surface transition-all";
+    });
+    el.className = "speed-btn px-2.5 py-1 rounded font-code-sm text-code-sm bg-surface-container-high text-primary font-semibold transition-all";
+  }
+
+  function copyAllInputs() {
+    const cmds = terminalLinesData.filter(i => i.type === "cmd").map(i => i.text).join("\n");
+    navigator.clipboard.writeText(cmds);
+    alert("Copied terminal sequence to clipboard!");
+  }
+
+  // Init
+  document.addEventListener("DOMContentLoaded", () => {
+    renderStep(0);
+    resetTerminal();
+  });
+</script></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant/20 py-space-lg"><div class="max-w-7xl mx-auto px-margin flex flex-col md:flex-row items-center justify-between gap-space-md"><div class="flex items-center gap-space-md"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div><span class="font-label-caps text-label-caps uppercase tracking-wider text-outline">Git Survival Operations Engine</span></div><span class="text-outline-variant hidden md:inline">•</span><span class="font-code-sm text-code-sm text-on-surface-variant">Zero telemetry recovery & non-destructive presets</span></div><div class="flex items-center gap-space-lg"><div class="hidden sm:flex items-center gap-space-md font-code-sm text-code-sm text-outline"><span class="flex items-center gap-1.5"><kbd class="px-1 py-0.5 bg-surface-container-high rounded text-on-surface-variant border border-outline-variant/30">Esc</kbd> Reset Terminal</span><span class="flex items-center gap-1.5"><kbd class="px-1 py-0.5 bg-surface-container-high rounded text-on-surface-variant border border-outline-variant/30">Tab</kbd> Autocomplete</span></div><div class="text-on-surface-variant font-body-sm text-body-sm">© 2025 GitGyan. Built for clean reflogs.</div></div></div></footer></body></html>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    
+    <!-- Neon Path Gradient -->
+    <linearGradient id="glowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark Rounded Squircle Background -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bgGrad)" stroke="#312e81" stroke-width="8" />
+
+  <!-- Git Branching Graphic representing Gyan (wisdom/eyes) and emergency nodes -->
+  <g transform="translate(64, 64)" filter="url(#neonGlow)">
+    <!-- Main stem (Vertical line on the left) -->
+    <path d="M 96,288 L 96,96" stroke="url(#glowGrad)" stroke-width="24" stroke-linecap="round" fill="none" />
+    
+    <!-- Branch curve 1 (going to center-right) -->
+    <path d="M 96,224 Q 160,224 224,160" stroke="url(#glowGrad)" stroke-width="24" stroke-linecap="round" fill="none" />
+    
+    <!-- Branch curve 2 (going from C1 to C3) -->
+    <path d="M 96,160 Q 160,96 224,96" stroke="url(#glowGrad)" stroke-width="24" stroke-linecap="round" fill="none" />
+
+    <!-- Branch node 1 (Bottom/Source commit) -->
+    <circle cx="96" cy="288" r="28" fill="#0f172a" stroke="#3b82f6" stroke-width="10" />
+    
+    <!-- Branch node 2 (Middle commit) -->
+    <circle cx="96" cy="160" r="28" fill="#0f172a" stroke="#8b5cf6" stroke-width="10" />
+    
+    <!-- Branch node 3 (Branch 1 tip - emergency fire node) -->
+    <circle cx="224" cy="160" r="28" fill="#0f172a" stroke="#f97316" stroke-width="10" />
+    <circle cx="224" cy="160" r="10" fill="#ef4444" />
+
+    <!-- Branch node 4 (Branch 2 tip) -->
+    <circle cx="224" cy="96" r="28" fill="#0f172a" stroke="#ec4899" stroke-width="10" />
+  </g>
+
+  <!-- Wisdom glow arc -->
+  <path d="M 120,80 Q 256,20 392,80" fill="none" stroke="#6366f1" stroke-width="8" stroke-dasharray="16,16" stroke-linecap="round" opacity="0.6" />
+</svg>

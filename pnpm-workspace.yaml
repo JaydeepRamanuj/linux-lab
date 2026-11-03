@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - cli
+  - hooks
+
+# esbuild ships prebuilt binaries; sharp is only for Astro image optimisation, which we don't use yet.
+allowBuilds:
+  esbuild: true
+  sharp: false

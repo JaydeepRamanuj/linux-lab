@@ -1,0 +1,10 @@
+{
+  "name": "shellgyan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "check": "pnpm --filter web check"
+  }
+}

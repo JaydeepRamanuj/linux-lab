@@ -1,0 +1,63 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Problem-first Linux walkthroughs and a command explainer that tells you how dangerous a command is.' } = Astro.props;
+const fullTitle = title === 'ShellGyan' ? 'ShellGyan | Linux Command Survival Guide' : `${title} · ShellGyan`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Geist (headlines), Inter (body), JetBrains Mono (code) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="border-b border-white/5 bg-surface-lowest/80">
+      <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2 font-display font-semibold">
+          <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+          ShellGyan
+        </a>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full animate-fade-in">
+      <slot />
+    </main>
+
+    <footer class="border-t border-white/5 bg-surface-lowest">
+      <div class="max-w-6xl mx-auto px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-outline">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+          <span class="label-caps text-on-surface-variant">ShellGyan</span>
+          <span class="text-outline-variant">•</span>
+          <span>A scenario-based Linux survival guide</span>
+        </div>
+        <p class="text-center sm:text-right max-w-md">Read what a command does before you run it.</p>
+      </div>
+    </footer>
+  </body>
+</html>
