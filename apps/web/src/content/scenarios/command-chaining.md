@@ -88,8 +88,7 @@ cautions:
     text: "With `|| echo …` at the end the whole line exits 0, even when the build failed. CI and agents read that 0 as success. If something checks the exit code, drop the `|| echo`."
 avoid:
   - "Read a chain left to right, and for each operator ask whether the previous command succeeded."
-  - "`echo $?` prints the exit code of the last command: `0` means success, anything else means failure."
-  - "Use `set -e` at the top of scripts to stop on the first failing command."
+  - "`echo $?` prints the exit code of the last command. The exit codes scenario covers what the numbers mean, `|| true` and `set -e`."
 related: [port-in-use, redirection, expansion-quoting, exit-codes]
 anatomy:
   '"failed"': "The text to print. Quoted, so it's passed as one argument."

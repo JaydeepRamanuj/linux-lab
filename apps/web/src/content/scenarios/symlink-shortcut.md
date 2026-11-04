@@ -84,7 +84,7 @@ avoid:
   - "Move or rename the target and the link breaks: `ls -l` still shows the arrow, but opening it says `No such file or directory`. Re-point it with `ln -sfn`."
   - "`readlink -f ~/web` prints the real path a link resolves to, following chains of links."
   - "Put links to programs in `~/.local/bin` to make them callable by name. That's how the `batcat` → `bat` fix works."
-related: [command-not-found, add-to-path]
+related: [command-not-found, add-to-path, open-from-terminal]
 anatomy:
   "~/projects/shellgyan/apps/web": "What the link points to (the target). It must come first."
   "~/web": "The new link's name and location."

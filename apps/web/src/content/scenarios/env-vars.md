@@ -1,6 +1,6 @@
 ---
 number: 34
-title: "Environment variables and .env: export, env and VAR=x cmd"
+title: "Environment Variables and .env: export, env and VAR=x cmd"
 quote: "The agent ran PORT=4000 npm run dev and it worked. Then echo $PORT printed nothing, and my .env file seems to be ignored. Where do these variables live?"
 module: decode-agent-commands
 severity: modifies

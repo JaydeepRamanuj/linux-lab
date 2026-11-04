@@ -133,6 +133,8 @@ These two phases are closest to what the Explainer does. Add each primary comman
 - Run a full build and a browser spot-check of the home page, every module page, search and a sample of pages at 375px.
 - Write a handoff file and deploy to Vercel (with your go-ahead).
 
+**Done, except the deploy, which waits for your go-ahead.** Link fixes: `open-from-terminal` had no inbound scenario links and `update-desktop-database` no inbound command link. Two duplicated explanations now point to the scenario that owns the topic. `port-in-use` and the `kill` page suggested `kill $(lsof -t -i :3000)`, which also kills clients connected to the port; both now use `-sTCP:LISTEN`, and #2 gained its first caution. #32–35's titles now use Title Case like the rest. No orphan commands; all 63 have a category and level. Every built page was loaded in a browser at 1280px and 375px. That found 7 command pages (`awk`, `apt-file`, `rg`, …) scrolling sideways at 375px because of long example commands; fixed in `CommandWell`. See `docs/handoff/2026-11-04-scenarios-phase-7.md`.
+
 ---
 
 ## Notes

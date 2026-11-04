@@ -1,6 +1,6 @@
 ---
 number: 35
-title: "Exit codes: $?, set -e and || true"
+title: "Exit Codes: $?, set -e and || true"
 quote: "The agent ran npm test || true and said everything passed. The output shows a failed test. What does || true do, and how do I tell if a command actually worked?"
 module: decode-agent-commands
 severity: modifies

@@ -135,7 +135,7 @@ const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string,
             {distros.map(([pm, cmd]) => (
               <div class="flex items-center gap-3">
                 <span class="label-caps text-outline w-16 shrink-0">{pm}</span>
-                <CommandWell command={cmd} className="flex-1" client:visible />
+                <CommandWell command={cmd} className="flex-1 min-w-0" client:visible />
               </div>
             ))}
           </div>

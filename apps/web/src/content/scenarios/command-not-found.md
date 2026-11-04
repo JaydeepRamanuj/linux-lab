@@ -101,7 +101,7 @@ avoid:
   - "To keep typing `bat`, link it: `mkdir -p ~/.local/bin && ln -s /usr/bin/batcat ~/.local/bin/bat` (see the symlink scenario), or add `alias bat=batcat` to `~/.bash_aliases`."
   - "Other Debian/Ubuntu renames to know: `fd` is `fdfind`, `ack` is `ack-grep` on old releases, and `node` was `nodejs` on old ones."
   - "On Ubuntu, `command-not-found` often tells you which package to install. Read its suggestion before installing: it's matching by name only."
-related: [which-package, add-to-path, symlink-shortcut, persistent-alias]
+related: [which-package, add-to-path, symlink-shortcut, persistent-alias, open-from-terminal]
 anatomy:
   "bat": "The name you typed. `type` reports whether it's an alias, a function, a builtin or a program, or nothing at all."
 ---

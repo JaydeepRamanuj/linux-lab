@@ -73,10 +73,12 @@ replay:
     - { line: "$ lsof -i :3000", type: input }
     - { line: "$ npm run dev", type: input }
     - { line: "  ▲ Next.js 15.0.3  - Local: http://localhost:3000", type: output }
-cautions: []
+cautions:
+  - type: caution
+    text: "`lsof -i :3000` lists every process with a connection on port 3000, not only the server. A browser tab or a test runner talking to your dev server shows up too, as an `ESTABLISHED` line. Kill only the PID on the `(LISTEN)` line."
 avoid:
   - "Stop dev servers with `Ctrl+C` before closing the terminal tab. Closing the tab doesn't always stop them."
-  - "Shortcut once you trust it: `kill $(lsof -t -i :3000)`. `-t` makes lsof print only the PID."
+  - "Shortcut once you trust it: `kill $(lsof -t -i :3000 -sTCP:LISTEN)`. `-t` prints only PIDs, and `-sTCP:LISTEN` keeps only the listener. Without it, the PIDs of connected clients are killed too."
   - "If something you didn't start owns the port (like a system service), `sudo lsof -i :3000` shows it; pick another port instead of killing it."
 related: [command-chaining, stopped-job, frozen-app]
 anatomy:

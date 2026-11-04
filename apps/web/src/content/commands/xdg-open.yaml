@@ -13,5 +13,5 @@ gotchas:
   - "Needs a desktop session: it fails over SSH or in a plain TTY."
   - "Don't run it with `sudo`: the app would run as root and write root-owned files into your home folder."
   - "`xdg-mime query default application/pdf` shows which app it will pick for PDFs."
-related: [code]
+related: [code, update-desktop-database]
 scenarios: [open-from-terminal]

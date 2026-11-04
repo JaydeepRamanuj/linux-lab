@@ -107,7 +107,7 @@ export function CommandWell({
     ? big ? 'whitespace-pre-wrap break-all sm:whitespace-pre sm:break-normal' : 'whitespace-pre'
     : big ? 'whitespace-pre-wrap break-all sm:whitespace-nowrap sm:break-normal' : 'whitespace-nowrap';
   return (
-    <div className={`well flex ${multiline ? 'items-start' : 'items-center'} gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
+    <div className={`well flex min-w-0 max-w-full ${multiline ? 'items-start' : 'items-center'} gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
       <div className={`flex ${multiline ? 'items-start' : 'items-center'} gap-3 min-w-0 flex-1 overflow-x-auto no-scrollbar ${big ? 'text-[15px]' : 'text-[13px]'}`}>
         <span className="font-mono text-secondary select-none">$</span>
         <CommandText command={command} className={wrap} />

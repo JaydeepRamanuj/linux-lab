@@ -1,6 +1,6 @@
 ---
 number: 33
-title: "Agent cleanup: rm -rf node_modules, mkdir -p and npx"
+title: "Agent Cleanup: rm -rf node_modules, mkdir -p and npx"
 quote: "The agent wants to run rm -rf node_modules package-lock.json && npm install, then mkdir -p and a couple of npx commands. Which of these can I wave through?"
 module: decode-agent-commands
 severity: modifies
@@ -113,7 +113,7 @@ replay:
     - { line: "$ rm -rf \"${OUT_DIR:?}/\"", type: input }
 cautions:
   - type: danger
-    text: "`rm -rf \"$OUT_DIR/\"` with an empty or unset `OUT_DIR` is `rm -rf /`. Modern `rm` refuses `/` itself, but `\"$OUT_DIR\"/*` has no such guard. Write `${OUT_DIR:?}` so the shell stops when the variable is empty, as in the replay. Also check spaces: `rm -rf node_modules /` is two targets, and the second is the whole disk."
+    text: "`rm -rf \"$OUT_DIR/\"` with an empty or unset `OUT_DIR` is `rm -rf /`. Modern `rm` refuses `/` itself, but `\"$OUT_DIR\"/*` has no such guard. Write `${OUT_DIR:?}` so the shell stops when the variable is empty, as in the replay (the expansion and quoting scenario explains why). Also check spaces: `rm -rf node_modules /` is two targets, and the second is the whole disk."
   - type: caution
     text: "Deleting `package-lock.json` isn't cleanup. Without it, `npm install` picks the newest versions `package.json` allows, so you can end up with different dependencies than everyone else on the project. Delete `node_modules` and run `npm ci`. Remove the lockfile only when you mean to re-resolve everything, and review the diff afterwards."
 avoid:

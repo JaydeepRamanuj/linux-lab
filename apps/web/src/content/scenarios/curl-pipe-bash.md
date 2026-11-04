@@ -1,6 +1,6 @@
 ---
 number: 32
-title: "curl -fsSL … | bash: what are you running?"
+title: "curl -fsSL … | bash: What Are You Running?"
 quote: "The agent says to install nvm with curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash. Is that safe to paste?"
 module: decode-agent-commands
 severity: elevated

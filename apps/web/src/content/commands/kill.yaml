@@ -12,7 +12,7 @@ flags:
   - { flag: "-l", meaning: "List signal names." }
 examples:
   - { command: "kill 48213", explain: "Ask a process to stop.", severity: modifies }
-  - { command: "kill $(lsof -t -i :3000)", explain: "Stop whatever is listening on port 3000.", severity: modifies }
+  - { command: "kill $(lsof -t -i :3000 -sTCP:LISTEN)", explain: "Stop whatever is listening on port 3000, and nothing that's only connected to it.", severity: modifies }
   - { command: "kill -9 48213", explain: "Force it, if it ignored the polite request.", severity: modifies }
 gotchas:
   - "`kill -9 -1` doesn't mean \"PID 1\": `-1` targets every process you own, including your desktop session."
