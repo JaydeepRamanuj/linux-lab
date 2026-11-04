@@ -1,0 +1,27 @@
+name: ncdu
+title: Browse disk usage interactively
+category: disk
+level: everyday
+summary: Scans a folder and shows what's inside, biggest first. Open a folder with Enter, go back with the left arrow, and see where the space went without typing `du` over and over.
+syntax: ncdu [options] [path]
+flags:
+  - { flag: "-x", meaning: "Stay on one filesystem: don't count other drives mounted inside the folder." }
+  - { flag: "-r", meaning: "Read-only mode: the delete key is switched off." }
+  - { flag: "--exclude PATTERN", meaning: "Skip matching files and folders, like `--exclude node_modules`." }
+  - { flag: "Enter / ←", meaning: "Keys inside ncdu: open the selected folder / go back up." }
+  - { flag: "d", meaning: "Delete the selected file or folder, after a confirmation prompt." }
+  - { flag: "g", meaning: "Cycle through percentage and bar graph views." }
+  - { flag: "q", meaning: "Quit." }
+examples:
+  - { command: "ncdu ~", explain: "Browse your home folder by size.", severity: readonly }
+  - { command: "ncdu -x -r /", explain: "The whole system disk, without other drives, with deleting switched off.", severity: readonly }
+gotchas:
+  - "Not installed by default: `sudo apt install ncdu`."
+  - "`d` deletes for real, with no trash. Use `-r` while you're only looking."
+  - "Folders you can't read are marked with `!` and counted as empty. Scanning `/` needs `sudo` for a full picture."
+related: [du, df]
+scenarios: [disk-full]
+distros:
+  apt: sudo apt install ncdu
+  dnf: sudo dnf install ncdu
+  pacman: sudo pacman -S ncdu

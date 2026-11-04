@@ -14,5 +14,5 @@ examples:
 gotchas:
   - "When `head` has printed enough lines it exits, and the command before it may stop early. That's normal and saves time."
   - "Remember the header line: `ps … | head -5` shows four processes, not five."
-related: [tail, ps]
+related: [tail, ps, sort]
 scenarios: [cpu-ram-hog]

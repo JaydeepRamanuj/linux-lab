@@ -106,15 +106,22 @@ const rm: Rule = {
   }
 };
 
+// Programs that `find -exec` can run without making the command more than readonly: none of them can
+// write files whatever their arguments (unlike `sed -i`, `sort -o` or `awk`, which stay modifies).
+const FIND_EXEC_READONLY = new Set([
+  'ls', 'stat', 'file', 'cat', 'head', 'tail', 'wc', 'grep', 'egrep', 'fgrep', 'rg', 'du', 'echo', 'printf',
+  'md5sum', 'sha1sum', 'sha256sum', 'sha512sum', 'cksum', 'basename', 'dirname', 'realpath', 'readlink', 'test', '['
+]);
+
 const find: Rule = {
   id: 'find-delete',
   check(c) {
     if (c.program !== 'find') return null;
     const values = c.argv.map((w) => w.value);
-    const execIdx = values.findIndex((v) => /^-(exec|execdir|ok|okdir)$/.test(v));
-    const execProg = execIdx >= 0 ? values[execIdx + 1] : undefined;
-    const deletes = values.includes('-delete') || (execProg !== undefined && /^(rm|shred|unlink)$/.test(execProg));
-    if (!deletes && execProg === undefined) return null;
+    const execProgs = values.flatMap((v, i) => (/^-(exec|execdir|ok|okdir)$/.test(v) && values[i + 1] !== undefined ? [values[i + 1]!] : []));
+    const execProg = execProgs.find((p) => !FIND_EXEC_READONLY.has(p)) ?? execProgs[0];
+    const deletes = values.includes('-delete') || execProgs.some((p) => /^(rm|shred|unlink)$/.test(p));
+    if (!deletes && execProgs.every((p) => FIND_EXEC_READONLY.has(p))) return null;
     const roots = values.slice(0, Math.max(0, values.findIndex((v) => /^[-(!]/.test(v)))).map(canonPath);
     const target = roots.length ? roots : [canonPath('.')];
     if (!deletes) return hit('modifies', `Runs \`${execProg}\` on every file it finds.`);

@@ -14,4 +14,7 @@ examples:
   - { command: "df -h .", explain: "Just the drive the current folder is on.", severity: readonly }
 gotchas:
   - "Snap packages show up as many small `/dev/loop` mounts at 100%. That's normal; they're read-only images."
-related: [du]
+  - "`Avail` reaches 0 before `Used` equals `Size`: about 5% of an ext4 disk is reserved for root."
+  - "If `df` says full but `du` can't find the files, a deleted file may still be held open: `sudo lsof +L1`."
+related: [du, ncdu]
+scenarios: [disk-full]

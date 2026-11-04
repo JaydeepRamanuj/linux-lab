@@ -240,6 +240,8 @@ table('read-only commands', [
   ['export PATH="$HOME/.local/bin:$PATH"', 'readonly'],
   ["alias ll='ls -alF'", 'readonly'],
   ['unalias gs', 'readonly'],
+  ['umask', 'readonly'],
+  ['umask 077', 'readonly'],
   ['tar -tzf project.tar.gz', 'readonly'],
   ['tar tzf project.tar.gz', 'readonly'],
   ['tar --list -f project.tar.gz | head', 'readonly'],
@@ -259,7 +261,12 @@ table('find', [
   ['find . -name "*.log" -delete', 'modifies'],
   ['find / -name "*.log" -delete', 'destructive'],
   ['find ~ -type f -exec rm {} \\;', 'destructive'],
-  ['find . -type f -exec chmod 644 {} +', 'modifies']
+  ['find . -type f -exec chmod 644 {} +', 'modifies'],
+  ['find ~ -type f -size +1G -exec ls -lh {} +', 'readonly'],
+  ['find . -name "*.log" -exec grep -l ERROR {} +', 'readonly'],
+  ['find . -name "*.txt" -exec sed -i s/a/b/ {} +', 'modifies'],
+  ['find . -exec ls {} + -exec chmod 644 {} +', 'modifies'],
+  ['find . -exec ls {} + -exec rm {} +', 'modifies']
 ]);
 
 describe('analysis details', () => {

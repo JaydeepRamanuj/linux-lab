@@ -25,4 +25,4 @@ gotchas:
   - "`node_modules` can always be rebuilt: `rm -rf node_modules && npm install` is a safe reset."
   - "If the project has `pnpm-lock.yaml` or `yarn.lock`, use that tool instead, or you end up with two lock files."
 related: [rm, sudo]
-scenarios: [command-chaining]
+scenarios: [command-chaining, root-owned-files]

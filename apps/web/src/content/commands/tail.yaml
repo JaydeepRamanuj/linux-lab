@@ -12,8 +12,10 @@ examples:
   - { command: "tail -n 3 train.log", explain: "The three newest lines.", severity: readonly }
   - { command: "tail -f train.log", explain: "Watch a log as it grows.", severity: readonly }
   - { command: "tail -f app.log | grep -i error", explain: "Only the new lines that mention errors.", severity: readonly }
+  - { command: "tail -F logs/app.log", explain: "Follow a log that gets rotated: switches to the new file.", severity: readonly }
 gotchas:
   - "Ctrl+C stops `tail`, not the program writing the log."
   - "For system services, `journalctl -f -u name` is the equivalent of `tail -f`."
-related: [nohup, grep, head]
-scenarios: [keep-running]
+  - "With `-f`, a rotated log goes quiet: `tail` keeps watching the renamed file. `-F` follows the name instead."
+related: [nohup, grep, head, less]
+scenarios: [keep-running, watch-log]

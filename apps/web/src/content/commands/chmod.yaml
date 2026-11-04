@@ -11,13 +11,19 @@ flags:
   - { flag: "755", meaning: "Owner rwx, group r-x, others r-x. Typical for scripts and folders." }
   - { flag: "644", meaning: "Owner rw-, everyone else r--. Typical for normal files." }
   - { flag: "600", meaning: "Owner rw-, nobody else anything. Required for SSH private keys." }
+  - { flag: "700", meaning: "Owner rwx, nobody else anything. For private folders like `~/.ssh`." }
+  - { flag: "u=rwX,go=rX", meaning: "Capital `X`: execute only for folders and files that already had it. Safe with `-R`." }
 examples:
   - { command: "chmod +x deploy.sh", explain: "Make a script runnable.", severity: modifies }
   - { command: "chmod 600 ~/.ssh/id_ed25519", explain: "Lock down an SSH key so ssh will accept it.", severity: elevated }
   - { command: "chmod -R u+w ./build", explain: "Give yourself write access to everything in a folder.", severity: modifies }
+  - { command: "chmod -R u=rwX,go=rX site", explain: "Fix a whole tree: folders 755, files 644, scripts stay runnable.", severity: modifies }
+  - { command: "umask", explain: "Show the mask that sets new files' permissions (Ubuntu: `0002`, so files start as 664).", severity: readonly }
 gotchas:
   - "`chmod 777` lets every user on the machine change the file. It almost never fixes the real problem."
   - "`chmod -R` on your home folder or a system folder can stop `ssh`, `sudo` or your desktop from working, and there's no undo."
   - "Octal digits are read/write/execute added up: r=4, w=2, x=1. So 7 = rwx, 5 = r-x, 6 = rw-."
-related: [chown, ls]
-scenarios: [permission-denied-script, appimage-install]
+  - "`chmod -R 644 folder` removes `x` from the folders as well, and a folder without `x` can't be entered. Use capital `X` or `find -type f` for recursive changes."
+  - "`umask` (a shell builtin, documented here) is subtracted from 666 for new files and 777 for new folders."
+related: [chown, ls, stat]
+scenarios: [permission-denied-script, appimage-install, chmod-numbers]

@@ -14,12 +14,17 @@ flags:
   - { flag: "-exec CMD {} ;", meaning: 'Run a command on each match; `{}` is the file. End with `\;` (once per file) or `+` (batched).' }
   - { flag: "-delete", meaning: "Delete every match. No confirmation." }
   - { flag: "-print0", meaning: "Separate results with a NUL byte, for `xargs -0`; safe with spaces in names." }
+  - { flag: "-user NAME", meaning: "Owned by NAME. `! -user \"$USER\"` finds files that aren't yours." }
 examples:
   - { command: "find . -name \"*.ts\" -not -path \"./node_modules/*\"", explain: "All TypeScript files outside node_modules.", severity: readonly }
   - { command: "find ~/Downloads -type f -size +500M", explain: "Big files in Downloads.", severity: readonly }
   - { command: "find . -name \"*.log\" -mtime +7 -delete", explain: "Delete log files older than a week.", severity: modifies }
+  - { command: "find ~ -iname \"*invoice*\"", explain: "Every file with \"invoice\" in its name, any case.", severity: readonly }
+  - { command: "find ~ -type f -size +1G -exec ls -lh {} +", explain: "Files over 1 GB, with sizes. `-exec ls` only lists them.", severity: readonly }
 gotchas:
   - "Run the command without `-delete` first and check the list. `-delete` acts on every line you would have seen."
   - "Put `-delete` last. `find . -delete -name x` deletes everything, because the tests are evaluated in order."
   - "Quote patterns (`\"*.log\"`), or the shell expands them before `find` sees them."
-related: [grep, ls, rm]
+  - "Unquoted, `find ~ -name *invoice*` is expanded by the shell first. It silently searches for one exact name, or fails with `paths must precede expression`."
+related: [grep, ls, rm, rg, chown]
+scenarios: [disk-full, find-files, root-owned-files]

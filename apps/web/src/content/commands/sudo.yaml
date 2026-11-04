@@ -18,4 +18,4 @@ gotchas:
   - "`curl … | sudo bash` runs an unread script as root. Download it, read it, then run it."
   - "After you type the password, sudo stays unlocked for about 15 minutes in that terminal."
 related: [chown, apt]
-scenarios: [apt-lock, system-service]
+scenarios: [apt-lock, system-service, root-owned-files]

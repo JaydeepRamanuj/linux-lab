@@ -1,0 +1,30 @@
+name: rg
+title: Search file contents fast (ripgrep)
+category: text
+level: everyday
+summary: Searches every file under a folder for a pattern, like `grep -rn`, but faster, with line numbers on by default, and skipping what `.gitignore` lists (such as `node_modules`), hidden files and binary files.
+syntax: rg [options] pattern [path…]
+flags:
+  - { flag: "-i, --ignore-case", meaning: "Ignore upper/lower case." }
+  - { flag: "-l, --files-with-matches", meaning: "Only print the names of matching files." }
+  - { flag: "-t TYPE", meaning: "Only files of one type, like `-t ts` or `-t py`. `rg --type-list` shows them all." }
+  - { flag: "-g GLOB", meaning: "Only files matching GLOB; `-g '!*.min.js'` excludes instead." }
+  - { flag: "--hidden", meaning: "Also search hidden files like `.env.example`." }
+  - { flag: "-u / -uu", meaning: "Stop skipping ignored files (`-u`), and hidden files too (`-uu`)." }
+  - { flag: "-F, --fixed-strings", meaning: "Treat the pattern as plain text, not a regex." }
+  - { flag: "--files", meaning: "List the files rg would search, without searching them." }
+examples:
+  - { command: "rg -n STRIPE_SECRET_KEY", explain: "Every use of a name in this project, skipping `node_modules`.", severity: readonly }
+  - { command: "rg -l -t ts useSession src", explain: "Which TypeScript files mention `useSession`.", severity: readonly }
+  - { command: "rg --files | rg -i invoice", explain: "Find files by name, the fast way.", severity: readonly }
+gotchas:
+  - "Not installed by default: `sudo apt install ripgrep`. The program is still called `rg`."
+  - "It skips hidden and git-ignored files silently. If something you know is there doesn't show up, try `--hidden` or `-uu`."
+  - "`.gitignore` only counts inside a git repository. In a plain folder, `rg` searches `node_modules` too."
+  - "In a script or pipe with no path given, `rg` searches its standard input instead of the folder and waits. Give it a path, like `rg pattern .`."
+related: [grep, find]
+scenarios: [find-files]
+distros:
+  apt: sudo apt install ripgrep
+  dnf: sudo dnf install ripgrep
+  pacman: sudo pacman -S ripgrep

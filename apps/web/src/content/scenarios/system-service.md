@@ -107,7 +107,7 @@ avoid:
   - "Many servers can reload their config without dropping connections: `sudo systemctl reload nginx`. If the config is broken, reload fails and the old config keeps running."
   - "Your own user services (`systemctl --user …`) need no `sudo`: PipeWire audio, Syncthing, and anything you set up yourself."
   - "`systemctl list-units --type=service` lists every service that's loaded, running or not."
-related: [keep-running, frozen-app, apt-lock]
+related: [keep-running, frozen-app, apt-lock, watch-log]
 anatomy:
   "restart": "Stop the service, then start it again."
   "nginx": "The service (unit) name. `nginx` is short for `nginx.service`."

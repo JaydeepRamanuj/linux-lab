@@ -13,11 +13,16 @@ flags:
   - { flag: "-E", meaning: "Extended regex: `a|b`, `+`, `?` without backslashes." }
   - { flag: "-F", meaning: "Treat the pattern as plain text, not a regex." }
   - { flag: "--include=GLOB", meaning: "Only search files matching the glob, like `--include=\"*.ts\"`." }
+  - { flag: "--exclude-dir=DIR", meaning: "Skip folders named DIR, like `--exclude-dir=node_modules`." }
+  - { flag: "-c, --count", meaning: "Print how many lines match instead of the lines." }
+  - { flag: "--line-buffered", meaning: "Print each match immediately, for the middle of a `tail -f` pipe." }
 examples:
   - { command: "grep -rn \"TODO\" src", explain: "Every TODO in the source tree, with file and line number.", severity: readonly }
   - { command: "ps aux | grep -i firefox", explain: "Find a running process by name.", severity: readonly }
+  - { command: "grep -rn --exclude-dir=node_modules \"STRIPE_SECRET_KEY\" .", explain: "Search a project, skipping its dependencies.", severity: readonly }
+  - { command: "tail -f logs/app.log | grep -iE \"error|warn\"", explain: "Only the new log lines that mention errors or warnings.", severity: readonly }
 gotchas:
   - "`ps aux | grep x` also lists the grep itself. `pgrep -a x` avoids that."
   - "`rg` (ripgrep) does the same job faster and skips `.gitignore`d files automatically."
-related: [find, ps]
-scenarios: [command-chaining, add-to-path, command-not-found, persistent-alias]
+related: [find, ps, rg, tail]
+scenarios: [command-chaining, add-to-path, command-not-found, persistent-alias, find-files, watch-log]

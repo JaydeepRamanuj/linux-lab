@@ -10,7 +10,7 @@ const READONLY = new Set([
   'diff', 'cmp', 'comm', 'sort', 'uniq', 'cut', 'tr', 'paste', 'join', 'column', 'jq', 'yq', 'xxd', 'od', 'hexdump', 'strings',
   'md5sum', 'sha1sum', 'sha256sum', 'sha512sum', 'cksum', 'basename', 'dirname', 'realpath', 'readlink', 'tree', 'lsblk',
   'blkid', 'findmnt', 'dmesg', 'lscpu', 'lsusb', 'lspci', 'lsmod', 'nproc', 'test', '[', '[[', 'true', 'false', 'sleep', 'wait',
-  'jobs', 'cd', 'pushd', 'popd', 'export', 'unset', 'alias', 'unalias', 'set', 'shopt', 'read', 'tput', 'clear', 'reset', 'env', 'locale',
+  'jobs', 'cd', 'pushd', 'popd', 'export', 'unset', 'alias', 'unalias', 'set', 'shopt', 'umask', 'read', 'tput', 'clear', 'reset', 'env', 'locale',
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',

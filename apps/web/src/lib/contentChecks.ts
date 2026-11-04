@@ -28,7 +28,7 @@ export interface ContentReport {
 const NO_PAGE_NEEDED = new Set(['cd', 'true', 'false']);
 
 // Programs documented on another command's page.
-const COVERED_BY: Record<string, string> = { fg: 'jobs', bg: 'jobs' };
+const COVERED_BY: Record<string, string> = { fg: 'jobs', bg: 'jobs', umask: 'chmod' };
 
 /** A token that runs a file by path (`./deploy.sh`, `~/Applications/x.AppImage`), not a named program. */
 const isPath = (program: string) => program.includes('/');

@@ -79,6 +79,8 @@ Do this first, so that 30 new files can't quietly break things.
 **Already done in Phase 2:** `tail`, `head` (add the Phase 3 scenarios that use them).
 **Existing pages to update:** `chown`, `chmod`, `du`, `df`, `find`, `grep`, `mv`, `cp`, `ls`.
 
+**Done.** `umask` is documented on the `chmod` page. Two rule fixes: bare `umask` is readonly, and `find -exec` with a read-only program (`ls`, `grep`, `stat`…) is readonly. See `docs/handoff/2026-11-04-scenarios-phase-3.md`.
+
 ## Phase 4: Packages (4 scenarios)
 
 | # | Slug | Scenario | Severity |

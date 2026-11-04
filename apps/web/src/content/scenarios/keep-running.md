@@ -100,7 +100,7 @@ avoid:
   - "To stop a `nohup` job later: `pgrep -a train.sh` for its PID, then `kill PID`."
   - "For something that should always run, including after a reboot (a bot, a server), make it a systemd service instead: see the system service scenario."
   - "`tmux` isn't always installed: `sudo apt install tmux`. `screen` is an older tool that does the same job."
-related: [stopped-job, system-service, frozen-app]
+related: [stopped-job, system-service, frozen-app, watch-log]
 anatomy:
   "./train.sh": "The script to run, from the current folder."
   "train.log": "The file that collects the job's output."

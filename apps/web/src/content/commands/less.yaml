@@ -1,0 +1,24 @@
+name: less
+title: Read a long file one screen at a time
+category: text
+level: everyday
+summary: Opens a file (or piped output) in a scrollable viewer. You can search it, jump to the end, and follow it live as it grows. Nothing you do in `less` changes the file.
+syntax: less [options] [file]
+flags:
+  - { flag: "+F", meaning: "Start in follow mode, like `tail -f`. Ctrl+C stops following so you can scroll; Shift+F follows again." }
+  - { flag: "+G", meaning: "Open at the end of the file." }
+  - { flag: "-N", meaning: "Show line numbers." }
+  - { flag: "-S", meaning: "Cut long lines instead of wrapping them; scroll sideways with the arrow keys." }
+  - { flag: "-R", meaning: "Show colours from piped output, like `git log --color | less -R`." }
+  - { flag: "/text, n, N", meaning: "Keys inside less: search forward, next match, previous match." }
+  - { flag: "g / G / q", meaning: "Keys inside less: go to the start / the end / quit." }
+examples:
+  - { command: "less logs/app.log", explain: "Read a log, search it with `/`.", severity: readonly }
+  - { command: "less +F logs/app.log", explain: "Follow a log live, and stop to scroll back with Ctrl+C.", severity: readonly }
+  - { command: "journalctl -u nginx | less", explain: "Page through long output.", severity: readonly }
+gotchas:
+  - "Press `q` to get out. In follow mode, press Ctrl+C first, then `q`."
+  - "Ctrl+C in `less +F` only stops following; the file and the program writing it are untouched."
+  - "`man` pages open in `less`, so the same keys work there."
+related: [tail, head, grep]
+scenarios: [watch-log]
