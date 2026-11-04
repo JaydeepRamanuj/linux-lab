@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { assertContentValid } from '../../lib/contentChecks';
 import type { CollectionEntry } from 'astro:content';
 import { Terminal, ListChecks, AlertTriangle, Package, Link2, BookOpen } from 'lucide-react';
 import { maxSeverity } from '@shellgyan/core/severity';
@@ -11,6 +12,7 @@ import { COMMAND_CATEGORIES, LEVELS } from '../../data/commandCategories';
 import { buildAnatomy } from '../../lib/anatomy';
 
 export async function getStaticPaths() {
+  await assertContentValid();
   const commands = await getCollection('commands');
   return commands.map((command) => ({ params: { slug: command.id }, props: { command } }));
 }
