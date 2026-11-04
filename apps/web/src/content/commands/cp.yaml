@@ -11,10 +11,13 @@ flags:
   - { flag: "-a, --archive", meaning: "Copy recursively and keep permissions, owners and timestamps. Best for backups." }
   - { flag: "-v, --verbose", meaning: "Print each file as it's copied." }
   - { flag: "-u, --update", meaning: "Only copy when the source is newer than the destination." }
+  - { flag: "-b, --backup[=numbered]", meaning: "Keep the file being replaced as `name~` or `name.~1~`." }
 examples:
   - { command: "cp .env.example .env", explain: "Start a local config from the template.", severity: modifies }
   - { command: "cp -a ~/projects/site ~/backups/site-2026-11-04", explain: "A full copy of a folder, keeping permissions and dates.", severity: modifies }
+  - { command: "cp -i draft.md notes/", explain: "Copy, asking before replacing an existing file.", severity: modifies }
 gotchas:
   - "`cp a b` replaces `b` without asking. Add `-i` when you aren't sure."
   - "`cp -r src dest` behaves differently depending on whether `dest` already exists: it copies into it if it does, or creates it as the copy if it doesn't."
 related: [mv, rm, mkdir]
+scenarios: [safe-mv-cp]

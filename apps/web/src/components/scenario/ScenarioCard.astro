@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { ChevronRight } from 'lucide-react';
-import { SeverityBadge, CommandText, CopyButton } from '../ui/ui';
+import { SeverityBadge, CommandText, CopyButton, commandPreview } from '../ui/ui';
 
 interface Props {
   scenario: CollectionEntry<'scenarios'>;
@@ -29,7 +29,7 @@ const destructive = s.severity === 'destructive';
     <div class="well flex items-center gap-2 pl-4 pr-2 py-2.5 relative">
       <div class="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar text-[13px]">
         <span class="font-mono text-secondary">$</span>
-        <CommandText command={s.primaryCommand} className="whitespace-nowrap" />
+        <CommandText command={commandPreview(s.primaryCommand)} className="whitespace-nowrap" />
       </div>
       <CopyButton text={s.primaryCommand} compact className="relative z-10" client:visible />
       <ChevronRight className="h-4 w-4 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0" />

@@ -52,6 +52,8 @@ const pipeToShell: Rule = {
   id: 'pipe-to-shell',
   check(c, ctx) {
     if (!c.program || !(SHELLS.has(c.program) || INTERPRETERS.has(c.program))) return null;
+    // `bash -n` only parses its input (`curl … | bash -n` is a syntax check), and nothing in it runs.
+    if (SHELLS.has(c.program) && c.short.has('n') && !c.short.has('c')) return null;
     const hits: Hit[] = [];
 
     // curl … | bash

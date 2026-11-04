@@ -1,0 +1,19 @@
+name: tr
+title: Replace or delete characters
+category: text
+level: intermediate
+summary: Reads text from a pipe and swaps one set of characters for another, or deletes them. Works character by character, not on words.
+syntax: tr [options] SET1 [SET2]
+flags:
+  - { flag: "-d", meaning: "Delete the characters in SET1." }
+  - { flag: "-s", meaning: "Squeeze runs of the same character into one." }
+  - { flag: "-c", meaning: "Use every character NOT in SET1." }
+examples:
+  - { command: "echo \"$PATH\" | tr ':' '\\n'", explain: "Show each PATH folder on its own line.", severity: readonly }
+  - { command: "echo \"Hello\" | tr 'a-z' 'A-Z'", explain: "Upper-case text.", severity: readonly }
+  - { command: "tr -d '\\r' < win.txt > unix.txt", explain: "Strip Windows line endings into a new file.", severity: modifies }
+gotchas:
+  - "`tr` doesn't take file names: feed it with a pipe or `<`."
+  - "It replaces characters, not strings. `tr 'cat' 'dog'` turns every c into d, a into o and t into g. Use `sed` for words."
+related: [echo, grep, sed]
+scenarios: [add-to-path, command-not-found]

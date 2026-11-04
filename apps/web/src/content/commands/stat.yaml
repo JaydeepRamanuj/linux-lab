@@ -1,0 +1,20 @@
+name: stat
+title: Show a file's details, permissions as numbers
+category: files
+level: intermediate
+summary: "Prints everything the system keeps about a file: size, owner, permissions (as `rwx` and as a number like `644`), and when it was last read, changed and modified."
+syntax: stat [options] file…
+flags:
+  - { flag: "-c FORMAT", meaning: "Print only what you ask for. `%a` permissions as a number, `%A` as `rwx`, `%U`/`%G` owner and group, `%s` size, `%y` modified time, `%n` name." }
+  - { flag: "-L", meaning: "Follow a symlink and describe what it points to." }
+  - { flag: "-f", meaning: "Describe the filesystem the file is on instead of the file." }
+examples:
+  - { command: "stat deploy.sh", explain: "Everything about one file.", severity: readonly }
+  - { command: "stat -c \"%a %A %n\" *", explain: "Each file's permissions as a number and as letters.", severity: readonly }
+  - { command: "stat -c \"%U:%G %n\" node_modules package-lock.json", explain: "Who owns each file.", severity: readonly }
+gotchas:
+  - "`ls -l` shows the letters; `stat -c %a` is the quickest way to see the number you'd pass to `chmod`."
+  - "macOS `stat` is different: there it's `stat -f \"%Lp %N\"`."
+  - "`Change` is when the file's details (permissions, owner) last changed, not its contents. That's `Modify`."
+related: [ls, chmod, chown]
+scenarios: [chmod-numbers]

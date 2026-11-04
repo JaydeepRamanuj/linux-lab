@@ -7,7 +7,7 @@ import type { Hit, Rule } from './types';
 const DEVICE = /^\/dev\/(sd|hd|vd|xvd|nvme|mmcblk|disk|md|dm-|loop|mapper\/)/;
 const HARMLESS_TARGET = /^(\/dev\/(null|stdout|stderr|tty|fd\/\d+)|&?-|&?\d+)$/;
 const SHELL_CONFIG =
-  /^(~\/(\.bashrc|\.zshrc|\.profile|\.bash_profile|\.bash_login|\.zprofile|\.zshenv|\.zlogin|\.config\/fish\/config\.fish|\.ssh(\/.*)?)|\/etc\/(profile|bash\.bashrc|environment|zsh\/zshrc))$/;
+  /^(~\/(\.bashrc|\.bash_aliases|\.zshrc|\.profile|\.bash_profile|\.bash_login|\.zprofile|\.zshenv|\.zlogin|\.config\/fish\/config\.fish|\.ssh(\/.*)?)|\/etc\/(profile|bash\.bashrc|environment|zsh\/zshrc))$/;
 const PROJECT_REGENERABLE = /(^|\/)(node_modules|dist|build|\.next|\.nuxt|\.astro|\.turbo|\.cache|target|coverage|__pycache__|\.venv|venv)$/;
 
 const where = (kind: 'root' | 'home' | 'system', path: string) =>
@@ -20,6 +20,16 @@ export function writeTargetHit(target: Word, mode: 'overwrite' | 'append', via: 
   const p = canonPath(v);
   if (DEVICE.test(p.path)) {
     return hit('destructive', `${via} writes straight onto the disk device ${p.path}, wiping whatever filesystem is on it.`, {
+      touches: [p.path]
+    });
+  }
+  // A drop-in apt source, key or pin: adding one is how you add a repo, and a bad one breaks `apt update`, not booting.
+  // Replacing the distro's own sources (`sources.list`, `ubuntu.sources`, `debian.sources`) stays destructive below.
+  if (
+    /^\/etc\/apt\/(sources\.list\.d|preferences\.d|keyrings|trusted\.gpg\.d)\/[^/]+$/.test(p.path) &&
+    !/\/(ubuntu|debian)\.sources$/.test(p.path)
+  ) {
+    return hit('elevated', `${via} writes ${p.path}, which changes where apt installs software from and which signing keys it trusts.`, {
       touches: [p.path]
     });
   }
@@ -57,6 +67,23 @@ const redirects: Rule = {
   }
 };
 
+/** Deleting one file outside the project that the system or every terminal depends on. Mirrors `writeTargetHit`. */
+function systemFileDelete(path: string): Hit | null {
+  if (/^\/etc\/apt\/(sources\.list\.d|preferences\.d|keyrings|trusted\.gpg\.d)\/[^/]+$/.test(path) && !/\/(ubuntu|debian)\.sources$/.test(path)) {
+    return hit('elevated', `Deletes ${path}, which changes where apt installs software from and which signing keys it trusts.`, { touches: [path] });
+  }
+  if (/^\/(etc|boot)\//.test(path)) {
+    return hit('destructive', `Deletes the system file ${path}. Without it the machine may not boot, log in or reach the network.`, { touches: [path] });
+  }
+  if (SHELL_CONFIG.test(path)) {
+    return hit('elevated', `Deletes ${path}, which runs every time you open a terminal (or controls SSH access).`, { touches: [path] });
+  }
+  if (/^\/(usr|bin|sbin|lib|lib64|opt|var)\//.test(path)) {
+    return hit('elevated', `Deletes ${path} from the system location ${path.split('/').slice(0, 2).join('/')}.`, { touches: [path] });
+  }
+  return null;
+}
+
 const rm: Rule = {
   id: 'rm',
   check(c) {
@@ -69,6 +96,7 @@ const rm: Rule = {
     if (c.viaXargs) {
       hits.push(hit(recursive ? 'elevated' : 'modifies', 'The files to delete come from the previous command through `xargs`, so the list is not visible here.'));
     }
+    let sys: Hit | null;
     for (const w of c.operands) {
       const p = canonPath(w.value);
       const critical = criticalPath(p);
@@ -93,6 +121,8 @@ const rm: Rule = {
         hits.push(hit('elevated', `Deletes ${p.glob ? 'everything in' : ''} the ${p.path === '..' ? 'parent' : 'current'} folder; what that is depends on where you run it.`, { touches: [w.value] }));
       } else if (recursive && isOutsideProject(p)) {
         hits.push(hit('elevated', `Recursively deletes ${p.path}, outside the current project.`, { touches: [p.path] }));
+      } else if (!recursive && (sys = systemFileDelete(p.path))) {
+        hits.push(sys);
       } else {
         const regenerable = PROJECT_REGENERABLE.test(p.path);
         hits.push(
@@ -106,20 +136,44 @@ const rm: Rule = {
   }
 };
 
+// Programs that `find -exec` can run without making the command more than readonly: none of them can
+// write files whatever their arguments (unlike `sed -i`, `sort -o` or `awk`, which stay modifies).
+const FIND_EXEC_READONLY = new Set([
+  'ls', 'stat', 'file', 'cat', 'head', 'tail', 'wc', 'grep', 'egrep', 'fgrep', 'rg', 'du', 'echo', 'printf',
+  'md5sum', 'sha1sum', 'sha256sum', 'sha512sum', 'cksum', 'basename', 'dirname', 'realpath', 'readlink', 'test', '['
+]);
+
+// Expressions that select files. Anything else before `-delete` (`-maxdepth 2`, `-depth`, `-print`, `(`) selects nothing.
+const FIND_TEST = /^-(i?name|i?path|i?wholename|i?regex|i?lname|type|xtype|size|empty|[acm](time|min|newer)|newer\w*|user|group|uid|gid|nouser|nogroup|perm|links|inum|samefile|readable|writable|executable|fstype|context|used)$/;
+
 const find: Rule = {
   id: 'find-delete',
   check(c) {
     if (c.program !== 'find') return null;
     const values = c.argv.map((w) => w.value);
-    const execIdx = values.findIndex((v) => /^-(exec|execdir|ok|okdir)$/.test(v));
-    const execProg = execIdx >= 0 ? values[execIdx + 1] : undefined;
-    const deletes = values.includes('-delete') || (execProg !== undefined && /^(rm|shred|unlink)$/.test(execProg));
-    if (!deletes && execProg === undefined) return null;
+    const execProgs = values.flatMap((v, i) => (/^-(exec|execdir|ok|okdir)$/.test(v) && values[i + 1] !== undefined ? [values[i + 1]!] : []));
+    const execProg = execProgs.find((p) => !FIND_EXEC_READONLY.has(p)) ?? execProgs[0];
+    const deletes = values.includes('-delete') || execProgs.some((p) => /^(rm|shred|unlink)$/.test(p));
+    if (!deletes && execProgs.every((p) => FIND_EXEC_READONLY.has(p))) return null;
     const roots = values.slice(0, Math.max(0, values.findIndex((v) => /^[-(!]/.test(v)))).map(canonPath);
     const target = roots.length ? roots : [canonPath('.')];
     if (!deletes) return hit('modifies', `Runs \`${execProg}\` on every file it finds.`);
     const critical = target.map(criticalPath).find(Boolean);
     if (critical) return hit('destructive', `Deletes every matching file under ${where(critical, target[0]!.path)}.`);
+    // `find . -delete` or `find . -delete -name x`: no test comes before the delete, so every file under the start folder
+    // matches. That's `rm -r` on the start folder, and gets the same verdict as `rm -r .` or `rm -r ~/somewhere`.
+    const firstDelete = values.findIndex((v, i) => v === '-delete' || (/^-(exec|execdir|ok|okdir)$/.test(values[i - 1] ?? '') && /^(rm|shred|unlink)$/.test(v)));
+    const unfiltered = !values.slice(roots.length, firstDelete).some((v) => FIND_TEST.test(v));
+    if (unfiltered) {
+      const wide = target.find((t) => t.path === '.' || t.path === '..' || isOutsideProject(t));
+      const shown = target.map((t) => t.path).join(', ');
+      if (wide) {
+        return hit('elevated', `No test comes before the delete, so it deletes everything under ${wide.path === '.' ? 'the current folder' : wide.path === '..' ? 'the parent folder' : wide.path}. Tests like \`-name\` must come before \`-delete\`.`, {
+          touches: target.map((t) => t.path)
+        });
+      }
+      return hit('modifies', `No test comes before the delete, so it deletes everything under ${shown}.`, { touches: target.map((t) => t.path) });
+    }
     return hit('modifies', `Deletes every matching file under ${target.map((t) => t.path).join(', ')}.`, { touches: target.map((t) => t.path) });
   }
 };
@@ -236,6 +290,63 @@ const inPlaceEdit: Rule = {
   }
 };
 
+// `sort -o FILE` writes its output to FILE (often the input itself, to sort in place). `gpg -o FILE` / `--output FILE`
+// writes the decrypted, signed or dearmored result there, as install scripts do with `gpg --dearmor -o /usr/share/keyrings/…`.
+const OUTPUT_OPTION_PROGRAMS = new Set(['sort', 'gpg', 'gpg2']);
+const outputOption: Rule = {
+  id: 'output-option',
+  check(c) {
+    if (!c.program || !OUTPUT_OPTION_PROGRAMS.has(c.program)) return null;
+    const via = c.program === 'sort' ? '`sort -o`' : `\`${c.program} -o\``;
+    const argv = c.argv.map((w) => w.value);
+    const hits: Hit[] = [];
+    argv.forEach((v, i) => {
+      let target: Word | undefined;
+      if (v === '-o' || v === '--output') target = c.argv[i + 1];
+      else if (/^-o./.test(v)) target = { ...c.argv[i]!, value: v.slice(2) };
+      else if (v.startsWith('--output=')) target = { ...c.argv[i]!, value: v.slice('--output='.length) };
+      else if (/^-[a-zA-Z]*o$/.test(v) && !v.startsWith('--')) target = c.argv[i + 1];
+      if (!target || target.value === '-') return;
+      const h = writeTargetHit(target, 'overwrite', via);
+      if (h) hits.push(h);
+    });
+    return hits;
+  }
+};
+
+// awk is read-only unless its program writes a file (`print > "out"`), pipes to or runs a shell command
+// (`print | "cmd"`, `system(…)`, `"cmd" | getline`), or a script file (`-f`) does who knows what.
+const awkWrites: Rule = {
+  id: 'awk-writes',
+  check(c) {
+    if (!c.program || !/^[gmn]?awk$/.test(c.program)) return null;
+    if (c.argv.some((w) => w.value === '-f' || w.value.startsWith('--file'))) return hit('modifies', 'Runs an awk script from a file, which can write files or run commands.');
+    const hits: Hit[] = [];
+    for (const w of c.operands) {
+      const prog = w.value;
+      // Blank out string contents so `print "a -> b"` isn't read as a redirection; offsets stay the same.
+      const code = prog.replace(/"(?:[^"\\]|\\.)*"/g, (m) => `"${'_'.repeat(m.length - 2)}"`);
+      // Within one statement, `>` after `print`/`printf` is always a redirection (comparisons there need parentheses).
+      const redirect = /\bprintf?\b[^;{}\n]*?(>>?)\s*("[^"]*"|[^\s;{}]+)/.exec(code);
+      if (redirect) {
+        const start = redirect.index + redirect[0].length - redirect[2]!.length;
+        const raw = prog.slice(start, start + redirect[2]!.length);
+        const via = `awk's \`print ${redirect[1]}\``;
+        const mode = redirect[1] === '>>' ? 'append' : 'overwrite';
+        // A quoted name is a fixed file and gets the same verdict as `>` to it; anything else is computed per line.
+        const h = /^"[^"]*"$/.test(raw)
+          ? writeTargetHit({ ...w, raw, value: raw.slice(1, -1), vars: [], unquotedVar: false, substitution: false, startsWithExpansion: false }, mode, via)
+          : hit('modifies', `${via} writes to files named by \`${raw}\`, worked out line by line.`);
+        if (h) hits.push(h);
+      }
+      if (/\bsystem\s*\(/.test(code) || /\bprintf?\b[^;{}\n]*?\|/.test(code) || /\|\s*getline\b/.test(code)) {
+        hits.push(hit('modifies', 'The awk program runs shell commands (`system()` or a pipe), which can do anything you can.'));
+      }
+    }
+    return hits;
+  }
+};
+
 const truncate: Rule = {
   id: 'truncate',
   check(c) {
@@ -244,7 +355,7 @@ const truncate: Rule = {
   }
 };
 
-export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, truncate];
+export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, outputOption, awkWrites, truncate];
 
 export const isWrite = (c: NormalizedCommand) =>
   c.cmd.redirects.some((r) => r.target && />/.test(r.op) && !HARMLESS_TARGET.test(r.target.value));

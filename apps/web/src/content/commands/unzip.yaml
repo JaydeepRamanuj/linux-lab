@@ -1,0 +1,25 @@
+name: unzip
+title: Unpack .zip archives
+category: files
+level: everyday
+summary: Extracts `.zip` files, or lists what's in them without unpacking.
+syntax: unzip [options] ARCHIVE.zip [-d DIR]
+flags:
+  - { flag: "-l", meaning: "List the contents with sizes and dates. Changes nothing." }
+  - { flag: "-d DIR", meaning: "Extract into DIR, creating it if needed." }
+  - { flag: "-o", meaning: "Overwrite existing files without asking." }
+  - { flag: "-n", meaning: "Never overwrite existing files." }
+  - { flag: "-q", meaning: "Quiet: don't print each file." }
+examples:
+  - { command: "unzip -l photos.zip", explain: "See what's inside first.", severity: readonly }
+  - { command: "unzip photos.zip -d photos", explain: "Unpack into a folder of its own.", severity: modifies }
+gotchas:
+  - "Many zips have no top-level folder and scatter files into wherever you are. `-d` avoids that."
+  - "When a file already exists, unzip stops and asks `replace …? [y]es, [n]o, [A]ll, [N]one, [r]ename`."
+  - "File names from Windows may come out garbled if they use non-English characters. `unzip -O cp437` or the `7z` tool can help."
+related: [tar, ls]
+scenarios: [extract-archive]
+distros:
+  apt: sudo apt install unzip
+  dnf: sudo dnf install unzip
+  pacman: sudo pacman -S unzip

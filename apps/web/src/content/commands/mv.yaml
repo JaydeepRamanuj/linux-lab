@@ -9,11 +9,15 @@ flags:
   - { flag: "-n, --no-clobber", meaning: "Never overwrite an existing file." }
   - { flag: "-v, --verbose", meaning: "Print what was moved." }
   - { flag: "-t DIR", meaning: "Move everything into `DIR` (handy with `xargs`)." }
+  - { flag: "-b, --backup[=numbered]", meaning: "Before replacing a file, rename it to `name~` or `name.~1~`." }
 examples:
   - { command: "mv ~/Downloads/Obsidian-1.7.7.AppImage ~/Applications/obsidian.AppImage", explain: "Move and rename in one go.", severity: modifies }
   - { command: "mv -n *.log logs/", explain: "Move all log files into a folder without overwriting any already there.", severity: modifies }
+  - { command: "mv -i draft.md notes/", explain: "Move into a folder, asking before replacing a file there.", severity: modifies }
+  - { command: "mv -v --backup=numbered draft.md notes/", explain: "Replace, but keep the old file as `notes/draft.md.~1~`.", severity: modifies }
 gotchas:
   - "There is no undo, and an overwritten file is gone. `-i` or `-n` is cheap insurance."
   - "Renaming a folder that a program or `.desktop` file points to breaks that link."
-related: [cp, rm]
-scenarios: [appimage-install]
+  - "If the destination folder doesn't exist, `mv file archive` renames the file to `archive`. End folder names with `/` to get an error instead."
+related: [cp, rm, ls]
+scenarios: [appimage-install, safe-mv-cp]

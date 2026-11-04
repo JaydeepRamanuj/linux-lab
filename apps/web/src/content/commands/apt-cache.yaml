@@ -1,0 +1,27 @@
+name: apt-cache
+title: Query the package lists
+category: packages
+level: intermediate
+summary: "Read-only questions about packages, installed or not: which versions exist, where they come from, and what depends on what. Never needs `sudo`."
+syntax: apt-cache <command> [package…]
+flags:
+  - { flag: "policy PACKAGE", meaning: "Installed version, the version apt would install (Candidate), and which repository each comes from." }
+  - { flag: "show PACKAGE", meaning: "Full details, like `apt show`." }
+  - { flag: "depends PACKAGE", meaning: "What this package needs." }
+  - { flag: "rdepends --installed PACKAGE", meaning: "Which installed packages need this one. Check before removing a library." }
+  - { flag: "search PATTERN", meaning: "Search names and descriptions. Add `--names-only` to skip descriptions." }
+examples:
+  - { command: "apt-cache policy nginx", explain: "Is it installed, and which version would apt install?", severity: readonly }
+  - { command: "apt-cache rdepends --installed libgtk-3-0t64", explain: "What would break if this library went away?", severity: readonly }
+  - { command: "apt-cache search --names-only '^bind9'", explain: "Packages whose name starts with bind9.", severity: readonly }
+gotchas:
+  - "`Installed: (none)` with a `Candidate` means you can install it; `Candidate: (none)` means no enabled repository has it."
+  - "It answers from the lists on disk. Run `sudo apt update` first if they might be stale."
+  - "`apt show` and `apt search` give friendlier output for the same questions; `apt-cache` is steadier for scripts and has `policy` and `rdepends`."
+related: [apt, apt-file, dpkg]
+scenarios: []
+distrosTitle: Same lookup on other distros
+distros:
+  apt: apt-cache policy nginx
+  dnf: dnf info nginx
+  pacman: pacman -Si nginx

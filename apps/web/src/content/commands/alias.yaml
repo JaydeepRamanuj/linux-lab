@@ -1,0 +1,17 @@
+name: alias
+title: Create a shortcut for a command
+category: shell
+level: everyday
+summary: Defines a short name that the shell replaces with a longer command. With no arguments, lists your current aliases. Aliases last until the shell exits, unless you save them in a startup file.
+syntax: alias [name='command']
+examples:
+  - { command: "alias", explain: "List every alias in this shell.", severity: readonly }
+  - { command: "alias gs='git status'", explain: "Typing `gs` now runs `git status`, in this terminal.", severity: readonly }
+  - { command: "echo \"alias gs='git status'\" >> ~/.bash_aliases", explain: "Save it for every new terminal (Ubuntu and Debian load this file).", severity: elevated }
+gotchas:
+  - "No spaces around `=`, and quote the value if it has spaces."
+  - "`unalias name` removes one; prefix a command with `\\` (`\\ls`) to skip its alias once."
+  - "Aliases only replace the first word and can't take arguments in the middle. Use a shell function for that."
+  - "Scripts don't see your aliases."
+related: [type, command, source]
+scenarios: [persistent-alias]

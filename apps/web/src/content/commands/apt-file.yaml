@@ -1,0 +1,27 @@
+name: apt-file
+title: Find which package contains a file
+category: packages
+level: intermediate
+summary: "Searches the file lists of every package in the archive, installed or not. The answer to: which package do I install to get this command?"
+syntax: apt-file <search|list|update> PATTERN
+flags:
+  - { flag: "search PATTERN", meaning: "Packages with a file whose path contains PATTERN. Prints `package: /path`." }
+  - { flag: "--regexp / -x", meaning: "Treat PATTERN as a regular expression, e.g. `'bin/convert$'` for an exact name." }
+  - { flag: "list PACKAGE", meaning: "Every file a package would install, without installing it." }
+  - { flag: "update", meaning: "Download fresh file lists. Needs `sudo`." }
+examples:
+  - { command: "apt-file search bin/ifconfig", explain: "Which package provides the `ifconfig` command? (`net-tools`)", severity: readonly }
+  - { command: "apt-file search --regexp 'bin/convert$'", explain: "Exactly `convert`, not `convert2gpx` and friends.", severity: readonly }
+  - { command: "apt-file list net-tools | grep bin/", explain: "Which commands would this package give me?", severity: readonly }
+gotchas:
+  - "Not installed by default: `sudo apt install apt-file`, then `sudo apt-file update` to download the lists (tens of MB)."
+  - "Search for `bin/NAME`, not just `NAME`: a bare `ifconfig` also matches man pages and Python modules, 49 hits from 34 packages."
+  - "It matches file names only. Read `apt show PACKAGE` before installing what it finds."
+  - "Commands reached through an alternatives link (like ImageMagick's `convert`) are listed under their real file name, e.g. `convert-im6.q16`."
+related: [dpkg, apt, apt-cache]
+scenarios: [which-package]
+distrosTitle: Same lookup on other distros
+distros:
+  apt: apt-file search bin/ifconfig
+  dnf: dnf provides '*/bin/ifconfig'
+  pacman: pacman -F ifconfig

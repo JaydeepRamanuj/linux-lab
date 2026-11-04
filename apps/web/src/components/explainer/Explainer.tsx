@@ -21,7 +21,7 @@ import type { Analysis, AnalyzedCommand } from '@shellgyan/core';
 import { redact } from '@shellgyan/core/redact';
 import type { Redaction } from '@shellgyan/core/redact';
 import Anatomy from '../anatomy/Anatomy';
-import { CommandText, CopyButton, Prose, SeverityBadge } from '../ui/ui';
+import { CommandText, CopyButton, Prose, SeverityBadge, commandPreview } from '../ui/ui';
 import { SEVERITY } from '../../lib/theme';
 import type { Severity } from '../../lib/theme';
 import { isTopLevel } from '../../lib/anatomyTokens';
@@ -35,7 +35,13 @@ const EXAMPLES = [
   'lsof -i :3000 || echo "port is free"',
   'find . -name "*.log" -mtime +7 -exec rm {} \\;',
   'sudo chown -R $USER:$USER ~/.npm',
-  'rm -rf $BUILD_DIR/'
+  'rm -rf $BUILD_DIR/',
+  'npm test > test.log 2>&1',
+  'cat "$file"',
+  "sed -i 's/localhost:5432/db:5432/g' .env",
+  "cat <<'EOF' > .env.example\nDATABASE_URL=postgres://app:CHANGE_ME@db:5432/shop\nSTRIPE_SECRET_KEY=\nEOF",
+  'PORT=4000 npm run dev',
+  'npm test || true'
 ];
 
 const REVERSIBLE: Record<Severity, { label: string; note: string; className: string }> = {
@@ -182,7 +188,7 @@ export default function Explainer() {
                   onClick={() => pick(ex)}
                   className="rounded-lg bg-surface-low border border-white/6 hover:border-primary-container/40 transition px-2.5 py-1.5 text-[12px] text-left max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
                 >
-                  <CommandText command={ex} />
+                  <CommandText command={commandPreview(ex)} />
                 </button>
               ))}
             </div>

@@ -1,0 +1,25 @@
+name: sort
+title: Sort lines of text
+category: text
+level: everyday
+summary: Sorts lines alphabetically, by number, or by human-readable size. Usually sits in the middle of a pipe, after the command whose output you want ordered.
+syntax: sort [options] [file…]
+flags:
+  - { flag: "-h, --human-numeric-sort", meaning: "Sort sizes like `46M`, `1.4G`, `19G` correctly. Use it on `du -h` output." }
+  - { flag: "-n, --numeric-sort", meaning: "Sort by number, so 9 comes before 10." }
+  - { flag: "-r, --reverse", meaning: "Biggest or last first." }
+  - { flag: "-k N", meaning: "Sort by column N instead of the whole line, like `-k2`." }
+  - { flag: "-t CHAR", meaning: "Columns are separated by CHAR, like `-t:` for `/etc/passwd`." }
+  - { flag: "-u, --unique", meaning: "Drop duplicate lines." }
+  - { flag: "-o FILE", meaning: "Write the result to FILE. Safe even when FILE is the input." }
+examples:
+  - { command: "du -h -d 1 ~ | sort -h", explain: "Folders in your home, smallest first, biggest at the bottom.", severity: readonly }
+  - { command: "du -sh * | sort -rh | head", explain: "The ten biggest items in this folder, biggest first.", severity: readonly }
+  - { command: "sort -u emails.txt", explain: "Each line once, in order.", severity: readonly }
+  - { command: "sort -o names.txt names.txt", explain: "Sort a file in place. `sort names.txt > names.txt` would empty it instead.", severity: modifies }
+gotchas:
+  - "Plain `sort` compares text, so `19G` lands between `1.5G` and `2.8G`, and `46M` after them. Sizes need `-h`; plain numbers need `-n`."
+  - "`sort file > file` empties the file before `sort` reads it. Use `sort -o file file` instead."
+  - "The order of upper and lower case and of punctuation depends on your locale. `LC_ALL=C sort` gives plain byte order."
+related: [du, head, tail, awk]
+scenarios: [disk-full]

@@ -1,0 +1,18 @@
+name: head
+title: Show the start of a file or output
+category: text
+level: everyday
+summary: Prints the first lines of a file or of piped output (10 by default). Often used at the end of a pipe to keep only the top of a sorted list.
+syntax: head [options] [file…]
+flags:
+  - { flag: "-n N, -N", meaning: "The first N lines. `-n -N` prints everything except the last N." }
+  - { flag: "-c N", meaning: "The first N bytes instead of lines." }
+examples:
+  - { command: "head -n 20 README.md", explain: "The first 20 lines of a file.", severity: readonly }
+  - { command: "ps aux --sort=-%cpu | head -4", explain: "The header plus the three busiest processes.", severity: readonly }
+  - { command: "du -sh * | sort -rh | head", explain: "The ten biggest items in this folder.", severity: readonly }
+gotchas:
+  - "When `head` has printed enough lines it exits, and the command before it may stop early. That's normal and saves time."
+  - "Remember the header line: `ps … | head -5` shows four processes, not five."
+related: [tail, ps, sort]
+scenarios: [cpu-ram-hog, curl-pipe-bash]

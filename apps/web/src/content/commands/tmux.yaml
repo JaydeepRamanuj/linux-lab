@@ -1,0 +1,28 @@
+name: tmux
+title: Terminal sessions that survive disconnects
+category: processes
+level: intermediate
+summary: Runs terminal sessions on the machine itself, so you can detach, close the window or lose SSH, and re-attach later to find everything still running. It can also split one window into panes.
+syntax: tmux [command] [options]
+flags:
+  - { flag: "new -s NAME", meaning: "Start a new named session." }
+  - { flag: "ls", meaning: "List running sessions." }
+  - { flag: "attach -t NAME", meaning: "Re-attach to a session." }
+  - { flag: "kill-session -t NAME", meaning: "End a session and every program running in it." }
+  - { flag: "Ctrl+B D", meaning: "Inside tmux: detach, leaving the session running." }
+  - { flag: "Ctrl+B %  /  Ctrl+B \"", meaning: "Inside tmux: split the window side by side / top and bottom." }
+  - { flag: "Ctrl+B [", meaning: "Inside tmux: scroll back (q to leave)." }
+examples:
+  - { command: "tmux new -s train", explain: "Start a session called train.", severity: readonly }
+  - { command: "tmux attach -t train", explain: "Go back to it later, from any terminal or SSH login.", severity: readonly }
+  - { command: "tmux kill-session -t train", explain: "End it, and everything running inside.", severity: modifies }
+gotchas:
+  - "Every tmux shortcut starts with the prefix Ctrl+B: press it, let go, then press the key."
+  - "Mouse scrolling doesn't scroll by default. Use Ctrl+B [ or add `set -g mouse on` to `~/.tmux.conf`."
+  - "Sessions survive disconnects, not reboots."
+related: [nohup, jobs]
+scenarios: [keep-running]
+distros:
+  apt: sudo apt install tmux
+  dnf: sudo dnf install tmux
+  pacman: sudo pacman -S tmux

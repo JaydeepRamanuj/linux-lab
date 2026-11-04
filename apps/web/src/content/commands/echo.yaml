@@ -1,0 +1,20 @@
+name: echo
+title: Print text
+category: shell
+level: everyday
+summary: Prints its arguments, followed by a newline. Used to show a variable's value, write a line into a file with `>` or `>>`, or feed text into another command.
+syntax: echo [options] [text…]
+flags:
+  - { flag: "-n", meaning: "Don't print the trailing newline." }
+  - { flag: "-e", meaning: "Interpret backslash escapes like `\\n` (newline) and `\\t` (tab)." }
+examples:
+  - { command: "echo \"Hello, $USER\"", explain: "Double quotes: `$USER` is replaced with your username.", severity: readonly }
+  - { command: "echo 'Price: $5'", explain: "Single quotes: printed exactly as written, `$5` included.", severity: readonly }
+  - { command: "echo \"$PATH\" | tr \":\" \"\\n\"", explain: "Print each folder on your PATH on its own line.", severity: readonly }
+  - { command: "echo \"node_modules/\" >> .gitignore", explain: "Add a line to the end of a file. `>>` appends; `>` would replace the whole file.", severity: modifies }
+gotchas:
+  - "`echo` itself never changes anything, but `> file` after it overwrites that file. Check for `>` versus `>>` before running a line someone else wrote."
+  - "Without quotes, the shell splits and expands first: `echo *.txt` prints matching file names, and runs of spaces collapse to one."
+  - "`-e` and `-n` behave differently between shells (bash, dash, zsh). In scripts, `printf '%s\\n' \"$x\"` is the portable choice."
+related: [source, which, export, tr, cat, tee]
+scenarios: [command-chaining, add-to-path, command-not-found, persistent-alias, redirection, expansion-quoting, find-exec-xargs, sed-awk, env-vars, exit-codes]

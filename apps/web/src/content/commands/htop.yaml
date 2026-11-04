@@ -1,0 +1,26 @@
+name: htop
+title: A friendlier live process viewer
+category: processes
+level: everyday
+summary: Like `top`, with colour bars for each CPU core and memory, mouse support, a tree view, and menus for sorting, searching and killing processes.
+syntax: htop [options]
+flags:
+  - { flag: "-u USER", meaning: "Only USER's processes." }
+  - { flag: "-t, --tree", meaning: "Start in tree view, showing which process started which." }
+  - { flag: "F3 / F4", meaning: "Keys inside htop: search / filter by name." }
+  - { flag: "F6", meaning: "Pick the column to sort by." }
+  - { flag: "F9", meaning: "Send a signal to the selected process (15 asks, 9 forces)." }
+  - { flag: "F10 / q", meaning: "Quit." }
+examples:
+  - { command: "htop", explain: "Live view of everything running.", severity: readonly }
+  - { command: "htop -u jd", explain: "Only your own processes.", severity: readonly }
+gotchas:
+  - "Not always installed: `sudo apt install htop`."
+  - "Threads are shown as separate rows by default, so one app can appear many times. Press `H` to hide threads."
+  - "Killing with F9 is the same as `kill`: check the PID and name first."
+related: [top, ps, kill]
+scenarios: [cpu-ram-hog]
+distros:
+  apt: sudo apt install htop
+  dnf: sudo dnf install htop
+  pacman: sudo pacman -S htop

@@ -1,0 +1,19 @@
+name: type
+title: Find out what a command name means
+category: shell
+level: everyday
+summary: Tells you what the shell will run for a name, whether that's an alias, a function, a builtin like `cd`, or a program file on `PATH`. More complete than `which`.
+syntax: type [-a] [-t] name…
+flags:
+  - { flag: "-a", meaning: "Show every meaning, in the order the shell tries them: aliases, functions, builtins, then every match on PATH." }
+  - { flag: "-t", meaning: "Print one word: alias, function, builtin, file or keyword." }
+  - { flag: "-P", meaning: "Search PATH only, like `which`." }
+examples:
+  - { command: "type ll", explain: "ll is aliased to `ls -alF'.", severity: readonly }
+  - { command: "type -a python3", explain: "Every python3 the shell could run, in priority order.", severity: readonly }
+  - { command: "type cd", explain: "cd is a shell builtin: there's no file for it.", severity: readonly }
+gotchas:
+  - "\"is hashed\" means bash remembered where it found the program last time. If you've since installed a new copy elsewhere, `hash -r` makes it look again."
+  - "`type` is a bash/zsh builtin, so it can't be run with `sudo` (`sudo type x` fails)."
+related: [which, command, alias]
+scenarios: [command-not-found, persistent-alias]

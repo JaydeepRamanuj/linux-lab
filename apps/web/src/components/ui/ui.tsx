@@ -66,6 +66,9 @@ function tokenClass(tok: string, prev: string | null): string | null {
 }
 
 // Syntax-tint a shell command: programs in cyan, operators violet, placeholders muted.
+/** One line to show where a command must fit on one row (cards, chips). A heredoc shows its first line and `…`. */
+export const commandPreview = (command: string) => (command.includes('\n') ? `${command.split('\n')[0]} …` : command);
+
 export function CommandText({ command, className = '' }: { command: string; className?: string }) {
   const parts: ReactNode[] = [];
   let prevWord: string | null = null;
@@ -98,11 +101,16 @@ export function CommandWell({
   className?: string;
 }) {
   const big = size === 'lg';
+  // A heredoc spans several lines: keep its line breaks (and scroll sideways) instead of joining it into one line.
+  const multiline = command.includes('\n');
+  const wrap = multiline
+    ? big ? 'whitespace-pre-wrap break-all sm:whitespace-pre sm:break-normal' : 'whitespace-pre'
+    : big ? 'whitespace-pre-wrap break-all sm:whitespace-nowrap sm:break-normal' : 'whitespace-nowrap';
   return (
-    <div className={`well flex items-center gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
-      <div className={`flex items-center gap-3 min-w-0 flex-1 overflow-x-auto no-scrollbar ${big ? 'text-[15px]' : 'text-[13px]'}`}>
+    <div className={`well flex min-w-0 max-w-full ${multiline ? 'items-start' : 'items-center'} gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
+      <div className={`flex ${multiline ? 'items-start' : 'items-center'} gap-3 min-w-0 flex-1 overflow-x-auto no-scrollbar ${big ? 'text-[15px]' : 'text-[13px]'}`}>
         <span className="font-mono text-secondary select-none">$</span>
-        <CommandText command={command} className={big ? 'whitespace-pre-wrap break-all sm:whitespace-nowrap sm:break-normal' : 'whitespace-nowrap'} />
+        <CommandText command={command} className={wrap} />
       </div>
       <CopyButton text={command} label={label} compact={!label && !big} />
     </div>
@@ -136,20 +144,22 @@ export function SectionTitle({
   );
 }
 
-// Render inline `code` spans inside plain prose strings.
+// Render inline `code` spans inside plain prose strings. As in Markdown, ``double backticks`` (with a space inside
+// each end) wrap code that itself contains a backtick: `` `cmd` `` shows `cmd` with its backticks.
 export function Prose({ text, className = '' }: { text: string; className?: string }) {
-  const parts = text.split(/(`[^`]+`)/g);
+  const parts = text.split(/(``.+?``|`[^`]+`)/g);
   return (
     <span className={className}>
-      {parts.map((p, i) =>
-        p.startsWith('`') && p.endsWith('`') ? (
-          <code key={i} className="font-mono text-[0.85em] text-primary bg-surface-high px-1.5 py-0.5 rounded">
-            {p.slice(1, -1)}
-          </code>
-        ) : (
+      {parts.map((p, i) => {
+        const code = p.startsWith('``') && p.endsWith('``') && p.length > 4 ? p.slice(2, -2).replace(/^ (.*) $/, '$1') : p.startsWith('`') && p.endsWith('`') && p.length > 1 ? p.slice(1, -1) : null;
+        return code === null ? (
           p
-        )
-      )}
+        ) : (
+          <code key={i} className="font-mono text-[0.85em] text-primary bg-surface-high px-1.5 py-0.5 rounded">
+            {code}
+          </code>
+        );
+      })}
     </span>
   );
 }

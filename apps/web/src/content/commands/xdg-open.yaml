@@ -1,0 +1,17 @@
+name: xdg-open
+title: Open a file, folder or URL in its default app
+category: system
+level: everyday
+summary: Opens whatever you give it with the app your desktop uses for that kind of thing, the same as double-clicking it. Works on GNOME, KDE, Xfce and other Linux desktops.
+syntax: xdg-open file | folder | URL
+examples:
+  - { command: "xdg-open .", explain: "Open the current folder in the file manager.", severity: readonly }
+  - { command: "xdg-open invoice.pdf", explain: "Open a PDF in the default viewer.", severity: readonly }
+  - { command: "xdg-open https://example.com", explain: "Open a link in your default browser.", severity: readonly }
+gotchas:
+  - "Takes exactly one argument. To open several files, run it once per file."
+  - "Needs a desktop session: it fails over SSH or in a plain TTY."
+  - "Don't run it with `sudo`: the app would run as root and write root-owned files into your home folder."
+  - "`xdg-mime query default application/pdf` shows which app it will pick for PDFs."
+related: [code, update-desktop-database]
+scenarios: [open-from-terminal]

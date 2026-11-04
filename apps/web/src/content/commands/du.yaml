@@ -16,4 +16,6 @@ examples:
 gotchas:
   - "`*` skips hidden folders like `.cache` and `.local`, which are often the biggest. Use `du -sh .[!.]* *` to include them."
   - "`ncdu` gives the same information as an interactive, navigable list."
-related: [df, find]
+  - "Plain `sort` sorts `du -h` sizes as text (`19G` before `2.8G`). Always pair `du -h` with `sort -h`."
+related: [df, find, sort, ncdu]
+scenarios: [disk-full, agent-cleanup]

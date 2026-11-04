@@ -1,5 +1,6 @@
 import type { NormalizedCommand } from '../normalize';
 import type { Severity } from '../severity';
+import { SHELLS } from './remote';
 
 // Programs that only read or inspect. Writes through redirects are caught separately by the rules.
 const READONLY = new Set([
@@ -10,11 +11,11 @@ const READONLY = new Set([
   'diff', 'cmp', 'comm', 'sort', 'uniq', 'cut', 'tr', 'paste', 'join', 'column', 'jq', 'yq', 'xxd', 'od', 'hexdump', 'strings',
   'md5sum', 'sha1sum', 'sha256sum', 'sha512sum', 'cksum', 'basename', 'dirname', 'realpath', 'readlink', 'tree', 'lsblk',
   'blkid', 'findmnt', 'dmesg', 'lscpu', 'lsusb', 'lspci', 'lsmod', 'nproc', 'test', '[', '[[', 'true', 'false', 'sleep', 'wait',
-  'jobs', 'cd', 'pushd', 'popd', 'export', 'unset', 'alias', 'set', 'shopt', 'read', 'tput', 'clear', 'reset', 'env', 'locale',
+  'jobs', 'cd', 'pushd', 'popd', 'export', 'unset', 'alias', 'unalias', 'set', 'shopt', 'umask', 'read', 'tput', 'clear', 'reset', 'env', 'locale',
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
-  'curl', 'wget', 'gpg', 'ncdu', 'hash'
+  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return'
 ]);
 
 // Programs that change files in the project or user space, recoverably.
@@ -54,9 +55,49 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   if (p === 'journalctl' && [...c.long].some((f) => f.startsWith('vacuum') || f === 'rotate')) {
     return { severity: 'modifies', reason: 'Deletes old system logs.' };
   }
+  if (p === 'tar' && (c.short.has('t') || c.long.has('list') || /^[A-Za-z]*t[A-Za-z]*$/.test(c.argv[0]?.value ?? '') && !/[cxrua]/.test(c.argv[0]?.value ?? ''))) return { severity: 'readonly', reason: 'Only lists what is inside the archive.' };
+  if (p === 'unzip' && (c.short.has('l') || c.short.has('v') || c.short.has('Z'))) return { severity: 'readonly', reason: 'Only lists what is inside the archive.' };
+  if (p === 'tmux' && c.operands.some((w) => /^kill-(session|server|window|pane)$/.test(w.value))) {
+    return { severity: 'modifies', reason: 'Closes tmux sessions or windows and ends the programs running in them.' };
+  }
   if (p === 'env' && c.operands.length === 0) return { severity: 'readonly', reason: 'Prints environment variables.' };
+
+  if (SHELLS.has(p) && p !== 'busybox') {
+    const shell = shellBasis(c);
+    if (shell) return shell;
+  }
 
   if (READONLY.has(p)) return { severity: 'readonly', reason: 'Only reads or inspects.' };
   if (MODIFIES.has(p)) return { severity: 'modifies', reason: 'Changes files in your project or home folder.' };
   return { severity: 'modifies', reason: `\`${p}\` isn't in ShellGyan's list yet, so it's assumed to change things.` };
+}
+
+/**
+ * `bash -c '…'`, `bash -n script`, `bash script`, plain `bash`. What a shell does depends on what it runs, so the shell
+ * itself only gets a basis here; `bash -c` bodies are opened up and checked as commands of their own (analyze.ts), and
+ * `curl … | bash` is the pipe-to-shell rule's job.
+ */
+function shellBasis(c: NormalizedCommand): Basis | null {
+  const p = c.program!;
+  if (c.short.has('c')) {
+    const body = c.operands[0];
+    if (body && !body.substitution) {
+      return { severity: 'readonly', reason: `Runs the quoted text as a command in a new ${p}; that command is checked on its own.` };
+    }
+    return null;
+  }
+  const script = c.operands[0];
+  const fromFile = c.cmd.redirects.some((r) => r.op === '<' && r.target);
+  const piped = !!c.cmd.pipeline && c.cmd.pipeline.index > 0;
+  if (c.short.has('n') && (script || fromFile || piped)) {
+    return { severity: 'readonly', reason: "Only checks the script's syntax (`-n`); nothing in it runs." };
+  }
+  if (script && !c.short.has('s')) {
+    return { severity: 'modifies', reason: `Runs the script ${script.value}, which can do anything you can. Read it before you run it.` };
+  }
+  if (fromFile) return { severity: 'modifies', reason: 'Runs the script fed in with `<`, which can do anything you can.' };
+  if (!piped) {
+    return { severity: 'readonly', reason: `Starts a new interactive ${p}. Type \`exit\` to come back.` };
+  }
+  return null;
 }

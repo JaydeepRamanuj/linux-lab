@@ -1,0 +1,21 @@
+name: tee
+title: Show output and save it at the same time
+category: text
+level: intermediate
+summary: Copies its input to the screen and into one or more files. Use it in a pipe when you want to watch output and keep it, or to write a file as root with `sudo tee`.
+syntax: command | tee [options] file…
+flags:
+  - { flag: "-a, --append", meaning: "Add to the end of the file instead of replacing it." }
+  - { flag: "-i", meaning: "Ignore Ctrl+C, so the file still gets everything the command printed." }
+examples:
+  - { command: "npm test 2>&1 | tee test.log", explain: "Watch the test run and keep a full copy, errors included.", severity: modifies }
+  - { command: "./build.sh 2>&1 | tee -a build.log", explain: "Append each run to the same log.", severity: modifies }
+  - { command: "echo 'deb https://repo.example.com/apt stable main' | sudo tee /etc/apt/sources.list.d/example.list", explain: "Write a root-owned file. `sudo echo … > file` fails, because the `>` runs as you.", severity: elevated }
+  - { command: "tee README.md <<'EOF'\n# Shop\nEOF", explain: "Write a file from a heredoc and see what went in.", severity: modifies }
+gotchas:
+  - "Without `-a`, `tee` replaces the file, just like `>`."
+  - "`tee` only gets what comes through the pipe, which is normally stdout. Add `2>&1` before the `|` to include errors."
+  - "With `sudo tee file`, the text is also printed to the terminal. Add `> /dev/null` at the end to hide it."
+  - "After `cmd | tee log`, `$?` is `tee`'s exit code (0), not `cmd`'s. In bash, `${PIPESTATUS[0]}` has the real one."
+related: [cat, echo, sudo, tail]
+scenarios: [redirection, heredocs]

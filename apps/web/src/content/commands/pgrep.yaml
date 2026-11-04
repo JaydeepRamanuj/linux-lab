@@ -1,0 +1,23 @@
+name: pgrep
+title: Find processes by name
+category: processes
+level: everyday
+summary: Prints the PIDs of processes whose name matches a pattern. The safe way to check what `pkill` would hit, and cleaner than `ps aux | grep`.
+syntax: pgrep [options] pattern
+flags:
+  - { flag: "-a", meaning: "Print the full command line next to each PID." }
+  - { flag: "-f", meaning: "Match against the whole command line, not just the process name." }
+  - { flag: "-l", meaning: "Print the process name next to each PID." }
+  - { flag: "-u USER", meaning: "Only processes owned by USER." }
+  - { flag: "-x", meaning: "The name must match exactly, not just contain the pattern." }
+  - { flag: "-o / -n", meaning: "Only the oldest / newest match." }
+examples:
+  - { command: "pgrep -a obsidian", explain: "Every obsidian process, with its command line.", severity: readonly }
+  - { command: "pgrep -fa \"next dev\"", explain: "Find a dev server by its arguments.", severity: readonly }
+  - { command: "pgrep -x node || echo \"not running\"", explain: "Exit code 1 means no match, handy in scripts.", severity: readonly }
+gotchas:
+  - "Without `-f`, the pattern is checked against the process name, which is cut to 15 characters. Long names need `-f`."
+  - "The pattern is a regular expression, and matches anywhere in the name: `pgrep code` also finds `vscode-server`. Use `-x` for an exact name."
+  - "Run `pgrep` with the same pattern before every `pkill`: it shows exactly what would be signalled."
+related: [pkill, ps, kill]
+scenarios: [frozen-app]

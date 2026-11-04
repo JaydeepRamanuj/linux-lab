@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { assertContentValid } from '../../lib/contentChecks';
 import type { CollectionEntry } from 'astro:content';
 import { Terminal, ListChecks, AlertTriangle, Package, Link2, BookOpen } from 'lucide-react';
 import { maxSeverity } from '@shellgyan/core/severity';
@@ -11,6 +12,7 @@ import { COMMAND_CATEGORIES, LEVELS } from '../../data/commandCategories';
 import { buildAnatomy } from '../../lib/anatomy';
 
 export async function getStaticPaths() {
+  await assertContentValid();
   const commands = await getCollection('commands');
   return commands.map((command) => ({ params: { slug: command.id }, props: { command } }));
 }
@@ -127,13 +129,13 @@ const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string,
         <section class="card p-5 sm:p-8 space-y-4">
           <h2 class="flex items-center gap-2 text-[22px] font-semibold">
             <Package className="h-5 w-5 text-secondary" />
-            Install it
+            {c.distrosTitle ?? 'Install it'}
           </h2>
           <div class="space-y-2">
             {distros.map(([pm, cmd]) => (
               <div class="flex items-center gap-3">
                 <span class="label-caps text-outline w-16 shrink-0">{pm}</span>
-                <CommandWell command={cmd} className="flex-1" client:visible />
+                <CommandWell command={cmd} className="flex-1 min-w-0" client:visible />
               </div>
             ))}
           </div>

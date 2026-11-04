@@ -2,7 +2,6 @@
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { Zap, ScanSearch, Network, BrainCircuit, ShieldCheck, CheckCircle2, Link2, ChevronRight, BookOpen, Info } from 'lucide-react';
-import { rank } from '@shellgyan/core/severity';
 import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import StatePanel from '../../components/scenario/StatePanel.astro';
@@ -10,12 +9,14 @@ import Callout from '../../components/scenario/Callout.astro';
 import AnatomyBlock from '../../components/anatomy/AnatomyBlock.astro';
 import StepWalkthrough from '../../components/walkthrough/StepWalkthrough';
 import TerminalReplay from '../../components/replay/TerminalReplay';
-import { SeverityBadge, CommandWell, Prose, CategoryIcon } from '../../components/ui/ui';
+import { SeverityBadge, CommandWell, Prose, CategoryIcon, commandPreview } from '../../components/ui/ui';
 import { ACCENTS, SEVERITY } from '../../lib/theme';
 import { moduleById } from '../../data/modules';
 import { buildAnatomy } from '../../lib/anatomy';
+import { assertContentValid } from '../../lib/contentChecks';
 
 export async function getStaticPaths() {
+  await assertContentValid();
   const scenarios = await getCollection('scenarios', (s) => !s.data.draft);
   return scenarios.map((scenario) => ({ params: { slug: scenario.id }, props: { scenario } }));
 }
@@ -30,15 +31,6 @@ const accent = ACCENTS[module.color];
 const { Content } = await render(scenario);
 const anatomy = await buildAnatomy(s.primaryCommand, s.anatomy);
 
-// Content check: a step's declared kind must not be milder than what the rule engine says.
-for (const step of s.steps) {
-  if (!step.command || !step.kind) continue;
-  const verdict = (await buildAnatomy(step.command)).severity;
-  if (rank(verdict) > rank(step.kind)) {
-    console.warn(`[content] ${scenario.id}: step "${step.title}" is marked ${step.kind}, rule engine says ${verdict}`);
-  }
-}
-
 const all = await getCollection('scenarios', (x) => !x.data.draft);
 const related = s.related.map((id) => all.find((x) => x.id === id)).filter((x): x is CollectionEntry<'scenarios'> => Boolean(x));
 
@@ -49,7 +41,7 @@ const relatedCommands = commands.filter((c) => usedPrograms.has(c.data.name) || 
 const number = String(s.number).padStart(2, '0');
 ---
 
-<Base title={s.title} description={`${s.quote} — step-by-step fix: ${s.primaryCommand}`} current="scenarios">
+<Base title={s.title} description={`${s.quote} — step-by-step fix: ${commandPreview(s.primaryCommand)}`} current="scenarios">
   <div class="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8 sm:gap-10">
     <Breadcrumbs items={[{ label: module.name, href: `/m/${module.id}` }, { label: `#${number}: ${s.title}` }]} back={{ href: `/m/${module.id}`, label: 'Back to module' }} />
 

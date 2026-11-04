@@ -8,6 +8,7 @@ flags:
   - { flag: "-i :PORT", meaning: "Only network connections on that port." }
   - { flag: "-i TCP", meaning: "Only TCP connections." }
   - { flag: "-t", meaning: "Print only PIDs, for use with `kill`." }
+  - { flag: "-sTCP:LISTEN", meaning: "Only listening sockets: the server, not clients connected to it." }
   - { flag: "-p PID", meaning: "Only files opened by that process." }
   - { flag: "-P", meaning: "Show port numbers instead of service names." }
   - { flag: "-n", meaning: "Don't look up host names (faster)." }
@@ -17,6 +18,7 @@ examples:
   - { command: "lsof +D ~/Downloads", explain: "Which programs have files in a folder open (why can't I delete it?).", severity: readonly }
 gotchas:
   - "Without `sudo` you only see your own processes."
+  - "`-i :3000` also matches clients connected to port 3000 (a browser tab on your dev server). Add `-sTCP:LISTEN` before feeding `-t` output to `kill`."
   - "Not installed by default on some systems; `ss -ltnp` gives the same answer for ports."
 related: [ss, kill, ps]
 scenarios: [port-in-use]

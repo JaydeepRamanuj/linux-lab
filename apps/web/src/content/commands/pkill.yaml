@@ -14,4 +14,5 @@ examples:
   - { command: "pgrep -af node", explain: "Preview what would match first: same pattern, no signal.", severity: readonly }
 gotchas:
   - "Patterns are partial matches: `pkill node` also stops `nodemon` and anything else with node in its name. Check with `pgrep -a` first."
-related: [kill, ps]
+related: [kill, ps, pgrep]
+scenarios: [frozen-app]

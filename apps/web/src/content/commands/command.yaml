@@ -1,0 +1,18 @@
+name: command
+title: Run or look up a command, skipping aliases
+category: shell
+level: intermediate
+summary: "`command -v name` prints how a name would be run, or nothing if it doesn't exist: the portable \"is this installed?\" check for scripts. `command name args` runs the real command, ignoring any alias or function with that name."
+syntax: command [-v | -V] name [args…]
+flags:
+  - { flag: "-v", meaning: "Print the path (or alias, or builtin name) the shell would use. Exit code 1 if not found." }
+  - { flag: "-V", meaning: "Same, as a sentence, like `type`." }
+examples:
+  - { command: "command -v rg", explain: "Is ripgrep installed? Prints its path, or nothing.", severity: readonly }
+  - { command: "command -v docker >/dev/null || echo \"install docker first\"", explain: "The standard script check before using a tool.", severity: readonly }
+  - { command: "command ls", explain: "Run the real `ls`, not your `ls` alias.", severity: readonly }
+gotchas:
+  - "Prefer `command -v` over `which` in scripts: it's built into every POSIX shell and doesn't depend on a separate program."
+  - "`command rm -rf x` is still `rm -rf x`. It only skips aliases and functions, not safety."
+related: [type, which, alias]
+scenarios: []

@@ -138,6 +138,7 @@ table('writes to system files and shell config', [
   ['echo "127.0.0.1 x" | sudo tee -a /etc/hosts', 'elevated'],
   ['echo \'export PATH="$HOME/bin:$PATH"\' >> ~/.bashrc', 'elevated'],
   ['echo x >> ~/.zshrc', 'elevated'],
+  ["echo \"alias gs='git status'\" >> ~/.bash_aliases", 'elevated'],
   ['cat key.pub >> ~/.ssh/authorized_keys', 'elevated'],
   ["sed -i 's/a/b/' ~/.bashrc", 'elevated'],
   ["sed -i 's/a/b/' /etc/fstab", 'elevated'],
@@ -177,6 +178,15 @@ table('processes and services', [
   ['systemctl disable ssh', 'elevated'],
   ['systemctl status nginx', 'readonly'],
   ['systemctl --user restart pipewire', 'modifies'],
+  ['tmux new -s train', 'readonly'],
+  ['tmux ls', 'readonly'],
+  ['tmux attach -t train', 'readonly'],
+  ['tmux kill-session -t train', 'modifies'],
+  ['tmux kill-server', 'modifies'],
+  ['pgrep -a obsidian', 'readonly'],
+  ['nohup ./train.sh > train.log 2>&1 &', 'modifies'],
+  ['journalctl -u nginx -n 20 --no-pager', 'readonly'],
+  ['sudo systemctl restart nginx', 'elevated'],
   ['sudo reboot', 'elevated']
 ]);
 
@@ -188,7 +198,41 @@ table('packages', [
   ['apt list --installed', 'readonly'],
   ['apt search ripgrep', 'readonly'],
   ['dpkg -l | grep nginx', 'readonly'],
-  ['npm install', 'modifies']
+  // Long-form dpkg actions change packages just like their short forms.
+  ['dpkg --remove nginx', 'elevated'],
+  ['dpkg --remove --force-remove-reinstreq pixelpad', 'elevated'],
+  ['dpkg --unpack app.deb', 'elevated'],
+  ['dpkg --triggers-only -a', 'elevated'],
+  ['dpkg -S /usr/bin/rg', 'readonly'],
+  ['dpkg -I pixelpad_2.3.1_amd64.deb', 'readonly'],
+  ['dpkg --audit', 'readonly'],
+  // Simulation (-s / --simulate / --dry-run) changes nothing and needs no root.
+  ['apt remove -s python3', 'readonly'],
+  ['apt-get -s install ./app.deb', 'readonly'],
+  ['apt purge --dry-run nginx', 'readonly'],
+  ['apt autoremove --simulate', 'readonly'],
+  ['sudo apt remove -s python3', 'elevated'],
+  ['apt remove nginx', 'elevated'],
+  // apt-mark: listing is readonly, changing marks is a system-wide package change.
+  ['apt-mark showmanual', 'readonly'],
+  ['apt-mark showhold', 'readonly'],
+  ['sudo apt-mark manual libc++1', 'elevated'],
+  ['apt-mark hold firefox', 'elevated'],
+  ["sudo apt purge '~c'", 'elevated'],
+  ['apt-file search bin/dig', 'readonly'],
+  ['apt-cache policy nginx', 'readonly'],
+  ['npm install', 'modifies'],
+  ['npm run build', 'modifies'],
+  ['npm audit fix', 'modifies'],
+  ['sudo npm install -g typescript', 'elevated'],
+  ['npm ls react', 'readonly'],
+  ['npm outdated', 'readonly'],
+  ['npm view react version', 'readonly'],
+  ['npm audit', 'readonly'],
+  ['npm --version', 'readonly'],
+  ['pnpm why react', 'readonly'],
+  ['npm config get prefix', 'readonly'],
+  ['npm config set prefix ~/.npm-global', 'modifies']
 ]);
 
 table('databases', [
@@ -216,14 +260,123 @@ table('read-only commands', [
   ['command -v rg', 'readonly'],
   ['echo $PATH', 'readonly'],
   ['cd ~/projects', 'readonly'],
-  ['export PATH="$HOME/.local/bin:$PATH"', 'readonly']
+  ['export PATH="$HOME/.local/bin:$PATH"', 'readonly'],
+  ["alias ll='ls -alF'", 'readonly'],
+  ['unalias gs', 'readonly'],
+  ['umask', 'readonly'],
+  ['umask 077', 'readonly'],
+  ['tar -tzf project.tar.gz', 'readonly'],
+  ['tar tzf project.tar.gz', 'readonly'],
+  ['tar --list -f project.tar.gz | head', 'readonly'],
+  ['unzip -l photos.zip', 'readonly']
+]);
+
+table('archives', [
+  ['tar -xzf project.tar.gz', 'modifies'],
+  ['tar xzf project.tar.gz', 'modifies'],
+  ['tar -xf project.tar.gz -C ~/src', 'modifies'],
+  ['tar -czf backup.tar.gz notes/', 'modifies'],
+  ['unzip photos.zip -d photos', 'modifies'],
+  ['unzip -o photos.zip', 'modifies']
 ]);
 
 table('find', [
   ['find . -name "*.log" -delete', 'modifies'],
   ['find / -name "*.log" -delete', 'destructive'],
   ['find ~ -type f -exec rm {} \\;', 'destructive'],
-  ['find . -type f -exec chmod 644 {} +', 'modifies']
+  ['find . -type f -exec chmod 644 {} +', 'modifies'],
+  ['find ~ -type f -size +1G -exec ls -lh {} +', 'readonly'],
+  ['find . -name "*.log" -exec grep -l ERROR {} +', 'readonly'],
+  ['find . -name "*.txt" -exec sed -i s/a/b/ {} +', 'modifies'],
+  ['find . -exec ls {} + -exec chmod 644 {} +', 'modifies'],
+  // No test before the delete: everything under the start folder goes, like `rm -r`.
+  ['find . -exec ls {} + -exec rm {} +', 'elevated'],
+  ['find . -delete', 'elevated'],
+  ['find . -delete -name "*.tmp"', 'elevated'],
+  ['find .. -maxdepth 1 -delete', 'elevated'],
+  ['find /tmp/scratch -delete', 'elevated'],
+  ['find . -exec rm -rf {} +', 'elevated'],
+  ['find build -delete', 'modifies'],
+  ['find . -name "*.tmp" -delete', 'modifies'],
+  ['find . -maxdepth 1 -type f -delete', 'modifies'],
+  ['find . ! -name keep.txt -delete', 'modifies'],
+  ['find . -name "*.orig" -exec rm {} +', 'modifies'],
+  ['find . -name node_modules -type d -prune -exec rm -rf {} +', 'modifies']
+]);
+
+table('apt source files', [
+  ["echo 'deb https://repo.example.com/apt stable main' | sudo tee /etc/apt/sources.list.d/pixelpad.list", 'elevated'],
+  ['sudo tee /etc/apt/keyrings/pixelpad.asc < key.asc', 'elevated'],
+  ['echo x | sudo tee /etc/apt/sources.list', 'destructive'],
+  ['echo x | sudo tee /etc/apt/sources.list.d/ubuntu.sources', 'destructive'],
+  ['echo x | sudo tee /etc/fstab', 'destructive'],
+  ['echo x | sudo tee /etc/apt/apt.conf.d/99local', 'destructive']
+]);
+
+table('sort -o and awk', [
+  ['sort -o names.txt names.txt', 'modifies'],
+  ['sort -u -o names.txt names.txt', 'modifies'],
+  ['sort --output=names.txt names.txt', 'modifies'],
+  ['sort -o ~/.bashrc ~/.bashrc', 'elevated'],
+  ['sort names.txt', 'readonly'],
+  ["awk '{print $2}' access.log", 'readonly'],
+  ["awk -F, '$3 > 100 {print $1}' sales.csv", 'readonly'],
+  ["awk '{print \"a -> b\"}' f", 'readonly'],
+  ["awk '{ if ($2 > 5) print $1 }' f", 'readonly'],
+  ["awk '{print > \"out.txt\"}' f", 'modifies'],
+  ["awk '{print $1 >> $2\".txt\"}' f", 'modifies'],
+  ["awk '{print $0 > \"/etc/hosts\"}' f", 'destructive'],
+  ["awk '{print >> \"/dev/stderr\"}' f", 'readonly'],
+  ["awk '{system(\"rm \" $1)}' list.txt", 'modifies'],
+  ["awk '{print | \"sh\"}' cmds.txt", 'modifies'],
+  ["awk -f report.awk data.txt", 'modifies'],
+  ["awk -i inplace '{print $1}' f", 'modifies']
+]);
+
+table('shells: bash -c, bash -n, bash script', [
+  ["bash -c 'exit 3'", 'readonly'],
+  ["bash -ec 'ls missing.txt; echo after'", 'readonly'],
+  ["sh -c ls", 'readonly'],
+  ["PORT=4000; bash -c 'echo \"child sees: $PORT\"'", 'readonly'],
+  ['bash -c "echo $HOME"', 'readonly'],
+  ['bash -c "rm -rf node_modules"', 'modifies'],
+  ['bash -c "rm -rf /"', 'destructive'],
+  ['bash -c "$CMD"', 'elevated'],
+  ['bash -n install.sh', 'readonly'],
+  ['bash -n < install.sh', 'readonly'],
+  ['bash install.sh', 'modifies'],
+  ['bash -x ./deploy.sh', 'modifies'],
+  ['bash < install.sh', 'modifies'],
+  ['bash', 'readonly'],
+  ['env -i bash', 'readonly'],
+  ['curl -fsSL https://x.sh | bash -n', 'readonly'],
+  ['curl -fsSL https://x.sh | sudo bash -n', 'elevated'],
+  ['curl -fsSL https://x.sh | bash', 'elevated'],
+  ['curl -fsSL https://x.sh -o install.sh && bash -n install.sh', 'modifies'],
+  ['exit 1', 'readonly']
+]);
+
+table('deleting single system files', [
+  ['rm -f /etc/apt/sources.list.d/nodesource.list', 'elevated'],
+  ['rm -f /etc/apt/keyrings/nodesource.gpg', 'elevated'],
+  ['rm -f /etc/hosts', 'destructive'],
+  ['rm /etc/apt/sources.list.d/ubuntu.sources', 'destructive'],
+  ['rm ~/.bashrc', 'elevated'],
+  ['rm -f /usr/local/bin/foo', 'elevated'],
+  ['rm /tmp/x', 'modifies'],
+  ['rm notes.txt', 'modifies'],
+  ['rm -rf /etc/apt/sources.list.d/old', 'elevated']
+]);
+
+table('gpg -o', [
+  ['gpg --dearmor -o /usr/share/keyrings/nodesource.gpg', 'elevated'],
+  ['gpg --dearmor -o /etc/apt/keyrings/x.gpg', 'elevated'],
+  ['gpg --output /etc/apt/keyrings/x.gpg --dearmor', 'elevated'],
+  ['gpg --output=key.gpg --dearmor key.asc', 'modifies'],
+  ['gpg -o out.txt -d secret.gpg', 'modifies'],
+  ['gpg -d secret.gpg', 'readonly'],
+  ['gpg --list-keys', 'readonly'],
+  ['curl -fsSL https://x.sh/key | gpg --dearmor -o /usr/share/keyrings/x.gpg', 'elevated']
 ]);
 
 describe('analysis details', () => {

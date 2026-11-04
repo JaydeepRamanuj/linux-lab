@@ -1,0 +1,18 @@
+name: free
+title: How much memory is in use
+category: system
+level: everyday
+summary: Shows total, used and available memory (RAM) and swap. `available` is the number that matters.
+syntax: free [options]
+flags:
+  - { flag: "-h", meaning: "Human-readable sizes (Gi, Mi)." }
+  - { flag: "-s N", meaning: "Repeat every N seconds." }
+  - { flag: "-w", meaning: "Show buffers and cache in separate columns." }
+examples:
+  - { command: "free -h", explain: "Memory and swap at a glance.", severity: readonly }
+  - { command: "free -h -s 2", explain: "Watch it change every 2 seconds (Ctrl+C to stop).", severity: readonly }
+gotchas:
+  - "A small `free` number is normal: Linux fills spare RAM with disk cache and hands it back on demand. Look at `available`."
+  - "Heavy swap use plus low `available` is when things get slow. That's the time to find the memory hog."
+related: [top, htop, ps]
+scenarios: [cpu-ram-hog]

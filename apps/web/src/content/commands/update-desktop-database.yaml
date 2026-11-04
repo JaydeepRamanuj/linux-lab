@@ -10,5 +10,5 @@ examples:
   - { command: "update-desktop-database ~/.local/share/applications", explain: "Refresh your own menu entries; no sudo needed.", severity: modifies }
 gotchas:
   - "Most desktops notice new `.desktop` files on their own. If an entry still doesn't appear, check it with `desktop-file-validate`."
-related: [chmod]
+related: [chmod, xdg-open]
 scenarios: [appimage-install]

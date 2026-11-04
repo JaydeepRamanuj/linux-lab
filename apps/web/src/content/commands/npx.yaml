@@ -1,0 +1,22 @@
+name: npx
+title: Run a command from an npm package
+category: packages
+level: everyday
+summary: Runs a command that an npm package provides. It uses the project's `node_modules/.bin` first. If the command isn't installed anywhere, it offers to download the package with that name and run it.
+syntax: npx [options] <command> [args…]
+flags:
+  - { flag: "-y, --yes", meaning: "Download the package without asking. Agents use it so they don't get stuck at the prompt." }
+  - { flag: "--no", meaning: "Never download: fail if the command isn't already installed." }
+  - { flag: "-p, --package PKG", meaning: "Install PKG and run a command from it, for when the command and package names differ (`npx -p typescript tsc`)." }
+  - { flag: "PKG@VERSION", meaning: "Run a specific version, like `npx prettier@3 --check .` or `npx create-vite@latest`." }
+examples:
+  - { command: "npx tsc --noEmit", explain: "Type-check the project with its own TypeScript version.", severity: modifies }
+  - { command: "npx prettier --check .", explain: "List files that aren't formatted. `--write` fixes them.", severity: modifies }
+  - { command: "npx --no eslint .", explain: "Run the project's eslint, and fail instead of downloading one.", severity: modifies }
+  - { command: "npx create-vite@latest my-app", explain: "Download the newest project generator and run it once.", severity: modifies }
+gotchas:
+  - "The command and the package don't always share a name. `tsc` comes from `typescript`; the npm package called `tsc` is an unrelated, deprecated stub. Read the package name in the `Need to install the following packages` prompt."
+  - "`npx -y` with a typo downloads and runs whatever is published under the typo, with your permissions."
+  - "Downloaded packages go to a cache (`~/.npm/_npx`), not your project. `npm install -D` the tool if the project needs it every time."
+related: [npm, which]
+scenarios: [agent-cleanup]

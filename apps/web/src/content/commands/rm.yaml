@@ -16,8 +16,11 @@ examples:
   - { command: "rm -rf node_modules && npm install", explain: "Reinstall dependencies from scratch. node_modules can always be regenerated.", severity: modifies }
   - { command: "rm -I *.tmp", explain: "Delete temp files, with one confirmation if there are many.", severity: modifies }
   - { command: "rm -rf \"${BUILD_DIR:?}/\"", explain: "Delete a build folder from a variable, aborting if the variable is empty.", severity: modifies }
+  - { command: "echo rm -rf \"$OUT_DIR/\"", explain: "Dry run: print the command with the variable filled in, so you see the real path before deleting.", severity: readonly }
 gotchas:
   - "`rm -rf $DIR/` with an empty `DIR` becomes `rm -rf /`. Quote variables and use `${DIR:?}` so an empty value stops the command."
   - "A space in the wrong place matters: `rm -rf ./build /` deletes `./build` and then tries to delete everything."
+  - "Generated folders (`node_modules`, `dist`, `.next`, `coverage`) are safe to delete. `package-lock.json` isn't generated in the same sense: it pins versions, and deleting it changes what `npm install` picks."
   - "`-f` hides mistakes. If you aren't sure what a glob matches, run `ls` with the same pattern first."
-related: [find, mv, trash]
+related: [find, mv, ln, xargs]
+scenarios: [symlink-shortcut, find-exec-xargs, agent-cleanup]

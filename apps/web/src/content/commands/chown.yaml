@@ -11,7 +11,10 @@ flags:
 examples:
   - { command: "sudo chown -R $USER:$USER ./node_modules", explain: "Take back a folder that `sudo npm install` left owned by root.", severity: elevated }
   - { command: "ls -l package-lock.json", explain: "Check the owner first: it's the third column.", severity: readonly }
+  - { command: "find . ! -user \"$USER\"", explain: "List every file in this folder that isn't yours, before fixing it.", severity: readonly }
 gotchas:
   - "Files owned by root in your project usually mean a command ran with `sudo` by mistake. Fix the ownership, then stop using `sudo` for that tool."
   - "Never `chown -R` a system folder like `/usr` or `/etc`. Many programs check ownership and refuse to run when it's wrong."
-related: [chmod, sudo, ls]
+  - "Point `chown -R` at exactly the paths that are wrong, not at a parent folder or your whole home."
+related: [chmod, sudo, ls, find, stat]
+scenarios: [root-owned-files]
