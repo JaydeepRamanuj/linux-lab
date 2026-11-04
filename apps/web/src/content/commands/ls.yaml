@@ -19,4 +19,4 @@ gotchas:
   - "`ll` is an alias for `ls -alF` on Ubuntu, not a separate program."
   - "Don't parse `ls` output in scripts: file names with spaces break it. Use globs or `find` instead."
 related: [find, du, chmod]
-scenarios: [appimage-install, permission-denied-script]
+scenarios: [appimage-install, permission-denied-script, add-to-path, extract-archive, symlink-shortcut]

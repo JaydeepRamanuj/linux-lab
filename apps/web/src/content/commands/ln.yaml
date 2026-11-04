@@ -1,0 +1,23 @@
+name: ln
+title: Create links to files and folders
+category: files
+level: everyday
+summary: Creates a link. With `-s` it makes a symbolic link (symlink), a small file that points to another path, so one file or folder can be reached under a second name.
+syntax: ln -s TARGET LINK_NAME
+flags:
+  - { flag: "-s, --symbolic", meaning: "Make a symbolic link. Without it, `ln` makes a hard link, which can't point to folders or across drives." }
+  - { flag: "-f, --force", meaning: "Replace an existing file or link with that name." }
+  - { flag: "-n, --no-dereference", meaning: "If LINK_NAME is already a link to a folder, replace the link instead of creating a new one inside the folder." }
+  - { flag: "-r, --relative", meaning: "Store the target as a path relative to the link's location." }
+  - { flag: "-v, --verbose", meaning: "Print each link made." }
+examples:
+  - { command: "ln -s ~/projects/shellgyan/apps/web ~/web", explain: "A short name in your home folder for a deep project folder.", severity: modifies }
+  - { command: "ln -s /usr/bin/batcat ~/.local/bin/bat", explain: "Make a program callable under another name.", severity: modifies }
+  - { command: "ln -sfn ~/releases/v2 ~/current", explain: "Re-point an existing link in one step.", severity: modifies }
+gotchas:
+  - "The order is target first, then the new name, the same as `cp`. Getting it backwards gives \"File exists\" or a link in the wrong place."
+  - "Relative targets are resolved from the link's folder, not from where you ran `ln`."
+  - "To remove a link, `rm name` with no trailing slash. `rm -r name/` follows the link and deletes the target's contents."
+  - "`readlink -f name` prints where a link finally resolves to."
+related: [ls, rm, mkdir]
+scenarios: [symlink-shortcut]

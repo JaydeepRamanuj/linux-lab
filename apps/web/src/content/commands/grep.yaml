@@ -20,4 +20,4 @@ gotchas:
   - "`ps aux | grep x` also lists the grep itself. `pgrep -a x` avoids that."
   - "`rg` (ripgrep) does the same job faster and skips `.gitignore`d files automatically."
 related: [find, ps]
-scenarios: [command-chaining]
+scenarios: [command-chaining, add-to-path, command-not-found, persistent-alias]

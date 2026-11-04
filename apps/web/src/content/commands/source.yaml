@@ -10,4 +10,5 @@ examples:
 gotchas:
   - "Running the file as `./file` or `bash file` starts a new shell, so its `export`s vanish when it ends. That's why config files are sourced."
   - "Only source files you trust: they run with full access to your current shell."
-related: [which]
+related: [which, export, alias]
+scenarios: [add-to-path, persistent-alias]

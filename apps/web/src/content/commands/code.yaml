@@ -1,0 +1,21 @@
+name: code
+title: Open files and folders in VS Code
+category: shell
+level: everyday
+summary: VS Code's command-line launcher. Opens a folder as a workspace, or a file at a given line, in a new or existing window.
+syntax: code [options] [path…]
+flags:
+  - { flag: "-g, --goto FILE:LINE[:COL]", meaning: "Open the file with the cursor on that line." }
+  - { flag: "-r, --reuse-window", meaning: "Open in the last active window instead of a new one." }
+  - { flag: "-n, --new-window", meaning: "Always open a new window." }
+  - { flag: "-d, --diff A B", meaning: "Compare two files side by side." }
+  - { flag: "--install-extension ID", meaning: "Install an extension from the terminal." }
+examples:
+  - { command: "code .", explain: "Open the current folder as a workspace.", severity: readonly }
+  - { command: "code -g src/app.ts:42", explain: "Jump straight to line 42.", severity: readonly }
+  - { command: "code -d old.json new.json", explain: "See what changed between two files.", severity: readonly }
+gotchas:
+  - "`code: command not found`: on Linux the .deb, .rpm and snap installs add it; otherwise run \"Shell Command: Install 'code' command in PATH\" from the command palette."
+  - "On WSL, `code .` opens the Windows editor connected to your Linux files. That's expected."
+related: [xdg-open]
+scenarios: [open-from-terminal]

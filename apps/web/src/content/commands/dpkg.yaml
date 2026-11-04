@@ -17,4 +17,4 @@ examples:
 gotchas:
   - "`dpkg -i` doesn't install dependencies. Prefer `sudo apt install ./file.deb`."
 related: [apt]
-scenarios: [apt-lock]
+scenarios: [apt-lock, command-not-found]

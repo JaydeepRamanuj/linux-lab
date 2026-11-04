@@ -1,0 +1,20 @@
+name: export
+title: Set a variable for programs you start
+category: shell
+level: everyday
+summary: Sets a shell variable and marks it to be passed to every program started from this shell. Used for `PATH`, API keys and tool settings. It lasts until the shell exits.
+syntax: export NAME=value
+flags:
+  - { flag: "-n NAME", meaning: "Stop passing the variable to programs, but keep it in this shell." }
+  - { flag: "-p", meaning: "List every exported variable." }
+examples:
+  - { command: "export PATH=\"$HOME/.local/bin:$PATH\"", explain: "Put a folder at the front of PATH for this terminal.", severity: readonly }
+  - { command: "export EDITOR=nano", explain: "Tell git, crontab and others which editor to open.", severity: readonly }
+  - { command: "echo 'export EDITOR=nano' >> ~/.bashrc", explain: "Make it permanent: every new terminal runs `~/.bashrc`.", severity: elevated }
+gotchas:
+  - "No spaces around `=`. `export PATH = x` is an error."
+  - "It only affects this shell and programs it starts. Other open terminals, and the terminal you return to after a script ends, don't see it."
+  - "When changing `PATH`, always keep `:$PATH`. Without it you replace the whole list and ordinary commands stop being found."
+  - "A script can't export into the shell that ran it. To change your current shell, `source` the file instead of running it."
+related: [echo, source, which]
+scenarios: [add-to-path]

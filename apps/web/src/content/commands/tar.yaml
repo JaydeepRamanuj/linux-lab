@@ -1,0 +1,28 @@
+name: tar
+title: Pack and unpack .tar archives
+category: files
+level: everyday
+summary: Creates and extracts `.tar` archives, compressed or not (`.tar.gz`, `.tgz`, `.tar.xz`, `.tar.bz2`, `.tar.zst`). Can also list what's inside without unpacking.
+syntax: tar -x|-c|-t [options] -f ARCHIVE [files…]
+flags:
+  - { flag: "-t, --list", meaning: "List the contents. Changes nothing." }
+  - { flag: "-x, --extract", meaning: "Unpack the archive." }
+  - { flag: "-c, --create", meaning: "Create a new archive from the files you name." }
+  - { flag: "-f FILE", meaning: "The archive file to read or write. Put it last in a group like `-xzf`, since it takes the next word." }
+  - { flag: "-z", meaning: "gzip compression (`.gz`, `.tgz`)." }
+  - { flag: "-J", meaning: "xz compression (`.xz`)." }
+  - { flag: "-j", meaning: "bzip2 compression (`.bz2`)." }
+  - { flag: "-v, --verbose", meaning: "Print each file as it's processed." }
+  - { flag: "-C DIR", meaning: "Change into DIR first: extract into it, or archive paths relative to it." }
+  - { flag: "--strip-components=N", meaning: "Drop the first N folders from every path when extracting." }
+examples:
+  - { command: "tar -tzf app.tar.gz", explain: "Look inside before unpacking.", severity: readonly }
+  - { command: "tar -xf app.tar.gz -C ~/opt", explain: "Unpack into ~/opt. Modern tar detects the compression itself.", severity: modifies }
+  - { command: "tar -czf notes-backup.tar.gz notes/", explain: "Pack a folder into a compressed archive.", severity: modifies }
+gotchas:
+  - "Extracting overwrites existing files with the same name without asking."
+  - "Check with `-t` whether everything sits in one top-level folder. If not, extract into a new folder with `-C`."
+  - "`tar -czf` takes the archive name first and the files after it. `tar -czf notes/ backup.tar.gz` tries to create an archive called `notes/`."
+  - "`.zip` files need `unzip`, not tar."
+related: [unzip, mkdir, ls]
+scenarios: [extract-archive]

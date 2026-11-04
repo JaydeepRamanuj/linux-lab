@@ -14,4 +14,4 @@ examples:
 gotchas:
   - "Without `-p`, `mkdir a/b/c` fails if `a/b` doesn't exist yet."
 related: [ls, rm]
-scenarios: [appimage-install, command-chaining]
+scenarios: [appimage-install, command-chaining, extract-archive]

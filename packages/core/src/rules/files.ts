@@ -7,7 +7,7 @@ import type { Hit, Rule } from './types';
 const DEVICE = /^\/dev\/(sd|hd|vd|xvd|nvme|mmcblk|disk|md|dm-|loop|mapper\/)/;
 const HARMLESS_TARGET = /^(\/dev\/(null|stdout|stderr|tty|fd\/\d+)|&?-|&?\d+)$/;
 const SHELL_CONFIG =
-  /^(~\/(\.bashrc|\.zshrc|\.profile|\.bash_profile|\.bash_login|\.zprofile|\.zshenv|\.zlogin|\.config\/fish\/config\.fish|\.ssh(\/.*)?)|\/etc\/(profile|bash\.bashrc|environment|zsh\/zshrc))$/;
+  /^(~\/(\.bashrc|\.bash_aliases|\.zshrc|\.profile|\.bash_profile|\.bash_login|\.zprofile|\.zshenv|\.zlogin|\.config\/fish\/config\.fish|\.ssh(\/.*)?)|\/etc\/(profile|bash\.bashrc|environment|zsh\/zshrc))$/;
 const PROJECT_REGENERABLE = /(^|\/)(node_modules|dist|build|\.next|\.nuxt|\.astro|\.turbo|\.cache|target|coverage|__pycache__|\.venv|venv)$/;
 
 const where = (kind: 'root' | 'home' | 'system', path: string) =>

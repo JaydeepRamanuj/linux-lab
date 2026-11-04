@@ -138,6 +138,7 @@ table('writes to system files and shell config', [
   ['echo "127.0.0.1 x" | sudo tee -a /etc/hosts', 'elevated'],
   ['echo \'export PATH="$HOME/bin:$PATH"\' >> ~/.bashrc', 'elevated'],
   ['echo x >> ~/.zshrc', 'elevated'],
+  ["echo \"alias gs='git status'\" >> ~/.bash_aliases", 'elevated'],
   ['cat key.pub >> ~/.ssh/authorized_keys', 'elevated'],
   ["sed -i 's/a/b/' ~/.bashrc", 'elevated'],
   ["sed -i 's/a/b/' /etc/fstab", 'elevated'],
@@ -227,7 +228,22 @@ table('read-only commands', [
   ['command -v rg', 'readonly'],
   ['echo $PATH', 'readonly'],
   ['cd ~/projects', 'readonly'],
-  ['export PATH="$HOME/.local/bin:$PATH"', 'readonly']
+  ['export PATH="$HOME/.local/bin:$PATH"', 'readonly'],
+  ["alias ll='ls -alF'", 'readonly'],
+  ['unalias gs', 'readonly'],
+  ['tar -tzf project.tar.gz', 'readonly'],
+  ['tar tzf project.tar.gz', 'readonly'],
+  ['tar --list -f project.tar.gz | head', 'readonly'],
+  ['unzip -l photos.zip', 'readonly']
+]);
+
+table('archives', [
+  ['tar -xzf project.tar.gz', 'modifies'],
+  ['tar xzf project.tar.gz', 'modifies'],
+  ['tar -xf project.tar.gz -C ~/src', 'modifies'],
+  ['tar -czf backup.tar.gz notes/', 'modifies'],
+  ['unzip photos.zip -d photos', 'modifies'],
+  ['unzip -o photos.zip', 'modifies']
 ]);
 
 table('find', [

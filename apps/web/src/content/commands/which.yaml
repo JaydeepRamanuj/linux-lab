@@ -13,4 +13,5 @@ examples:
 gotchas:
   - "No output means the name isn't on `PATH`: not installed, or installed somewhere `PATH` doesn't include."
   - "`command -v name` is the portable version to use in scripts."
-related: [source]
+related: [source, type, command]
+scenarios: [add-to-path, command-not-found]

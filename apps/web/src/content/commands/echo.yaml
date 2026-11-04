@@ -16,5 +16,5 @@ gotchas:
   - "`echo` itself never changes anything, but `> file` after it overwrites that file. Check for `>` versus `>>` before running a line someone else wrote."
   - "Without quotes, the shell splits and expands first: `echo *.txt` prints matching file names, and runs of spaces collapse to one."
   - "`-e` and `-n` behave differently between shells (bash, dash, zsh). In scripts, `printf '%s\\n' \"$x\"` is the portable choice."
-related: [source, which]
-scenarios: [command-chaining]
+related: [source, which, export, tr]
+scenarios: [command-chaining, add-to-path, command-not-found, persistent-alias]

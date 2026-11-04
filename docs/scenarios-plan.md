@@ -36,16 +36,18 @@ Do this first, so that 30 new files can't quietly break things.
 
 | # | Slug | Scenario | Severity |
 |---|---|---|---|
-| 6 | `add-to-path` | Add a folder to PATH permanently | modifies |
+| 6 | `add-to-path` | Add a folder to PATH permanently | elevated |
 | 7 | `command-not-found` | "command not found": where is this program? | readonly |
 | 8 | `open-from-terminal` | Open the current folder in the file manager or editor | readonly |
 | 9 | `symlink-shortcut` | Make a shortcut with a symlink | modifies |
-| 10 | `persistent-alias` | Create a shell alias that sticks | modifies |
+| 10 | `persistent-alias` | Create a shell alias that sticks | elevated |
 | 11 | `extract-archive` | Unpack a .tar.gz / .zip | modifies |
 
 **Already done in Phase 0:** `echo` (add the Phase 1 scenarios that use it to its `scenarios:`).
-**New command pages:** `export`, `type`, `command`, `xdg-open`, `ln`, `alias`, `tar`, `unzip`.
+**New command pages:** `export`, `type`, `command`, `xdg-open`, `ln`, `alias`, `tar`, `unzip`, plus `tr` and `code` (used by the scenarios' steps).
 **Existing pages to update:** `which`, `source`.
+
+**Done.** #6 and #10 are elevated: they append to `~/.bashrc` / `~/.bash_aliases`, which run in every new terminal. See `docs/handoff/2026-11-04-scenarios-phase-1.md`.
 
 ## Phase 2: Processes & Ports (5 scenarios)
 
