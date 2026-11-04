@@ -66,6 +66,9 @@ function tokenClass(tok: string, prev: string | null): string | null {
 }
 
 // Syntax-tint a shell command: programs in cyan, operators violet, placeholders muted.
+/** One line to show where a command must fit on one row (cards, chips). A heredoc shows its first line and `…`. */
+export const commandPreview = (command: string) => (command.includes('\n') ? `${command.split('\n')[0]} …` : command);
+
 export function CommandText({ command, className = '' }: { command: string; className?: string }) {
   const parts: ReactNode[] = [];
   let prevWord: string | null = null;
@@ -98,11 +101,16 @@ export function CommandWell({
   className?: string;
 }) {
   const big = size === 'lg';
+  // A heredoc spans several lines: keep its line breaks (and scroll sideways) instead of joining it into one line.
+  const multiline = command.includes('\n');
+  const wrap = multiline
+    ? big ? 'whitespace-pre-wrap break-all sm:whitespace-pre sm:break-normal' : 'whitespace-pre'
+    : big ? 'whitespace-pre-wrap break-all sm:whitespace-nowrap sm:break-normal' : 'whitespace-nowrap';
   return (
-    <div className={`well flex items-center gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
-      <div className={`flex items-center gap-3 min-w-0 flex-1 overflow-x-auto no-scrollbar ${big ? 'text-[15px]' : 'text-[13px]'}`}>
+    <div className={`well flex ${multiline ? 'items-start' : 'items-center'} gap-3 ${big ? 'p-4 sm:p-5' : 'px-4 py-3'} ${className}`}>
+      <div className={`flex ${multiline ? 'items-start' : 'items-center'} gap-3 min-w-0 flex-1 overflow-x-auto no-scrollbar ${big ? 'text-[15px]' : 'text-[13px]'}`}>
         <span className="font-mono text-secondary select-none">$</span>
-        <CommandText command={command} className={big ? 'whitespace-pre-wrap break-all sm:whitespace-nowrap sm:break-normal' : 'whitespace-nowrap'} />
+        <CommandText command={command} className={wrap} />
       </div>
       <CopyButton text={command} label={label} compact={!label && !big} />
     </div>

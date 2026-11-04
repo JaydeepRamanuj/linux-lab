@@ -11,7 +11,9 @@ flags:
   - { flag: "-mtime N", meaning: "Modified N days ago; `+7` means more than 7 days ago." }
   - { flag: "-size N", meaning: "By size, like `+100M` for files over 100 MB." }
   - { flag: "-maxdepth N", meaning: "Don't descend more than N levels." }
-  - { flag: "-exec CMD {} ;", meaning: 'Run a command on each match; `{}` is the file. End with `\;` (once per file) or `+` (batched).' }
+  - { flag: "-exec CMD {} \\;", meaning: "Run CMD once per match, with `{}` replaced by the file. The `\\;` ends the command; the backslash stops the shell from eating the `;`." }
+  - { flag: "-exec CMD {} +", meaning: "Run CMD once with as many matches as fit on one command line. Much faster, and what you want for `rm`, `grep`, `chmod`." }
+  - { flag: "-ok CMD {} \\;", meaning: "Like `-exec … \\;`, but asks y/n before each file." }
   - { flag: "-delete", meaning: "Delete every match. No confirmation." }
   - { flag: "-print0", meaning: "Separate results with a NUL byte, for `xargs -0`; safe with spaces in names." }
   - { flag: "-user NAME", meaning: "Owned by NAME. `! -user \"$USER\"` finds files that aren't yours." }
@@ -21,10 +23,14 @@ examples:
   - { command: "find . -name \"*.log\" -mtime +7 -delete", explain: "Delete log files older than a week.", severity: modifies }
   - { command: "find ~ -iname \"*invoice*\"", explain: "Every file with \"invoice\" in its name, any case.", severity: readonly }
   - { command: "find ~ -type f -size +1G -exec ls -lh {} +", explain: "Files over 1 GB, with sizes. `-exec ls` only lists them.", severity: readonly }
+  - { command: "find . -name \"*.orig\" -exec echo rm {} +", explain: "Dry run: print the `rm` command instead of running it.", severity: readonly }
+  - { command: "find . -name \"*.orig\" -print0 | xargs -0 rm", explain: "The same delete through `xargs`, safe with spaces in names.", severity: modifies }
 gotchas:
   - "Run the command without `-delete` first and check the list. `-delete` acts on every line you would have seen."
   - "Put `-delete` last. `find . -delete -name x` deletes everything, because the tests are evaluated in order."
+  - "`find … | xargs rm` breaks on names with spaces. Use `-exec rm {} +`, `-delete`, or `-print0 | xargs -0`."
+  - "Forgetting `\\;` or `+` at the end fails with a `missing argument to -exec` error."
   - "Quote patterns (`\"*.log\"`), or the shell expands them before `find` sees them."
   - "Unquoted, `find ~ -name *invoice*` is expanded by the shell first. It silently searches for one exact name, or fails with `paths must precede expression`."
-related: [grep, ls, rm, rg, chown]
-scenarios: [disk-full, find-files, root-owned-files]
+related: [grep, ls, rm, rg, chown, xargs]
+scenarios: [disk-full, find-files, root-owned-files, find-exec-xargs]

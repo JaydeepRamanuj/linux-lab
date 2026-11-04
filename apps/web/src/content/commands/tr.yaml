@@ -15,5 +15,5 @@ examples:
 gotchas:
   - "`tr` doesn't take file names: feed it with a pipe or `<`."
   - "It replaces characters, not strings. `tr 'cat' 'dog'` turns every c into d, a into o and t into g. Use `sed` for words."
-related: [echo, grep]
+related: [echo, grep, sed]
 scenarios: [add-to-path, command-not-found]

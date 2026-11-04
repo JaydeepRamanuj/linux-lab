@@ -289,7 +289,48 @@ table('find', [
   ['find . -name "*.log" -exec grep -l ERROR {} +', 'readonly'],
   ['find . -name "*.txt" -exec sed -i s/a/b/ {} +', 'modifies'],
   ['find . -exec ls {} + -exec chmod 644 {} +', 'modifies'],
-  ['find . -exec ls {} + -exec rm {} +', 'modifies']
+  // No test before the delete: everything under the start folder goes, like `rm -r`.
+  ['find . -exec ls {} + -exec rm {} +', 'elevated'],
+  ['find . -delete', 'elevated'],
+  ['find . -delete -name "*.tmp"', 'elevated'],
+  ['find .. -maxdepth 1 -delete', 'elevated'],
+  ['find /tmp/scratch -delete', 'elevated'],
+  ['find . -exec rm -rf {} +', 'elevated'],
+  ['find build -delete', 'modifies'],
+  ['find . -name "*.tmp" -delete', 'modifies'],
+  ['find . -maxdepth 1 -type f -delete', 'modifies'],
+  ['find . ! -name keep.txt -delete', 'modifies'],
+  ['find . -name "*.orig" -exec rm {} +', 'modifies'],
+  ['find . -name node_modules -type d -prune -exec rm -rf {} +', 'modifies']
+]);
+
+table('apt source files', [
+  ["echo 'deb https://repo.example.com/apt stable main' | sudo tee /etc/apt/sources.list.d/pixelpad.list", 'elevated'],
+  ['sudo tee /etc/apt/keyrings/pixelpad.asc < key.asc', 'elevated'],
+  ['echo x | sudo tee /etc/apt/sources.list', 'destructive'],
+  ['echo x | sudo tee /etc/apt/sources.list.d/ubuntu.sources', 'destructive'],
+  ['echo x | sudo tee /etc/fstab', 'destructive'],
+  ['echo x | sudo tee /etc/apt/apt.conf.d/99local', 'destructive']
+]);
+
+table('sort -o and awk', [
+  ['sort -o names.txt names.txt', 'modifies'],
+  ['sort -u -o names.txt names.txt', 'modifies'],
+  ['sort --output=names.txt names.txt', 'modifies'],
+  ['sort -o ~/.bashrc ~/.bashrc', 'elevated'],
+  ['sort names.txt', 'readonly'],
+  ["awk '{print $2}' access.log", 'readonly'],
+  ["awk -F, '$3 > 100 {print $1}' sales.csv", 'readonly'],
+  ["awk '{print \"a -> b\"}' f", 'readonly'],
+  ["awk '{ if ($2 > 5) print $1 }' f", 'readonly'],
+  ["awk '{print > \"out.txt\"}' f", 'modifies'],
+  ["awk '{print $1 >> $2\".txt\"}' f", 'modifies'],
+  ["awk '{print $0 > \"/etc/hosts\"}' f", 'destructive'],
+  ["awk '{print >> \"/dev/stderr\"}' f", 'readonly'],
+  ["awk '{system(\"rm \" $1)}' list.txt", 'modifies'],
+  ["awk '{print | \"sh\"}' cmds.txt", 'modifies'],
+  ["awk -f report.awk data.txt", 'modifies'],
+  ["awk -i inplace '{print $1}' f", 'modifies']
 ]);
 
 describe('analysis details', () => {

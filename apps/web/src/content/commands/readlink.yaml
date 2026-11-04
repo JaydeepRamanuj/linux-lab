@@ -17,4 +17,4 @@ gotchas:
   - "`realpath` does the same as `readlink -f` and is easier to remember."
   - "Prints nothing (and exits 1) for a path that isn't a symlink, unless you add `-f`."
 related: [ln, ls, which]
-scenarios: [which-package]
+scenarios: [which-package, expansion-quoting, heredocs]

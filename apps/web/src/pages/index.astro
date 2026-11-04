@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import { ArrowRight, Zap, Shapes, BookOpen, ShieldAlert } from 'lucide-react';
 import Base from '../layouts/Base.astro';
 import SearchBar from '../components/search/SearchBar';
-import { CategoryIcon, CommandText, CopyButton } from '../components/ui/ui';
+import { CategoryIcon, CommandText, CopyButton, commandPreview } from '../components/ui/ui';
 import { ACCENTS, SEVERITY, SEVERITY_LEVELS } from '../lib/theme';
 import { MODULES } from '../data/modules';
 
@@ -117,7 +117,7 @@ const total = scenarios.length;
           scenarios.map((s) => (
             <div class="group flex items-center rounded-lg bg-surface-container border border-white/6 hover:border-primary-container/40 transition">
               <a href={`/s/${s.id}`} class="pl-3 pr-1 py-2 text-[12px]" title={s.data.title}>
-                <CommandText command={s.data.primaryCommand} />
+                <CommandText command={commandPreview(s.data.primaryCommand)} />
               </a>
               <CopyButton text={s.data.primaryCommand} compact className="mr-1" client:visible />
             </div>

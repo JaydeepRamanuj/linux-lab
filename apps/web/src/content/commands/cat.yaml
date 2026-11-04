@@ -1,0 +1,22 @@
+name: cat
+title: Print a file, or join files
+category: files
+level: everyday
+summary: Prints the contents of files to the terminal, one after another. With `>` it writes them into a new file, and with a heredoc it writes text you type.
+syntax: cat [options] [file…]
+flags:
+  - { flag: "-n", meaning: "Number every line." }
+  - { flag: "-A", meaning: "Show hidden characters: `$` at each line end, `^I` for tabs, `^M` for Windows line endings." }
+  - { flag: "-s", meaning: "Squeeze runs of blank lines into one." }
+examples:
+  - { command: "cat .env.example", explain: "Print a short file.", severity: readonly }
+  - { command: "cat -A deploy.sh | head", explain: "Check a script for stray tabs or `^M` (Windows line endings).", severity: readonly }
+  - { command: "cat part1.csv part2.csv > all.csv", explain: "Join two files into a new one. `>` replaces `all.csv` if it exists.", severity: modifies }
+  - { command: "cat <<'EOF' > .env.example\nDATABASE_URL=\nEOF", explain: "Write the lines between the markers into a file (a heredoc).", severity: modifies }
+gotchas:
+  - "`cat` itself never changes a file. When a line with `cat` writes something, it's the `>` or `>>` after it."
+  - "For anything longer than a screen, use `less`: it scrolls and searches. `cat` dumps everything at once."
+  - "`cat file | grep x` works, but `grep x file` does the same without the extra program."
+  - "Plain `cat` with no file waits for you to type. Press Ctrl+D to finish, or Ctrl+C to quit."
+related: [less, head, tail, tee, echo]
+scenarios: [redirection, expansion-quoting, heredocs]

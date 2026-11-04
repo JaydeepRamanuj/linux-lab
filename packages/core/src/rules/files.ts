@@ -23,6 +23,16 @@ export function writeTargetHit(target: Word, mode: 'overwrite' | 'append', via: 
       touches: [p.path]
     });
   }
+  // A drop-in apt source, key or pin: adding one is how you add a repo, and a bad one breaks `apt update`, not booting.
+  // Replacing the distro's own sources (`sources.list`, `ubuntu.sources`, `debian.sources`) stays destructive below.
+  if (
+    /^\/etc\/apt\/(sources\.list\.d|preferences\.d|keyrings|trusted\.gpg\.d)\/[^/]+$/.test(p.path) &&
+    !/\/(ubuntu|debian)\.sources$/.test(p.path)
+  ) {
+    return hit('elevated', `${via} writes ${p.path}, which changes where apt installs software from and which signing keys it trusts.`, {
+      touches: [p.path]
+    });
+  }
   if (/^\/(etc|boot)(\/|$)/.test(p.path) && mode === 'overwrite') {
     return hit('destructive', `${via} replaces the system file ${p.path}. A wrong write here can stop the machine from booting or logging in.`, {
       touches: [p.path]
@@ -113,6 +123,9 @@ const FIND_EXEC_READONLY = new Set([
   'md5sum', 'sha1sum', 'sha256sum', 'sha512sum', 'cksum', 'basename', 'dirname', 'realpath', 'readlink', 'test', '['
 ]);
 
+// Expressions that select files. Anything else before `-delete` (`-maxdepth 2`, `-depth`, `-print`, `(`) selects nothing.
+const FIND_TEST = /^-(i?name|i?path|i?wholename|i?regex|i?lname|type|xtype|size|empty|[acm](time|min|newer)|newer\w*|user|group|uid|gid|nouser|nogroup|perm|links|inum|samefile|readable|writable|executable|fstype|context|used)$/;
+
 const find: Rule = {
   id: 'find-delete',
   check(c) {
@@ -127,6 +140,20 @@ const find: Rule = {
     if (!deletes) return hit('modifies', `Runs \`${execProg}\` on every file it finds.`);
     const critical = target.map(criticalPath).find(Boolean);
     if (critical) return hit('destructive', `Deletes every matching file under ${where(critical, target[0]!.path)}.`);
+    // `find . -delete` or `find . -delete -name x`: no test comes before the delete, so every file under the start folder
+    // matches. That's `rm -r` on the start folder, and gets the same verdict as `rm -r .` or `rm -r ~/somewhere`.
+    const firstDelete = values.findIndex((v, i) => v === '-delete' || (/^-(exec|execdir|ok|okdir)$/.test(values[i - 1] ?? '') && /^(rm|shred|unlink)$/.test(v)));
+    const unfiltered = !values.slice(roots.length, firstDelete).some((v) => FIND_TEST.test(v));
+    if (unfiltered) {
+      const wide = target.find((t) => t.path === '.' || t.path === '..' || isOutsideProject(t));
+      const shown = target.map((t) => t.path).join(', ');
+      if (wide) {
+        return hit('elevated', `No test comes before the delete, so it deletes everything under ${wide.path === '.' ? 'the current folder' : wide.path === '..' ? 'the parent folder' : wide.path}. Tests like \`-name\` must come before \`-delete\`.`, {
+          touches: target.map((t) => t.path)
+        });
+      }
+      return hit('modifies', `No test comes before the delete, so it deletes everything under ${shown}.`, { touches: target.map((t) => t.path) });
+    }
     return hit('modifies', `Deletes every matching file under ${target.map((t) => t.path).join(', ')}.`, { touches: target.map((t) => t.path) });
   }
 };
@@ -243,6 +270,60 @@ const inPlaceEdit: Rule = {
   }
 };
 
+// `sort -o FILE` writes its output to FILE (often the input itself, to sort in place).
+const sortOutput: Rule = {
+  id: 'sort-output',
+  check(c) {
+    if (c.program !== 'sort') return null;
+    const argv = c.argv.map((w) => w.value);
+    const hits: Hit[] = [];
+    argv.forEach((v, i) => {
+      let target: Word | undefined;
+      if (v === '-o') target = c.argv[i + 1];
+      else if (/^-o./.test(v)) target = { ...c.argv[i]!, value: v.slice(2) };
+      else if (v.startsWith('--output=')) target = { ...c.argv[i]!, value: v.slice('--output='.length) };
+      else if (/^-[a-zA-Z]*o$/.test(v) && !v.startsWith('--')) target = c.argv[i + 1];
+      if (!target) return;
+      const h = writeTargetHit(target, 'overwrite', '`sort -o`');
+      if (h) hits.push(h);
+    });
+    return hits;
+  }
+};
+
+// awk is read-only unless its program writes a file (`print > "out"`), pipes to or runs a shell command
+// (`print | "cmd"`, `system(…)`, `"cmd" | getline`), or a script file (`-f`) does who knows what.
+const awkWrites: Rule = {
+  id: 'awk-writes',
+  check(c) {
+    if (!c.program || !/^[gmn]?awk$/.test(c.program)) return null;
+    if (c.argv.some((w) => w.value === '-f' || w.value.startsWith('--file'))) return hit('modifies', 'Runs an awk script from a file, which can write files or run commands.');
+    const hits: Hit[] = [];
+    for (const w of c.operands) {
+      const prog = w.value;
+      // Blank out string contents so `print "a -> b"` isn't read as a redirection; offsets stay the same.
+      const code = prog.replace(/"(?:[^"\\]|\\.)*"/g, (m) => `"${'_'.repeat(m.length - 2)}"`);
+      // Within one statement, `>` after `print`/`printf` is always a redirection (comparisons there need parentheses).
+      const redirect = /\bprintf?\b[^;{}\n]*?(>>?)\s*("[^"]*"|[^\s;{}]+)/.exec(code);
+      if (redirect) {
+        const start = redirect.index + redirect[0].length - redirect[2]!.length;
+        const raw = prog.slice(start, start + redirect[2]!.length);
+        const via = `awk's \`print ${redirect[1]}\``;
+        const mode = redirect[1] === '>>' ? 'append' : 'overwrite';
+        // A quoted name is a fixed file and gets the same verdict as `>` to it; anything else is computed per line.
+        const h = /^"[^"]*"$/.test(raw)
+          ? writeTargetHit({ ...w, raw, value: raw.slice(1, -1), vars: [], unquotedVar: false, substitution: false, startsWithExpansion: false }, mode, via)
+          : hit('modifies', `${via} writes to files named by \`${raw}\`, worked out line by line.`);
+        if (h) hits.push(h);
+      }
+      if (/\bsystem\s*\(/.test(code) || /\bprintf?\b[^;{}\n]*?\|/.test(code) || /\|\s*getline\b/.test(code)) {
+        hits.push(hit('modifies', 'The awk program runs shell commands (`system()` or a pipe), which can do anything you can.'));
+      }
+    }
+    return hits;
+  }
+};
+
 const truncate: Rule = {
   id: 'truncate',
   check(c) {
@@ -251,7 +332,7 @@ const truncate: Rule = {
   }
 };
 
-export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, truncate];
+export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, sortOutput, awkWrites, truncate];
 
 export const isWrite = (c: NormalizedCommand) =>
   c.cmd.redirects.some((r) => r.target && />/.test(r.op) && !HARMLESS_TARGET.test(r.target.value));

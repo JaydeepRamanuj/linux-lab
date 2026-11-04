@@ -17,5 +17,5 @@ gotchas:
   - "Ctrl+C stops `tail`, not the program writing the log."
   - "For system services, `journalctl -f -u name` is the equivalent of `tail -f`."
   - "With `-f`, a rotated log goes quiet: `tail` keeps watching the renamed file. `-F` follows the name instead."
-related: [nohup, grep, head, less]
+related: [nohup, grep, head, less, tee]
 scenarios: [keep-running, watch-log]

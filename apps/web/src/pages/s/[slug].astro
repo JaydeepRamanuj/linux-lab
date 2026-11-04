@@ -9,7 +9,7 @@ import Callout from '../../components/scenario/Callout.astro';
 import AnatomyBlock from '../../components/anatomy/AnatomyBlock.astro';
 import StepWalkthrough from '../../components/walkthrough/StepWalkthrough';
 import TerminalReplay from '../../components/replay/TerminalReplay';
-import { SeverityBadge, CommandWell, Prose, CategoryIcon } from '../../components/ui/ui';
+import { SeverityBadge, CommandWell, Prose, CategoryIcon, commandPreview } from '../../components/ui/ui';
 import { ACCENTS, SEVERITY } from '../../lib/theme';
 import { moduleById } from '../../data/modules';
 import { buildAnatomy } from '../../lib/anatomy';
@@ -41,7 +41,7 @@ const relatedCommands = commands.filter((c) => usedPrograms.has(c.data.name) || 
 const number = String(s.number).padStart(2, '0');
 ---
 
-<Base title={s.title} description={`${s.quote} — step-by-step fix: ${s.primaryCommand}`} current="scenarios">
+<Base title={s.title} description={`${s.quote} — step-by-step fix: ${commandPreview(s.primaryCommand)}`} current="scenarios">
   <div class="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8 sm:gap-10">
     <Breadcrumbs items={[{ label: module.name, href: `/m/${module.id}` }, { label: `#${number}: ${s.title}` }]} back={{ href: `/m/${module.id}`, label: 'Back to module' }} />
 

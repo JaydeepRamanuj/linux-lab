@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import { Search as SearchIcon, CornerDownLeft, X, Terminal } from 'lucide-react';
-import { SeverityBadge } from '../ui/ui';
+import { SeverityBadge, commandPreview } from '../ui/ui';
 import type { SearchItem } from '../../lib/searchTypes';
 
 const MAX_RESULTS = 8;
@@ -193,7 +193,7 @@ export default function SearchBar({ variant = 'header', hotkey = false }: { vari
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-on-surface truncate">{item.title}</div>
-                          <div className="text-xs text-outline truncate font-mono mt-0.5">{item.command}</div>
+                          <div className="text-xs text-outline truncate font-mono mt-0.5">{commandPreview(item.command)}</div>
                         </div>
                         {active ? (
                           <CornerDownLeft className="h-3.5 w-3.5 text-outline shrink-0" />

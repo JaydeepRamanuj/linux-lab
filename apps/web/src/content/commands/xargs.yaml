@@ -1,0 +1,26 @@
+name: xargs
+title: Turn a list into command arguments
+category: shell
+level: intermediate
+summary: Reads a list of words or file names from a pipe and runs a command with them as arguments, in as few runs as possible. It's how `find` or `grep -l` output gets handed to `rm`, `sed` or `grep`.
+syntax: command | xargs [options] program [args…]
+flags:
+  - { flag: "-0, --null", meaning: "Items are separated by NUL bytes, as `find -print0` and `grep -lZ` write them. The only form that's safe with spaces in names." }
+  - { flag: "-r, --no-run-if-empty", meaning: "Don't run the command at all when the list is empty." }
+  - { flag: "-n N", meaning: "At most N arguments per run. `-n1` runs the command once per item." }
+  - { flag: "-I{}", meaning: "Run once per item and put it where `{}` is, like `xargs -I{} cp {} backup/`." }
+  - { flag: "-p", meaning: "Show each command and ask before running it." }
+  - { flag: "-t", meaning: "Print each command before running it." }
+  - { flag: "-P N", meaning: "Run up to N commands at once." }
+examples:
+  - { command: "find . -name \"*.orig\" -print0 | xargs -0 rm", explain: "Delete every `.orig` file, spaces in names included.", severity: modifies }
+  - { command: "find src -name \"*.tsx\" -print0 | xargs -0 grep -l \"fetchUser\"", explain: "Which components mention `fetchUser`.", severity: readonly }
+  - { command: "grep -rl \"localhost:5432\" src | xargs sed -i 's/localhost:5432/db:5432/g'", explain: "Make the same edit in every file that needs it.", severity: modifies }
+  - { command: "find . -name \"*.orig\" -print0 | xargs -0 -n1 echo rm", explain: "Dry run: print the commands instead of running them.", severity: readonly }
+gotchas:
+  - "Without `-0`, xargs splits on spaces and newlines, so `Order Summary.tsx` becomes two arguments, `Order` and `Summary.tsx`. Pair `find -print0` with `xargs -0`."
+  - "When the list is empty, GNU xargs still runs the command once with no arguments: `rm: missing operand`. Add `-r` to skip it."
+  - "Put `echo` before the command (`xargs echo rm`) to see what would run."
+  - "Exit code 123 means at least one of the runs failed."
+related: [find, grep, rm, sed]
+scenarios: [find-exec-xargs, sed-awk]

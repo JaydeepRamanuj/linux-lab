@@ -1,0 +1,29 @@
+name: sed
+title: Find and replace in text
+category: text
+level: intermediate
+summary: A stream editor. It reads text line by line, applies a small script (usually `s/old/new/`) and prints the result. With `-i` it writes the result back into the file instead.
+syntax: sed [options] 'script' [file…]
+flags:
+  - { flag: "s/OLD/NEW/", meaning: "Replace the first match of OLD on each line with NEW. OLD is a regular expression." }
+  - { flag: "s/OLD/NEW/g", meaning: "Replace every match on the line, not just the first." }
+  - { flag: "-i", meaning: "Edit the file in place. No backup, no undo." }
+  - { flag: "-i.bak", meaning: "Edit in place, and keep the original as `file.bak`." }
+  - { flag: "-n 'X,Yp'", meaning: "Print only lines X to Y, like `sed -n '20,30p' app.log`." }
+  - { flag: "'/PATTERN/d'", meaning: "Delete the lines that match." }
+  - { flag: "-E", meaning: "Extended regex: `+`, `?`, `|` and `()` without backslashes." }
+examples:
+  - { command: "sed 's/localhost:5432/db:5432/g' .env", explain: "Preview the change. Nothing is written.", severity: readonly }
+  - { command: "sed -i.bak 's/localhost:5432/db:5432/g' .env", explain: "Make the change, keeping `.env.bak` as a backup.", severity: modifies }
+  - { command: "sed 's|/usr/local/bin|/opt/node/bin|' paths.txt", explain: "Any character can be the separator. `|` saves escaping every `/` in a path.", severity: readonly }
+  - { command: "sed -n '2,3p' logs/app.log", explain: "Print lines 2 and 3 only.", severity: readonly }
+  - { command: "sed '/^STRIPE/d' .env", explain: "Print the file without the lines that start with `STRIPE`.", severity: readonly }
+gotchas:
+  - "Run it without `-i` first. The output is exactly what `-i` would write."
+  - "The pattern is a regex: `.` matches any character, so `s/1.0/2.0/` also turns `100` into `2.0`. Escape it as `1\\.0`."
+  - "A `/` inside the pattern ends it early: `s/usr/local/opt/` fails with `unknown option to 's'`. Use another separator: `s|usr/local|opt|`."
+  - "`&` in the replacement means \"the matched text\". Write `\\&` for a literal ampersand."
+  - "macOS needs `sed -i '' …`. GNU sed on Linux reads that `''` as the script and then can't find a file called `s/…/…/`. On Linux write `-i` or `-i.bak`, with no space."
+  - "Use single quotes around the script, so the shell leaves `$` and `\\` alone."
+related: [awk, grep, tr, xargs]
+scenarios: [sed-awk]

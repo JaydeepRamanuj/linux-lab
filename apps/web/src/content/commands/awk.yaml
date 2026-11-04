@@ -1,0 +1,29 @@
+name: awk
+title: Pick columns out of text
+category: text
+level: intermediate
+summary: Splits each line into fields (by spaces, or a separator you choose) and runs a small program on them. Mostly used to print one column, or the lines where a column has some value.
+syntax: awk [-F SEP] 'pattern { action }' [file…]
+flags:
+  - { flag: "'{print $2}'", meaning: "Print the second field of every line. `$1` is the first, `$0` the whole line, `$NF` the last." }
+  - { flag: "-F SEP", meaning: "Split on SEP instead of spaces, like `-F=` for `.env` files or `-F:` for `/etc/passwd`." }
+  - { flag: "'$2 == \"ERROR\"'", meaning: "A pattern: only lines whose second field is `ERROR`." }
+  - { flag: "'NR > 1'", meaning: "Skip the first line (a header). `NR` is the line number." }
+  - { flag: "'{s += $3} END {print s}'", meaning: "Add up a column and print the total at the end." }
+examples:
+  - { command: "awk '{print $2}' logs/app.log", explain: "The second column of a log: the level.", severity: readonly }
+  - { command: "awk '$2 == \"ERROR\" {print $1, $4}' logs/app.log", explain: "Time and path of each error.", severity: readonly }
+  - { command: "awk -F= '{print $1}' .env", explain: "The names of the variables in `.env`, without their values.", severity: readonly }
+  - { command: "ps aux | awk '{print $2, $11}'", explain: "PID and program of every process.", severity: readonly }
+gotchas:
+  - "Always single-quote the program. In double quotes the shell replaces `$2` with its own (usually empty) variable before awk sees it."
+  - "Fields are split on runs of spaces, so `INFO  GET` (two spaces) still gives `GET` as `$3`. With `-F`, every separator counts: `a,,b` has an empty `$2`."
+  - "Ubuntu's default `awk` is `mawk`. It's fast but has no `-i inplace`; `sudo apt install gawk` if a guide needs GNU awk features."
+  - "awk can write files (`print > \"out.txt\"`) and run commands (`system()`). If an agent's awk program contains those, read it as a write."
+distrosTitle: Get GNU awk
+distros:
+  apt: sudo apt install gawk
+  dnf: "Already installed: Fedora's awk is gawk"
+  pacman: "Already installed: Arch's awk is gawk"
+related: [sed, grep, sort, ps]
+scenarios: [sed-awk]

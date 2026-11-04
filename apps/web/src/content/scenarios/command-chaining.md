@@ -90,7 +90,7 @@ avoid:
   - "Read a chain left to right, and for each operator ask whether the previous command succeeded."
   - "`echo $?` prints the exit code of the last command: `0` means success, anything else means failure."
   - "Use `set -e` at the top of scripts to stop on the first failing command."
-related: [port-in-use]
+related: [port-in-use, redirection, expansion-quoting]
 anatomy:
   '"failed"': "The text to print. Quoted, so it's passed as one argument."
 ---

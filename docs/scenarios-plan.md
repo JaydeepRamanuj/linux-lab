@@ -101,12 +101,14 @@ Do this first, so that 30 new files can't quietly break things.
 |---|---|---|---|
 | 27 | `redirection` | Redirection: `>`, `>>`, `2>&1`, `/dev/null` | modifies |
 | 28 | `expansion-quoting` | Expansion and quoting: `$(…)`, `$VAR` vs `"$VAR"` | readonly |
-| 29 | `find-exec-xargs` | `find -exec … {} \;` / `+` and `xargs` | destructive |
+| 29 | `find-exec-xargs` | `find -exec … {} \;` / `+` and `xargs` | modifies (planned: destructive) |
 | 30 | `sed-awk` | `sed -i 's/a/b/g'` and `awk '{print $2}'` | modifies |
 | 31 | `heredocs` | Heredocs: `cat <<'EOF' > file` | modifies |
 
 **New command pages:** `xargs`, `sed`, `awk`, `cat`, `tee`.
 **Existing pages to update:** `find`.
+
+**Done.** #29 is modifies, not destructive: every step deletes only what `find . -name "*.orig"` matched in the project, and the engine rates that like `rm` on those files. The dangerous form (`-delete` before the tests) is a danger caution, not a step. Rule fixes: `find` with no test before `-delete`/`-exec rm` is treated like `rm -r` on the start folder (elevated for `.`, `..` and paths outside the project); `sort -o FILE` and awk programs that write files (`print > "f"`) or run commands (`system()`, `print | "cmd"`, `-f script`) are modifies or worse instead of readonly; writing a drop-in file under `/etc/apt/sources.list.d/`, `keyrings/`, `preferences.d/` or `trusted.gpg.d/` is elevated instead of destructive. Multi-line primary commands (the heredoc) now keep their line breaks in the command well and show their first line plus `…` on cards, chips, search results and the meta description. Four primary commands were added as `/explain` chips; `find-exec-xargs` wasn't, because the existing `find … -exec rm {} \;` chip covers it. See `docs/handoff/2026-11-04-scenarios-phase-5.md`.
 
 ## Phase 6: Decode Agent Commands, part 2 (4 scenarios)
 

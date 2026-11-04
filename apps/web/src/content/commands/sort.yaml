@@ -16,9 +16,10 @@ examples:
   - { command: "du -h -d 1 ~ | sort -h", explain: "Folders in your home, smallest first, biggest at the bottom.", severity: readonly }
   - { command: "du -sh * | sort -rh | head", explain: "The ten biggest items in this folder, biggest first.", severity: readonly }
   - { command: "sort -u emails.txt", explain: "Each line once, in order.", severity: readonly }
+  - { command: "sort -o names.txt names.txt", explain: "Sort a file in place. `sort names.txt > names.txt` would empty it instead.", severity: modifies }
 gotchas:
   - "Plain `sort` compares text, so `19G` lands between `1.5G` and `2.8G`, and `46M` after them. Sizes need `-h`; plain numbers need `-n`."
   - "`sort file > file` empties the file before `sort` reads it. Use `sort -o file file` instead."
   - "The order of upper and lower case and of punctuation depends on your locale. `LC_ALL=C sort` gives plain byte order."
-related: [du, head, tail]
+related: [du, head, tail, awk]
 scenarios: [disk-full]
