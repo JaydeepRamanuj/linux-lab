@@ -17,5 +17,5 @@ examples:
 gotchas:
   - "`ps aux` and `ps -aux` are different: the first is BSD syntax and the one you want."
   - "For a live view, use `top` or `htop`."
-related: [kill, pkill, lsof]
-scenarios: [apt-lock, command-chaining]
+related: [kill, pkill, lsof, pgrep, top]
+scenarios: [apt-lock, command-chaining, frozen-app, cpu-ram-hog]

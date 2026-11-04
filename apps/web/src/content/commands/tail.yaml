@@ -1,0 +1,19 @@
+name: tail
+title: Show the end of a file, or follow it live
+category: text
+level: everyday
+summary: Prints the last lines of a file (10 by default). With `-f` it keeps the file open and prints new lines as they're written, which is how you watch a log.
+syntax: tail [options] file…
+flags:
+  - { flag: "-n N", meaning: "The last N lines. `-n +N` starts at line N instead." }
+  - { flag: "-f", meaning: "Follow: keep printing new lines (Ctrl+C to stop)." }
+  - { flag: "-F", meaning: "Like `-f`, but survives the file being replaced, as log rotation does." }
+examples:
+  - { command: "tail -n 3 train.log", explain: "The three newest lines.", severity: readonly }
+  - { command: "tail -f train.log", explain: "Watch a log as it grows.", severity: readonly }
+  - { command: "tail -f app.log | grep -i error", explain: "Only the new lines that mention errors.", severity: readonly }
+gotchas:
+  - "Ctrl+C stops `tail`, not the program writing the log."
+  - "For system services, `journalctl -f -u name` is the equivalent of `tail -f`."
+related: [nohup, grep, head]
+scenarios: [keep-running]

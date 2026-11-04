@@ -1,0 +1,25 @@
+name: journalctl
+title: Read system and service logs
+category: system
+level: intermediate
+summary: Reads the systemd journal, where services, the kernel and the system log their messages. Filter by service, time or priority.
+syntax: journalctl [options]
+flags:
+  - { flag: "-u UNIT", meaning: "Only this service's messages." }
+  - { flag: "-n N", meaning: "The last N lines." }
+  - { flag: "-f", meaning: "Follow new messages live (Ctrl+C to stop)." }
+  - { flag: "-e", meaning: "Open at the end of the log." }
+  - { flag: "-b", meaning: "This boot only. `-b -1` is the previous boot." }
+  - { flag: "--since TIME", meaning: "From a time on, like `--since \"10 min ago\"` or `--since today`." }
+  - { flag: "-p err", meaning: "Only errors and worse." }
+  - { flag: "-k", meaning: "Kernel messages (like `dmesg`)." }
+  - { flag: "--no-pager", meaning: "Print straight to the terminal." }
+examples:
+  - { command: "journalctl -u nginx -n 20 --no-pager", explain: "Last 20 lines from nginx.", severity: readonly }
+  - { command: "journalctl -f -u docker", explain: "Watch Docker's log live.", severity: readonly }
+  - { command: "journalctl -b -1 -p err", explain: "Errors from the previous boot: useful after a crash.", severity: readonly }
+gotchas:
+  - "On Ubuntu, the first user is in the `adm` group and can read the system journal without `sudo`. Others see only their own messages until they use `sudo`."
+  - "`--vacuum-size` and `--vacuum-time` delete old logs. They're the only options that change anything."
+related: [systemctl]
+scenarios: [system-service]

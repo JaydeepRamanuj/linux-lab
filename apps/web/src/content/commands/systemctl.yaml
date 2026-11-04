@@ -1,0 +1,27 @@
+name: systemctl
+title: Control system services
+category: system
+level: intermediate
+summary: Starts, stops, restarts and inspects services run by systemd, and sets whether they start at boot. Reading status needs no `sudo`; changing a system service does.
+syntax: systemctl [--user] <command> [unit]
+flags:
+  - { flag: "status UNIT", meaning: "Is it running, does it start at boot, and its latest log lines." }
+  - { flag: "start / stop / restart UNIT", meaning: "Act now." }
+  - { flag: "reload UNIT", meaning: "Re-read config without a full restart, if the service supports it." }
+  - { flag: "enable / disable UNIT", meaning: "Start (or don't) at boot. Add `--now` to also start or stop it now." }
+  - { flag: "is-active / is-enabled UNIT", meaning: "One-word answer, for scripts." }
+  - { flag: "--failed", meaning: "List units that failed." }
+  - { flag: "list-units --type=service", meaning: "List loaded services." }
+  - { flag: "--user", meaning: "Your own per-user services. No sudo needed." }
+  - { flag: "daemon-reload", meaning: "Re-read unit files after you edit them." }
+examples:
+  - { command: "systemctl status nginx", explain: "Check one service.", severity: readonly }
+  - { command: "sudo systemctl restart nginx", explain: "Restart it after a config change.", severity: elevated }
+  - { command: "sudo systemctl enable --now docker", explain: "Start Docker now and at every boot.", severity: elevated }
+  - { command: "systemctl --user restart pipewire", explain: "Restart your audio service; no sudo.", severity: modifies }
+gotchas:
+  - "`stop` doesn't survive a reboot if the unit is enabled; `disable` doesn't stop it now. `disable --now` does both."
+  - "After editing a `.service` file, run `sudo systemctl daemon-reload` before restarting, or systemd keeps using the old version."
+  - "`status` opens a pager when the output is long. Press `q`, or add `--no-pager`."
+related: [journalctl, sudo]
+scenarios: [system-service]

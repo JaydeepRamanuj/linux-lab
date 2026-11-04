@@ -10,6 +10,7 @@
 //   - a step has a command but no `kind`
 //   - a step's `kind` is milder than the rule engine's verdict for its command
 //   - a scenario's `severity` isn't the most severe of its steps and its primary command
+//   - a scenario's `anatomy` key matches no token of its primary command (step commands get no anatomy)
 // Warnings (printed as `[content] …`; the plan's definition of done is zero of them):
 //   - a scenario runs a program that has no command page
 //   - a command page exists for a program a scenario runs, but doesn't list that scenario under `scenarios`
@@ -25,6 +26,9 @@ export interface ContentReport {
 
 // Programs that are shell syntax or builtins too basic to need their own page.
 const NO_PAGE_NEEDED = new Set(['cd', 'true', 'false']);
+
+// Programs documented on another command's page.
+const COVERED_BY: Record<string, string> = { fg: 'jobs', bg: 'jobs' };
 
 /** A token that runs a file by path (`./deploy.sh`, `~/Applications/x.AppImage`), not a named program. */
 const isPath = (program: string) => program.includes('/');
@@ -76,6 +80,14 @@ export async function collectContentReport(): Promise<ContentReport> {
     primary.tokens.filter((t) => t.kind === 'program').forEach((t) => programs.add(t.text));
     let expected: Severity = primary.severity;
 
+    // Anatomy notes only attach to tokens of the primary command; a key that matches none is silently dropped.
+    const tokenTexts = new Set(primary.tokens.map((t) => t.text));
+    for (const key of Object.keys(s.anatomy)) {
+      if (!tokenTexts.has(key)) {
+        errors.push(`scenario ${id}: anatomy key ${JSON.stringify(key)} matches no token in primaryCommand (tokens: ${[...tokenTexts].map((t) => JSON.stringify(t)).join(', ')})`);
+      }
+    }
+
     for (const step of s.steps) {
       if (step.kind) expected = maxSeverity(expected, step.kind);
       if (!step.command) continue;
@@ -96,9 +108,10 @@ export async function collectContentReport(): Promise<ContentReport> {
 
     for (const program of programs) {
       if (isPath(program) || NO_PAGE_NEEDED.has(program)) continue;
-      const page = commandByName.get(program);
+      const name = COVERED_BY[program] ?? program;
+      const page = commandByName.get(name);
       if (!page) warnings.push(`scenario ${id}: runs \`${program}\`, which has no command page`);
-      else if (!page.data.scenarios.includes(id)) warnings.push(`command ${program}: doesn't list scenario "${id}" under scenarios`);
+      else if (!page.data.scenarios.includes(id)) warnings.push(`command ${name}: doesn't list scenario "${id}" under scenarios`);
     }
   }
 

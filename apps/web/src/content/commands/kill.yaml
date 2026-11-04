@@ -17,5 +17,5 @@ examples:
 gotchas:
   - "`kill -9 -1` doesn't mean \"PID 1\": `-1` targets every process you own, including your desktop session."
   - "Try plain `kill` first and wait a few seconds; `-9` can leave lock files and half-written data behind."
-related: [pkill, ps, lsof]
-scenarios: [port-in-use]
+related: [pkill, ps, lsof, pgrep, jobs]
+scenarios: [port-in-use, frozen-app, stopped-job]

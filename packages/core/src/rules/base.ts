@@ -56,6 +56,9 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   }
   if (p === 'tar' && (c.short.has('t') || c.long.has('list') || /^[A-Za-z]*t[A-Za-z]*$/.test(c.argv[0]?.value ?? '') && !/[cxrua]/.test(c.argv[0]?.value ?? ''))) return { severity: 'readonly', reason: 'Only lists what is inside the archive.' };
   if (p === 'unzip' && (c.short.has('l') || c.short.has('v') || c.short.has('Z'))) return { severity: 'readonly', reason: 'Only lists what is inside the archive.' };
+  if (p === 'tmux' && c.operands.some((w) => /^kill-(session|server|window|pane)$/.test(w.value))) {
+    return { severity: 'modifies', reason: 'Closes tmux sessions or windows and ends the programs running in them.' };
+  }
   if (p === 'env' && c.operands.length === 0) return { severity: 'readonly', reason: 'Prints environment variables.' };
 
   if (READONLY.has(p)) return { severity: 'readonly', reason: 'Only reads or inspects.' };

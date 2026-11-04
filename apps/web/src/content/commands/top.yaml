@@ -1,0 +1,22 @@
+name: top
+title: Live view of processes and system load
+category: processes
+level: everyday
+summary: Shows the busiest processes, refreshed every few seconds, with CPU, memory, load and uptime at the top. Installed everywhere.
+syntax: top [options]
+flags:
+  - { flag: "-o FIELD", meaning: "Sort by a column, like `-o %MEM`." }
+  - { flag: "-u USER", meaning: "Only USER's processes." }
+  - { flag: "-p PID", meaning: "Watch specific PIDs." }
+  - { flag: "-b -n 1", meaning: "Print one snapshot and exit, for logs and scripts." }
+  - { flag: "P / M / c / k / q", meaning: "Keys inside top: sort by CPU / memory, show full commands, kill a PID, quit." }
+examples:
+  - { command: "top", explain: "Live view, busiest CPU users first.", severity: readonly }
+  - { command: "top -o %MEM", explain: "Biggest memory users first.", severity: readonly }
+  - { command: "top -b -n 1 | head -15", explain: "One snapshot of the top of the list.", severity: readonly }
+gotchas:
+  - "%CPU is per core: 100% is one full core, and a multi-core machine can go above it."
+  - "Load average is the number of processes wanting CPU or waiting on disk, averaged over 1, 5 and 15 minutes. Compare it to the number of cores (`nproc`)."
+  - "`wa` in the %Cpu(s) line is time spent waiting for the disk. High `wa` with low CPU use means the disk is the bottleneck."
+related: [htop, ps, free]
+scenarios: [cpu-ram-hog]

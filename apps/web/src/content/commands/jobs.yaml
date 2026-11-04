@@ -1,0 +1,21 @@
+name: jobs
+title: List, resume and background this shell's jobs (jobs, fg, bg)
+category: processes
+level: everyday
+summary: "`jobs` lists programs started from this terminal that are stopped (Ctrl+Z) or running in the background (`&`). `fg` brings one back to the foreground; `bg` resumes it in the background."
+syntax: "jobs [-l]  ·  fg [%N]  ·  bg [%N]"
+flags:
+  - { flag: "-l", meaning: "Also show each job's PID." }
+  - { flag: "%N", meaning: "Job number N, as shown by `jobs`. Works with `fg`, `bg`, `kill` and `disown`." }
+  - { flag: "%+  /  %-", meaning: "The current job (marked `+`) / the previous one (marked `-`)." }
+examples:
+  - { command: "jobs -l", explain: "What's stopped or running in the background here, with PIDs.", severity: readonly }
+  - { command: "fg", explain: "Resume the current job in the foreground.", severity: modifies }
+  - { command: "bg %2", explain: "Let job 2 continue in the background.", severity: modifies }
+  - { command: "kill %1", explain: "End job 1 without looking up its PID.", severity: modifies }
+gotchas:
+  - "Jobs belong to one shell: another terminal's `jobs` won't show them. Use `pgrep` or `ps` from elsewhere."
+  - "Ctrl+Z pauses, it doesn't quit. A stopped job keeps its memory, open files and ports."
+  - "`disown %1` removes a job from the list so closing the terminal won't send it SIGHUP."
+related: [kill, nohup, ps]
+scenarios: [stopped-job, keep-running]

@@ -78,7 +78,7 @@ avoid:
   - "Stop dev servers with `Ctrl+C` before closing the terminal tab. Closing the tab doesn't always stop them."
   - "Shortcut once you trust it: `kill $(lsof -t -i :3000)`. `-t` makes lsof print only the PID."
   - "If something you didn't start owns the port (like a system service), `sudo lsof -i :3000` shows it; pick another port instead of killing it."
-related: [command-chaining]
+related: [command-chaining, stopped-job, frozen-app]
 anatomy:
   "<PID>": "The process ID from the lsof output (48213 in this example)."
   ":3000": "The port to look up. Without a host, lsof matches it on every address."

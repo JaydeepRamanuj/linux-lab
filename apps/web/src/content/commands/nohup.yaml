@@ -1,0 +1,16 @@
+name: nohup
+title: Keep a command running after you log out
+category: processes
+level: intermediate
+summary: Runs a command so it ignores the hang-up signal (SIGHUP) sent when the terminal closes or SSH disconnects. Usually combined with `&` and a log file.
+syntax: nohup command [args…] [> log 2>&1] &
+examples:
+  - { command: "nohup ./train.sh > train.log 2>&1 &", explain: "Run in the background, survive logout, keep all output in train.log.", severity: modifies }
+  - { command: "nohup python3 bot.py > /dev/null 2>&1 &", explain: "Same, throwing the output away.", severity: modifies }
+gotchas:
+  - "Without a redirect, output goes to `nohup.out` in the current folder (or `~/nohup.out`)."
+  - "`nohup` doesn't put the command in the background by itself: add `&`."
+  - "It can't be applied to a job that's already running. Use `disown -h %1` for that."
+  - "For something that should run permanently and restart after a reboot, write a systemd service instead."
+related: [tmux, jobs, tail]
+scenarios: [keep-running]

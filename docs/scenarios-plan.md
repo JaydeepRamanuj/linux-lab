@@ -59,8 +59,10 @@ Do this first, so that 30 new files can't quietly break things.
 | 15 | `cpu-ram-hog` | What is eating my CPU or RAM? | readonly |
 | 16 | `system-service` | Restart or check a system service | elevated |
 
-**New command pages:** `pgrep`, `nohup`, `tmux`, `jobs` (covers `fg`/`bg`), `top`, `htop`, `free`, `systemctl`, `journalctl`.
+**New command pages:** `pgrep`, `nohup`, `tmux`, `jobs` (covers `fg`/`bg`), `top`, `htop`, `free`, `systemctl`, `journalctl`, plus `tail` (moved forward from Phase 3) and `head`.
 **Existing pages to update:** `ps`, `kill`, `pkill`, `sudo`.
+
+**Done.** See `docs/handoff/2026-11-04-scenarios-phase-2.md`.
 
 ## Phase 3: Files & Permissions (6 scenarios)
 
@@ -73,7 +75,8 @@ Do this first, so that 30 new files can't quietly break things.
 | 21 | `chmod-numbers` | Read chmod numbers: what 755 and 644 mean | modifies |
 | 22 | `watch-log` | Watch a log file live | readonly |
 
-**New command pages:** `sort`, `ncdu`, `rg`, `stat`, `tail`, `less`.
+**New command pages:** `sort`, `ncdu`, `rg`, `stat`, `less`.
+**Already done in Phase 2:** `tail`, `head` (add the Phase 3 scenarios that use them).
 **Existing pages to update:** `chown`, `chmod`, `du`, `df`, `find`, `grep`, `mv`, `cp`, `ls`.
 
 ## Phase 4: Packages (4 scenarios)

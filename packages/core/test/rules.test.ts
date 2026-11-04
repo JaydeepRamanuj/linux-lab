@@ -178,6 +178,15 @@ table('processes and services', [
   ['systemctl disable ssh', 'elevated'],
   ['systemctl status nginx', 'readonly'],
   ['systemctl --user restart pipewire', 'modifies'],
+  ['tmux new -s train', 'readonly'],
+  ['tmux ls', 'readonly'],
+  ['tmux attach -t train', 'readonly'],
+  ['tmux kill-session -t train', 'modifies'],
+  ['tmux kill-server', 'modifies'],
+  ['pgrep -a obsidian', 'readonly'],
+  ['nohup ./train.sh > train.log 2>&1 &', 'modifies'],
+  ['journalctl -u nginx -n 20 --no-pager', 'readonly'],
+  ['sudo systemctl restart nginx', 'elevated'],
   ['sudo reboot', 'elevated']
 ]);
 
