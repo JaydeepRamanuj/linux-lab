@@ -2,19 +2,34 @@ name: dpkg
 title: Low-level Debian package tool
 category: packages
 level: intermediate
-summary: The tool `apt` uses underneath. Handy for listing what's installed and for fixing an interrupted install.
+summary: The tool `apt` uses underneath. It installs and removes single package files, and knows every file each installed package owns. Handy for "where did this come from?" and for fixing an interrupted install.
 syntax: dpkg [options] [package|file]
 flags:
-  - { flag: "-l", meaning: "List installed packages (pipe into `grep`)." }
+  - { flag: "-l [PATTERN]", meaning: "List installed packages. The first two letters are the state: `ii` installed, `rc` removed with config left, `iU` unpacked but not set up." }
   - { flag: "-L PACKAGE", meaning: "List the files a package installed." }
-  - { flag: "-S FILE", meaning: "Which package owns this file?" }
+  - { flag: "-S PATH", meaning: "Which installed package owns this file? Give the full path." }
+  - { flag: "-I FILE.deb", meaning: "Show a .deb's name, version, architecture and dependencies, without installing it." }
+  - { flag: "-c FILE.deb", meaning: "List the files inside a .deb." }
   - { flag: "-i FILE.deb", meaning: "Install a .deb file, without resolving dependencies." }
+  - { flag: "--audit", meaning: "List packages left half-installed or half-configured. Prints nothing when all is well." }
   - { flag: "--configure -a", meaning: "Finish setting up every package left half-configured." }
+  - { flag: "--print-architecture", meaning: "Your machine's architecture, e.g. `amd64`." }
 examples:
   - { command: "dpkg -l | grep nginx", explain: "Is nginx installed, and which version?", severity: readonly }
-  - { command: "dpkg -S $(which rg)", explain: "Which package installed this program?", severity: readonly }
+  - { command: "dpkg -S \"$(which rg)\"", explain: "Which package installed this program?", severity: readonly }
+  - { command: "dpkg -L ripgrep | grep bin/", explain: "Which commands did this package install?", severity: readonly }
+  - { command: "dpkg -I pixelpad_2.3.1_amd64.deb", explain: "Look inside a downloaded .deb before installing it.", severity: readonly }
+  - { command: "dpkg -l | grep '^rc'", explain: "Removed packages that still have config files.", severity: readonly }
   - { command: "sudo dpkg --configure -a", explain: "Recover after an install was interrupted.", severity: elevated }
 gotchas:
-  - "`dpkg -i` doesn't install dependencies. Prefer `sudo apt install ./file.deb`."
-related: [apt]
-scenarios: [apt-lock, command-not-found]
+  - "`dpkg -i` doesn't install dependencies, and stops halfway when one is missing. Prefer `sudo apt install ./file.deb`; if it already happened, `sudo apt --fix-broken install`."
+  - "`dpkg -S` matches any path *containing* your text: `dpkg -S bin/rg` also finds `grep: /usr/bin/rgrep`. Give the full path."
+  - "\"no path found matching pattern\" can mean the path is a symlink (like `/usr/bin/awk`, managed by alternatives) or that the program wasn't installed from a package. `readlink -f` finds the real file."
+  - "`dpkg -l | grep …` prints very wide lines when piped. `dpkg -l NAME` on its own fits the terminal."
+related: [apt, apt-cache, apt-file, readlink]
+scenarios: [apt-lock, command-not-found, fix-broken-install, remove-package, install-deb, which-package]
+distrosTitle: Same lookup on other distros
+distros:
+  apt: dpkg -S /usr/bin/rg
+  dnf: rpm -qf /usr/bin/rg
+  pacman: pacman -Qo /usr/bin/rg

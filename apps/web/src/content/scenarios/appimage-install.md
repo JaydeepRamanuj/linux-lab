@@ -101,7 +101,7 @@ avoid:
   - Keep every AppImage in one folder like `~/Applications`, so you always know where they are and what to delete.
   - Use a version-free file name, so updating means replacing one file, not editing the `.desktop` entry.
   - "Only run AppImages from the project's official site or GitHub releases: an AppImage runs with all your permissions."
-related: [permission-denied-script, extract-archive, symlink-shortcut]
+related: [permission-denied-script, extract-archive, symlink-shortcut, install-deb]
 anatomy:
   "+x": "Add (+) execute permission (x) for everyone who can read the file."
 ---

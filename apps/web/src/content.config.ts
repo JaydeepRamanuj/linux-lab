@@ -84,7 +84,9 @@ const commands = defineCollection({
     scenarios: z.array(z.string()).default([]),
     distros: z
       .object({ apt: z.string().optional(), dnf: z.string().optional(), pacman: z.string().optional() })
-      .optional()
+      .optional(),
+    /** Heading for the `distros` section. Default "Install it"; package tools use it for their equivalents on other distros. */
+    distrosTitle: z.string().optional()
   })
 });
 

@@ -129,7 +129,7 @@ const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string,
         <section class="card p-5 sm:p-8 space-y-4">
           <h2 class="flex items-center gap-2 text-[22px] font-semibold">
             <Package className="h-5 w-5 text-secondary" />
-            Install it
+            {c.distrosTitle ?? 'Install it'}
           </h2>
           <div class="space-y-2">
             {distros.map(([pm, cmd]) => (

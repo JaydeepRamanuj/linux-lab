@@ -108,7 +108,7 @@ avoid:
   - "Outside your home: `sudo apt clean` removes downloaded package files, `journalctl --disk-usage` shows how big the system logs are, and `docker system df` shows space used by Docker."
   - "If `df` says full but `du` can't find it, a deleted file may still be open: `sudo lsof +L1` lists files that are deleted but still held by a program. Restarting that program frees the space."
   - "Add `2>/dev/null` to hide `Permission denied` lines when you scan folders you don't own, like `sudo du -h -d 1 /var | sort -h`."
-related: [find-files, cpu-ram-hog, root-owned-files]
+related: [find-files, cpu-ram-hog, root-owned-files, remove-package]
 anatomy:
   "-h": "Human-readable sizes like `2.8G`. On `sort`, it means \"understand those sizes\", so 19G sorts after 2.8G."
   "-d": "Max depth: how many levels of folders to list."

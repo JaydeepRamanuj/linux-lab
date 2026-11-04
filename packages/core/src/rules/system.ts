@@ -71,13 +71,28 @@ const packages: Rule = {
     const ops = c.operands.map((w) => w.value);
     let action = '';
     let names: string[] = [];
+    if (/^(apt|apt-get|aptitude)$/.test(p) && (c.short.has('s') || ['simulate', 'dry-run', 'just-print', 'no-act', 'recon'].some((f) => c.long.has(f)))) {
+      return hit('readonly', 'Simulation only (`-s`): prints what apt would install or remove, and changes nothing.');
+    }
+    if (p === 'apt-mark') {
+      const [sub = ''] = ops;
+      if (sub === '' || /^show/.test(sub)) return hit('readonly', 'Only lists how packages are marked.');
+      return hit('elevated', `\`apt-mark ${sub}\` changes how apt treats ${ops.slice(1).join(', ') || 'the packages'}: whether \`autoremove\` may remove them, or whether upgrades skip them.`);
+    }
     if (/^(apt|apt-get|aptitude|dnf|yum|zypper|snap|flatpak|brew)$/.test(p)) {
       [action = '', ...names] = ops;
     } else if (p === 'pacman' || p === 'yay' || p === 'paru') {
       action = c.short.has('R') ? 'remove' : c.short.has('S') && !c.short.has('s') && !c.short.has('i') ? 'install' : c.short.has('U') ? 'install' : 'query';
       names = ops;
     } else if (p === 'dpkg') {
-      action = c.short.has('i') || c.long.has('install') ? 'install' : c.short.has('r') || c.short.has('P') || c.long.has('purge') ? 'remove' : c.long.has('configure') ? 'configure' : 'query';
+      action =
+        c.short.has('i') || c.long.has('install') || c.long.has('unpack')
+          ? 'install'
+          : c.short.has('r') || c.short.has('P') || c.long.has('remove') || c.long.has('purge')
+            ? 'remove'
+            : c.long.has('configure') || c.long.has('triggers-only')
+              ? 'configure'
+              : 'query';
       names = ops;
     } else if (p === 'apt-cache' || p === 'apt-file' || p === 'dpkg-query' || p === 'rpm' && c.short.has('q')) {
       return hit('readonly', 'Only looks up package information.');

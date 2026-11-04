@@ -93,6 +93,8 @@ Do this first, so that 30 new files can't quietly break things.
 **New command pages:** `apt-file`, `apt-cache`.
 **Existing pages to update:** `apt`, `dpkg`. Add `dnf`/`pacman` equivalents in `distros`.
 
+**Done.** All severities match the plan. Extra page: `readlink` (used in `which-package`). Command pages gained an optional `distrosTitle`, so `apt`, `dpkg`, `apt-file` and `apt-cache` show their `dnf`/`pacman` equivalents under "Same … on other distros" instead of "Install it". Rule fixes: `dpkg --remove`/`--unpack` are elevated like `-r`/`-i`, `apt -s` (simulate) is readonly, and `apt-mark show*` is readonly while other `apt-mark` subcommands are elevated. See `docs/handoff/2026-11-04-scenarios-phase-4.md`.
+
 ## Phase 5: Decode Agent Commands, part 1 (5 scenarios)
 
 | # | Slug | Scenario | Severity |

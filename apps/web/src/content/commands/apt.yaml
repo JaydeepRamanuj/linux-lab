@@ -2,27 +2,43 @@ name: apt
 title: Install and remove packages (Debian/Ubuntu)
 category: packages
 level: everyday
-summary: The package manager front-end on Ubuntu and Debian. Installing, upgrading and removing need `sudo`; searching doesn't.
+summary: The package manager front-end on Ubuntu and Debian. Installing, upgrading and removing need `sudo`; searching, showing and listing don't.
 syntax: apt <command> [package…]
 flags:
-  - { flag: "install", meaning: "Install packages and their dependencies." }
-  - { flag: "remove", meaning: "Uninstall packages but keep their system config files." }
+  - { flag: "install PACKAGE", meaning: "Install packages and their dependencies." }
+  - { flag: "install ./FILE.deb", meaning: "Install a downloaded .deb and fetch its dependencies. The `./` marks it as a file." }
+  - { flag: "remove", meaning: "Uninstall packages but keep their system config files in /etc." }
   - { flag: "purge", meaning: "Uninstall packages and delete their system config files." }
-  - { flag: "autoremove", meaning: "Remove dependencies nothing needs any more." }
+  - { flag: "autoremove", meaning: "Remove dependencies that nothing needs any more." }
+  - { flag: "--autoremove", meaning: "With `remove` or `purge`: do the autoremove in the same step." }
+  - { flag: "--fix-broken install (-f)", meaning: "With no package names: repair a half-finished install by adding (or removing) what's needed." }
   - { flag: "update", meaning: "Refresh the package lists. Installs nothing." }
   - { flag: "upgrade", meaning: "Install newer versions of everything installed." }
   - { flag: "search", meaning: "Search package names and descriptions." }
-  - { flag: "show", meaning: "Details about one package." }
-  - { flag: "list --installed", meaning: "Everything installed." }
+  - { flag: "show", meaning: "Details about one package: version, size, dependencies, description." }
+  - { flag: "list --installed", meaning: "Everything installed. `[automatic]` marks packages pulled in as dependencies." }
+  - { flag: "-s", meaning: "Simulate: print the plan and change nothing. Works without sudo." }
   - { flag: "-y", meaning: "Answer yes to the confirmation prompt." }
-  - { flag: "--fix-broken", meaning: "Try to repair missing dependencies." }
+  - { flag: "'~c'", meaning: "Pattern for every package removed but with config files left (the `rc` state)." }
 examples:
   - { command: "sudo apt update && sudo apt upgrade", explain: "Refresh the lists, then upgrade everything.", severity: elevated }
   - { command: "apt search ripgrep", explain: "Find a package by name or description.", severity: readonly }
-  - { command: "sudo apt install ./app_1.2.0_amd64.deb", explain: "Install a downloaded .deb and pull in its dependencies. Note the `./`.", severity: elevated }
+  - { command: "sudo apt install ./pixelpad_2.3.1_amd64.deb", explain: "Install a downloaded .deb and pull in its dependencies. Note the `./`.", severity: elevated }
+  - { command: "sudo apt purge --autoremove nginx", explain: "Remove a package, its config and its unused dependencies.", severity: elevated }
+  - { command: "apt remove -s python3", explain: "Preview what a removal would take with it, without removing anything.", severity: readonly }
+  - { command: "sudo apt --fix-broken install", explain: "Finish an install that stopped on missing dependencies.", severity: elevated }
+  - { command: "apt list --installed 'nginx*'", explain: "Which nginx packages are installed, and which came in automatically.", severity: readonly }
 gotchas:
   - "Read the list of packages to be REMOVED before you confirm. Removing one package can take your desktop with it."
+  - "`remove` keeps config in /etc and leaves the package in the `rc` state. `purge` deletes it. Neither touches your home folder."
+  - "`apt install file.deb` without `./` looks for a package with that name and fails with \"Unable to locate package\"."
+  - "Quote patterns like `'nginx*'` and `'~c'`, or the shell may expand them first."
   - "`apt` is for people; scripts should use `apt-get`, whose output doesn't change between versions."
   - "\"Could not get lock\" means another install is running. Wait for it."
-related: [dpkg, sudo]
-scenarios: [apt-lock]
+related: [dpkg, apt-cache, apt-file, sudo]
+scenarios: [apt-lock, fix-broken-install, remove-package, install-deb, which-package]
+distrosTitle: Same job on other distros
+distros:
+  apt: sudo apt install nginx
+  dnf: sudo dnf install nginx
+  pacman: sudo pacman -S nginx

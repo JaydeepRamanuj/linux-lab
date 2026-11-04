@@ -19,5 +19,5 @@ gotchas:
   - "Relative targets are resolved from the link's folder, not from where you ran `ln`."
   - "To remove a link, `rm name` with no trailing slash. `rm -r name/` follows the link and deletes the target's contents."
   - "`readlink -f name` prints where a link finally resolves to."
-related: [ls, rm, mkdir]
+related: [ls, rm, mkdir, readlink]
 scenarios: [symlink-shortcut]

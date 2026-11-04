@@ -1,0 +1,20 @@
+name: readlink
+title: Show where a symlink points
+category: files
+level: intermediate
+summary: Prints a symlink's target. With `-f` it follows every link in the chain and prints the real file at the end.
+syntax: readlink [-f] path
+flags:
+  - { flag: "(none)", meaning: "One step: the target stored in this link." }
+  - { flag: "-f", meaning: "Follow all links and print the final, absolute path. Works on plain files too." }
+  - { flag: "-e", meaning: "Like `-f`, but fails if the final file doesn't exist." }
+examples:
+  - { command: "readlink /usr/bin/awk", explain: "One hop: `/etc/alternatives/awk`.", severity: readonly }
+  - { command: "readlink -f \"$(which awk)\"", explain: "The real program behind the name: `/usr/bin/mawk`.", severity: readonly }
+  - { command: "readlink -f ~/web", explain: "Where does this shortcut really lead?", severity: readonly }
+gotchas:
+  - "Without `-f`, a link to a link only shows the first hop."
+  - "`realpath` does the same as `readlink -f` and is easier to remember."
+  - "Prints nothing (and exits 1) for a path that isn't a symlink, unless you add `-f`."
+related: [ln, ls, which]
+scenarios: [which-package]
