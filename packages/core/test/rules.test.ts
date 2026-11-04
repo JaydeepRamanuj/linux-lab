@@ -188,7 +188,18 @@ table('packages', [
   ['apt list --installed', 'readonly'],
   ['apt search ripgrep', 'readonly'],
   ['dpkg -l | grep nginx', 'readonly'],
-  ['npm install', 'modifies']
+  ['npm install', 'modifies'],
+  ['npm run build', 'modifies'],
+  ['npm audit fix', 'modifies'],
+  ['sudo npm install -g typescript', 'elevated'],
+  ['npm ls react', 'readonly'],
+  ['npm outdated', 'readonly'],
+  ['npm view react version', 'readonly'],
+  ['npm audit', 'readonly'],
+  ['npm --version', 'readonly'],
+  ['pnpm why react', 'readonly'],
+  ['npm config get prefix', 'readonly'],
+  ['npm config set prefix ~/.npm-global', 'modifies']
 ]);
 
 table('databases', [

@@ -1,0 +1,28 @@
+name: npm
+title: Install JavaScript packages and run project scripts
+category: packages
+level: everyday
+summary: Node.js's package manager. Installs a project's dependencies into `node_modules`, and runs the scripts defined in `package.json`, like `build`, `test` and `dev`.
+syntax: npm <command> [args…]
+flags:
+  - { flag: "install (i)", meaning: "With no name: install everything in `package.json`. With a name: add that package as a dependency." }
+  - { flag: "ci", meaning: "Clean install exactly what `package-lock.json` says. Deletes `node_modules` first. Use it in CI." }
+  - { flag: "run <script>", meaning: "Run a script from the `scripts` section of `package.json`." }
+  - { flag: "test, start", meaning: "Shortcuts for `npm run test` and `npm run start`." }
+  - { flag: "uninstall <pkg>", meaning: "Remove a package and drop it from `package.json`." }
+  - { flag: "-D, --save-dev", meaning: "Add the package as a dev dependency (tools, tests), not a runtime one." }
+  - { flag: "-g, --global", meaning: "Install a command-line tool for your whole user, not just this project." }
+  - { flag: "ls <pkg>", meaning: "Show which version of a package is installed, and what pulled it in." }
+  - { flag: "outdated", meaning: "List packages with newer versions available. Changes nothing." }
+examples:
+  - { command: "npm install", explain: "Install the project's dependencies after cloning it.", severity: modifies }
+  - { command: "npm install -D vitest", explain: "Add a test runner as a dev dependency.", severity: modifies }
+  - { command: "npm run build && npm test", explain: "Build, then run the tests only if the build succeeded.", severity: modifies }
+  - { command: "npm ls react", explain: "Which version of react is installed, and why.", severity: readonly }
+gotchas:
+  - "`npm install` runs the install scripts of every package it downloads, with your user's permissions. Check unfamiliar package names for typos before installing."
+  - "Don't fix \"EACCES\" on `npm install -g` with `sudo`. Install Node with nvm (or set an npm prefix in your home folder) so global installs don't need root."
+  - "`node_modules` can always be rebuilt: `rm -rf node_modules && npm install` is a safe reset."
+  - "If the project has `pnpm-lock.yaml` or `yarn.lock`, use that tool instead, or you end up with two lock files."
+related: [rm, sudo]
+scenarios: [command-chaining]

@@ -28,6 +28,9 @@ Do this first, so that 30 new files can't quietly break things.
 - Fail the build when a `related` or `scenarios` slug, or a command name, doesn't exist.
 - Fail the build when two scenarios share a `number`.
 - Check that the 5 existing scenarios still build cleanly.
+- Clear the existing `[content]` warnings: add command pages for `echo` (moved forward from Phase 1) and `npm`, used by `command-chaining`.
+
+**Done.** The checks live in `apps/web/src/lib/contentChecks.ts`. See `docs/handoff/2026-11-04-scenarios-phase-0.md`.
 
 ## Phase 1: Everyday Rescue (6 scenarios)
 
@@ -40,7 +43,8 @@ Do this first, so that 30 new files can't quietly break things.
 | 10 | `persistent-alias` | Create a shell alias that sticks | modifies |
 | 11 | `extract-archive` | Unpack a .tar.gz / .zip | modifies |
 
-**New command pages:** `echo`, `export`, `type`, `command`, `xdg-open`, `ln`, `alias`, `tar`, `unzip`.
+**Already done in Phase 0:** `echo` (add the Phase 1 scenarios that use it to its `scenarios:`).
+**New command pages:** `export`, `type`, `command`, `xdg-open`, `ln`, `alias`, `tar`, `unzip`.
 **Existing pages to update:** `which`, `source`.
 
 ## Phase 2: Processes & Ports (5 scenarios)

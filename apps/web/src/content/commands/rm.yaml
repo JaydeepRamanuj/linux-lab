@@ -20,4 +20,4 @@ gotchas:
   - "`rm -rf $DIR/` with an empty `DIR` becomes `rm -rf /`. Quote variables and use `${DIR:?}` so an empty value stops the command."
   - "A space in the wrong place matters: `rm -rf ./build /` deletes `./build` and then tries to delete everything."
   - "`-f` hides mistakes. If you aren't sure what a glob matches, run `ls` with the same pattern first."
-related: [find, mv, trash]
+related: [find, mv]

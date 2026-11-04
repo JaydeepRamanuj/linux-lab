@@ -13,5 +13,5 @@ examples:
   - { command: "mkdir -p src/{components,lib,pages}", explain: "Create three folders at once with brace expansion.", severity: modifies }
 gotchas:
   - "Without `-p`, `mkdir a/b/c` fails if `a/b` doesn't exist yet."
-related: [cd, ls, rm]
-scenarios: [appimage-install]
+related: [ls, rm]
+scenarios: [appimage-install, command-chaining]

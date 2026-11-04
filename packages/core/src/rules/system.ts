@@ -156,6 +156,23 @@ const git: Rule = {
   }
 };
 
+// JS package managers: a few subcommands only report on the project.
+const NODE_PM_READONLY = /^(ls|list|ll|la|outdated|view|info|show|why|explain|root|prefix|bin|help|search|-v|--version|-h|--help)$/;
+
+const nodePackages: Rule = {
+  id: 'node-packages',
+  check(c) {
+    const p = c.program;
+    if (!p || !/^(npm|pnpm|yarn|bun)$/.test(p)) return null;
+    const values = c.argv.map((w) => w.value);
+    const sub = values[0] ?? '';
+    if (NODE_PM_READONLY.test(sub)) return hit('readonly', `\`${p} ${sub}\` only reports on installed packages.`);
+    if (sub === 'audit' && !values.includes('fix')) return hit('readonly', `\`${p} audit\` only reports known vulnerabilities.`);
+    if (sub === 'config' && /^(get|list|ls)$/.test(values[1] ?? '')) return hit('readonly', 'Only reads the configuration.');
+    return null;
+  }
+};
+
 const DESTRUCTIVE_SQL = /\b(drop\s+(database|schema|table)|truncate(\s+table)?\s+\w|delete\s+from\s+[\w."]+\s*(;|$)(?![\s\S]*\bwhere\b))/i;
 
 const sql: Rule = {
@@ -209,6 +226,6 @@ const forkBomb: SourceRule = {
   }
 };
 
-export const systemRules: Rule[] = [kill, services, packages, git, sql, infra];
+export const systemRules: Rule[] = [kill, services, packages, git, nodePackages, sql, infra];
 export const sourceRules: SourceRule[] = [forkBomb];
 export type { Hit };
