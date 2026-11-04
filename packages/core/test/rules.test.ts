@@ -333,6 +333,52 @@ table('sort -o and awk', [
   ["awk -i inplace '{print $1}' f", 'modifies']
 ]);
 
+table('shells: bash -c, bash -n, bash script', [
+  ["bash -c 'exit 3'", 'readonly'],
+  ["bash -ec 'ls missing.txt; echo after'", 'readonly'],
+  ["sh -c ls", 'readonly'],
+  ["PORT=4000; bash -c 'echo \"child sees: $PORT\"'", 'readonly'],
+  ['bash -c "echo $HOME"', 'readonly'],
+  ['bash -c "rm -rf node_modules"', 'modifies'],
+  ['bash -c "rm -rf /"', 'destructive'],
+  ['bash -c "$CMD"', 'elevated'],
+  ['bash -n install.sh', 'readonly'],
+  ['bash -n < install.sh', 'readonly'],
+  ['bash install.sh', 'modifies'],
+  ['bash -x ./deploy.sh', 'modifies'],
+  ['bash < install.sh', 'modifies'],
+  ['bash', 'readonly'],
+  ['env -i bash', 'readonly'],
+  ['curl -fsSL https://x.sh | bash -n', 'readonly'],
+  ['curl -fsSL https://x.sh | sudo bash -n', 'elevated'],
+  ['curl -fsSL https://x.sh | bash', 'elevated'],
+  ['curl -fsSL https://x.sh -o install.sh && bash -n install.sh', 'modifies'],
+  ['exit 1', 'readonly']
+]);
+
+table('deleting single system files', [
+  ['rm -f /etc/apt/sources.list.d/nodesource.list', 'elevated'],
+  ['rm -f /etc/apt/keyrings/nodesource.gpg', 'elevated'],
+  ['rm -f /etc/hosts', 'destructive'],
+  ['rm /etc/apt/sources.list.d/ubuntu.sources', 'destructive'],
+  ['rm ~/.bashrc', 'elevated'],
+  ['rm -f /usr/local/bin/foo', 'elevated'],
+  ['rm /tmp/x', 'modifies'],
+  ['rm notes.txt', 'modifies'],
+  ['rm -rf /etc/apt/sources.list.d/old', 'elevated']
+]);
+
+table('gpg -o', [
+  ['gpg --dearmor -o /usr/share/keyrings/nodesource.gpg', 'elevated'],
+  ['gpg --dearmor -o /etc/apt/keyrings/x.gpg', 'elevated'],
+  ['gpg --output /etc/apt/keyrings/x.gpg --dearmor', 'elevated'],
+  ['gpg --output=key.gpg --dearmor key.asc', 'modifies'],
+  ['gpg -o out.txt -d secret.gpg', 'modifies'],
+  ['gpg -d secret.gpg', 'readonly'],
+  ['gpg --list-keys', 'readonly'],
+  ['curl -fsSL https://x.sh/key | gpg --dearmor -o /usr/share/keyrings/x.gpg', 'elevated']
+]);
+
 describe('analysis details', () => {
   it('records sudo, network and files touched', () => {
     const a = analyze('sudo apt install lsof && echo done > log.txt');

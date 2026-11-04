@@ -1,0 +1,27 @@
+name: bash
+title: Run a shell, a script or a one-line command
+category: shell
+level: intermediate
+summary: The shell you type into on most Linux desktops. Run as a command, it starts a new shell, runs a script file, or runs a quoted command with `-c`. It's what `curl … | bash` hands a download to.
+syntax: "bash [options] [script [args…]]   (or: bash -c 'command')"
+flags:
+  - { flag: "-c 'CMD'", meaning: "Run CMD in a new shell, then exit. The rest of the line's arguments become `$0`, `$1`, …" }
+  - { flag: "-n", meaning: "Read the script and check its syntax without running any of it." }
+  - { flag: "-x", meaning: "Print each command, with variables filled in, before running it. The main way to debug a script." }
+  - { flag: "-e", meaning: "Exit at the first command that fails, like `set -e` at the top of the script." }
+  - { flag: "-s", meaning: "Read the script from stdin; arguments after it go to the script (`curl … | bash -s -- --yes`)." }
+  - { flag: "-l, --login", meaning: "Start as a login shell, which reads `~/.profile` as well." }
+  - { flag: "--norc", meaning: "Don't read `~/.bashrc`. Useful to test whether your config is causing a problem." }
+examples:
+  - { command: "bash -n install.sh", explain: "Check a downloaded script for syntax errors without running it.", severity: readonly }
+  - { command: "bash install.sh", explain: "Run a script you've read, without making it executable first.", severity: modifies }
+  - { command: "bash -x ./deploy.sh", explain: "Run a script and watch every command it runs.", severity: modifies }
+  - { command: "bash -c 'echo \"child sees: $PORT\"'", explain: "Start a new shell to check which variables a program would inherit.", severity: readonly }
+  - { command: "curl -fsSL https://get.example.sh | bash", explain: "Run a script straight from the internet. Download it with `-o` and read it first instead.", severity: elevated }
+gotchas:
+  - "`bash script.sh` and `./script.sh` both run the script in a new shell, so its `cd` and `export` don't change your terminal. Use `source script.sh` for that."
+  - "`bash -c \"echo $HOME\"` (double quotes) fills in `$HOME` before the new bash starts. Single quotes leave it for the new shell."
+  - "`sh` on Ubuntu is `dash`, not bash. Scripts with `[[ ]]`, arrays or `$PIPESTATUS` fail under `sh script.sh`; run them with `bash`."
+  - "`exit` in a script ends the script. Typed in your terminal, it closes the terminal."
+related: [source, set, env, curl, export]
+scenarios: [curl-pipe-bash, env-vars, exit-codes]

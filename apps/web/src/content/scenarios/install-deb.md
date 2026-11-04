@@ -118,7 +118,7 @@ avoid:
   - "To uninstall, use the **Package** name from step 2, not the file name: `sudo apt remove pixelpad`."
   - "Check apt first: `apt search pixelpad`. A package from Ubuntu's archive (or the vendor's own apt repository) gets updates with `sudo apt upgrade`."
   - "Fedora and openSUSE use .rpm files instead: `sudo dnf install ./app.rpm`. Arch users usually get the app from the AUR."
-related: [fix-broken-install, remove-package, appimage-install, extract-archive]
+related: [fix-broken-install, remove-package, appimage-install, extract-archive, curl-pipe-bash]
 anatomy:
   "install": "Install packages and everything they depend on."
   "./pixelpad_2.3.1_amd64.deb": "The downloaded file. The `./` (or any path with a `/`) tells apt it's a file, not a package name to look up."

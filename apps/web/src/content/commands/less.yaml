@@ -21,4 +21,4 @@ gotchas:
   - "Ctrl+C in `less +F` only stops following; the file and the program writing it are untouched."
   - "`man` pages open in `less`, so the same keys work there."
 related: [tail, head, grep]
-scenarios: [watch-log]
+scenarios: [watch-log, curl-pipe-bash]

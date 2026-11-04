@@ -11,7 +11,9 @@ flags:
 examples:
   - { command: "mkdir -p ~/Applications", explain: "Make sure the folder exists, whether or not it did before.", severity: modifies }
   - { command: "mkdir -p src/{components,lib,pages}", explain: "Create three folders at once with brace expansion.", severity: modifies }
+  - { command: "mkdir -p src/components/ui", explain: "Create a nested folder and any missing parents. Safe to run again.", severity: modifies }
 gotchas:
-  - "Without `-p`, `mkdir a/b/c` fails if `a/b` doesn't exist yet."
-related: [ls, rm]
-scenarios: [appimage-install, command-chaining, extract-archive]
+  - "Without `-p`, `mkdir a/b/c` fails if `a/b` doesn't exist yet: `mkdir: cannot create directory 'a/b/c': No such file or directory`."
+  - "`-p` never complains, so a typo (`src/compnents`) silently creates a second folder. Check with `ls` afterwards."
+related: [ls, rm, npx]
+scenarios: [appimage-install, command-chaining, extract-archive, agent-cleanup]

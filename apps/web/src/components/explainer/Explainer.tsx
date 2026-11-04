@@ -39,7 +39,9 @@ const EXAMPLES = [
   'npm test > test.log 2>&1',
   'cat "$file"',
   "sed -i 's/localhost:5432/db:5432/g' .env",
-  "cat <<'EOF' > .env.example\nDATABASE_URL=postgres://app:CHANGE_ME@db:5432/shop\nSTRIPE_SECRET_KEY=\nEOF"
+  "cat <<'EOF' > .env.example\nDATABASE_URL=postgres://app:CHANGE_ME@db:5432/shop\nSTRIPE_SECRET_KEY=\nEOF",
+  'PORT=4000 npm run dev',
+  'npm test || true'
 ];
 
 const REVERSIBLE: Record<Severity, { label: string; note: string; className: string }> = {

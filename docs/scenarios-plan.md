@@ -124,6 +124,8 @@ Do this first, so that 30 new files can't quietly break things.
 
 These two phases are closest to what the Explainer does. Add each primary command as an example chip on `/explain` if it isn't one already.
 
+**Done.** Three severities differ from the plan: #33 `agent-cleanup` is modifies (no step deletes anything that can't be regenerated; the `rm -rf "$OUT_DIR/"` empty-variable case is a danger caution and a dry-run replay, not a step), and #34 `env-vars` and #35 `exit-codes` are modifies because their primary commands (`PORT=4000 npm run dev`, `npm test || true`) run project scripts. Rule fixes: `bash -c '…'` is judged by its contents, `bash -n` (also `curl … | bash -n`) is readonly, `bash script.sh` says it runs the script, plain `bash` is readonly, and `exit` is readonly; deleting a single file under `/etc`/`/boot` is destructive, an apt drop-in or `~/.bashrc` or `/usr`… elevated; `gpg -o FILE` goes through the write-target check. Site: long anatomy tokens wrap at 375px, and prose renders ``` `` `x` `` ``` code spans (this fixed a Phase 5 line in `expansion-quoting`). `PORT=4000 npm run dev` and `npm test || true` were added as `/explain` chips. See `docs/handoff/2026-11-04-scenarios-phase-6.md`.
+
 ## Phase 7: Final pass
 
 - Read through all 35 scenarios together: consistent tone, no duplicated explanations (link to the other scenario instead), and `related` links that form sensible paths through each module.

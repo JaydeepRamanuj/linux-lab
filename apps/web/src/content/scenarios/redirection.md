@@ -128,7 +128,7 @@ avoid:
   - "`2>&1 | tail` and `| tail` look alike, but without `2>&1` the errors skip the pipe and print immediately, before everything else."
   - "After `cmd | tee log`, `echo $?` reports `tee`'s exit code, not the command's. It's usually 0 even when the tests failed."
   - "`< file` is the other direction: it feeds a file into a program's input, like `sort < names.txt`."
-related: [command-chaining, heredocs, expansion-quoting, watch-log]
+related: [command-chaining, heredocs, expansion-quoting, exit-codes, watch-log]
 anatomy:
   ">": "Send stdout (stream 1) into a file instead of the terminal."
   "2>&1": "Send stderr (stream 2) to wherever stdout points now: the same file."

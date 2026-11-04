@@ -144,20 +144,22 @@ export function SectionTitle({
   );
 }
 
-// Render inline `code` spans inside plain prose strings.
+// Render inline `code` spans inside plain prose strings. As in Markdown, ``double backticks`` (with a space inside
+// each end) wrap code that itself contains a backtick: `` `cmd` `` shows `cmd` with its backticks.
 export function Prose({ text, className = '' }: { text: string; className?: string }) {
-  const parts = text.split(/(`[^`]+`)/g);
+  const parts = text.split(/(``.+?``|`[^`]+`)/g);
   return (
     <span className={className}>
-      {parts.map((p, i) =>
-        p.startsWith('`') && p.endsWith('`') ? (
-          <code key={i} className="font-mono text-[0.85em] text-primary bg-surface-high px-1.5 py-0.5 rounded">
-            {p.slice(1, -1)}
-          </code>
-        ) : (
+      {parts.map((p, i) => {
+        const code = p.startsWith('``') && p.endsWith('``') && p.length > 4 ? p.slice(2, -2).replace(/^ (.*) $/, '$1') : p.startsWith('`') && p.endsWith('`') && p.length > 1 ? p.slice(1, -1) : null;
+        return code === null ? (
           p
-        )
-      )}
+        ) : (
+          <code key={i} className="font-mono text-[0.85em] text-primary bg-surface-high px-1.5 py-0.5 rounded">
+            {code}
+          </code>
+        );
+      })}
     </span>
   );
 }

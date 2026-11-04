@@ -126,7 +126,7 @@ avoid:
   - "`<<-EOF` strips leading tabs (not spaces) from each line and from the closing marker, so a heredoc can be indented inside a script."
   - "Heredocs feed any program's stdin, not just `cat`: `python3 <<'EOF'` runs a Python snippet, `ssh server <<'EOF'` runs commands on another machine."
   - "For one line, `echo \"text\" > file` or `printf '%s\\n' \"text\" > file` is simpler."
-related: [redirection, expansion-quoting, command-chaining, root-owned-files]
+related: [redirection, expansion-quoting, command-chaining, curl-pipe-bash, root-owned-files]
 anatomy:
   "<<": "Start a heredoc: the following lines, up to one that is exactly `EOF`, become cat's input. The quotes mean nothing inside is expanded."
   ".env.example": "Where the text goes. `>` creates the file, or replaces it if it exists."

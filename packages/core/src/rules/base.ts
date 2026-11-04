@@ -1,5 +1,6 @@
 import type { NormalizedCommand } from '../normalize';
 import type { Severity } from '../severity';
+import { SHELLS } from './remote';
 
 // Programs that only read or inspect. Writes through redirects are caught separately by the rules.
 const READONLY = new Set([
@@ -14,7 +15,7 @@ const READONLY = new Set([
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
-  'curl', 'wget', 'gpg', 'ncdu', 'hash'
+  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return'
 ]);
 
 // Programs that change files in the project or user space, recoverably.
@@ -61,7 +62,42 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   }
   if (p === 'env' && c.operands.length === 0) return { severity: 'readonly', reason: 'Prints environment variables.' };
 
+  if (SHELLS.has(p) && p !== 'busybox') {
+    const shell = shellBasis(c);
+    if (shell) return shell;
+  }
+
   if (READONLY.has(p)) return { severity: 'readonly', reason: 'Only reads or inspects.' };
   if (MODIFIES.has(p)) return { severity: 'modifies', reason: 'Changes files in your project or home folder.' };
   return { severity: 'modifies', reason: `\`${p}\` isn't in ShellGyan's list yet, so it's assumed to change things.` };
+}
+
+/**
+ * `bash -c '…'`, `bash -n script`, `bash script`, plain `bash`. What a shell does depends on what it runs, so the shell
+ * itself only gets a basis here; `bash -c` bodies are opened up and checked as commands of their own (analyze.ts), and
+ * `curl … | bash` is the pipe-to-shell rule's job.
+ */
+function shellBasis(c: NormalizedCommand): Basis | null {
+  const p = c.program!;
+  if (c.short.has('c')) {
+    const body = c.operands[0];
+    if (body && !body.substitution) {
+      return { severity: 'readonly', reason: `Runs the quoted text as a command in a new ${p}; that command is checked on its own.` };
+    }
+    return null;
+  }
+  const script = c.operands[0];
+  const fromFile = c.cmd.redirects.some((r) => r.op === '<' && r.target);
+  const piped = !!c.cmd.pipeline && c.cmd.pipeline.index > 0;
+  if (c.short.has('n') && (script || fromFile || piped)) {
+    return { severity: 'readonly', reason: "Only checks the script's syntax (`-n`); nothing in it runs." };
+  }
+  if (script && !c.short.has('s')) {
+    return { severity: 'modifies', reason: `Runs the script ${script.value}, which can do anything you can. Read it before you run it.` };
+  }
+  if (fromFile) return { severity: 'modifies', reason: 'Runs the script fed in with `<`, which can do anything you can.' };
+  if (!piped) {
+    return { severity: 'readonly', reason: `Starts a new interactive ${p}. Type \`exit\` to come back.` };
+  }
+  return null;
 }

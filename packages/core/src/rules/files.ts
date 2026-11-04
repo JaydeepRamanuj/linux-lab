@@ -67,6 +67,23 @@ const redirects: Rule = {
   }
 };
 
+/** Deleting one file outside the project that the system or every terminal depends on. Mirrors `writeTargetHit`. */
+function systemFileDelete(path: string): Hit | null {
+  if (/^\/etc\/apt\/(sources\.list\.d|preferences\.d|keyrings|trusted\.gpg\.d)\/[^/]+$/.test(path) && !/\/(ubuntu|debian)\.sources$/.test(path)) {
+    return hit('elevated', `Deletes ${path}, which changes where apt installs software from and which signing keys it trusts.`, { touches: [path] });
+  }
+  if (/^\/(etc|boot)\//.test(path)) {
+    return hit('destructive', `Deletes the system file ${path}. Without it the machine may not boot, log in or reach the network.`, { touches: [path] });
+  }
+  if (SHELL_CONFIG.test(path)) {
+    return hit('elevated', `Deletes ${path}, which runs every time you open a terminal (or controls SSH access).`, { touches: [path] });
+  }
+  if (/^\/(usr|bin|sbin|lib|lib64|opt|var)\//.test(path)) {
+    return hit('elevated', `Deletes ${path} from the system location ${path.split('/').slice(0, 2).join('/')}.`, { touches: [path] });
+  }
+  return null;
+}
+
 const rm: Rule = {
   id: 'rm',
   check(c) {
@@ -79,6 +96,7 @@ const rm: Rule = {
     if (c.viaXargs) {
       hits.push(hit(recursive ? 'elevated' : 'modifies', 'The files to delete come from the previous command through `xargs`, so the list is not visible here.'));
     }
+    let sys: Hit | null;
     for (const w of c.operands) {
       const p = canonPath(w.value);
       const critical = criticalPath(p);
@@ -103,6 +121,8 @@ const rm: Rule = {
         hits.push(hit('elevated', `Deletes ${p.glob ? 'everything in' : ''} the ${p.path === '..' ? 'parent' : 'current'} folder; what that is depends on where you run it.`, { touches: [w.value] }));
       } else if (recursive && isOutsideProject(p)) {
         hits.push(hit('elevated', `Recursively deletes ${p.path}, outside the current project.`, { touches: [p.path] }));
+      } else if (!recursive && (sys = systemFileDelete(p.path))) {
+        hits.push(sys);
       } else {
         const regenerable = PROJECT_REGENERABLE.test(p.path);
         hits.push(
@@ -270,21 +290,24 @@ const inPlaceEdit: Rule = {
   }
 };
 
-// `sort -o FILE` writes its output to FILE (often the input itself, to sort in place).
-const sortOutput: Rule = {
-  id: 'sort-output',
+// `sort -o FILE` writes its output to FILE (often the input itself, to sort in place). `gpg -o FILE` / `--output FILE`
+// writes the decrypted, signed or dearmored result there, as install scripts do with `gpg --dearmor -o /usr/share/keyrings/…`.
+const OUTPUT_OPTION_PROGRAMS = new Set(['sort', 'gpg', 'gpg2']);
+const outputOption: Rule = {
+  id: 'output-option',
   check(c) {
-    if (c.program !== 'sort') return null;
+    if (!c.program || !OUTPUT_OPTION_PROGRAMS.has(c.program)) return null;
+    const via = c.program === 'sort' ? '`sort -o`' : `\`${c.program} -o\``;
     const argv = c.argv.map((w) => w.value);
     const hits: Hit[] = [];
     argv.forEach((v, i) => {
       let target: Word | undefined;
-      if (v === '-o') target = c.argv[i + 1];
+      if (v === '-o' || v === '--output') target = c.argv[i + 1];
       else if (/^-o./.test(v)) target = { ...c.argv[i]!, value: v.slice(2) };
       else if (v.startsWith('--output=')) target = { ...c.argv[i]!, value: v.slice('--output='.length) };
       else if (/^-[a-zA-Z]*o$/.test(v) && !v.startsWith('--')) target = c.argv[i + 1];
-      if (!target) return;
-      const h = writeTargetHit(target, 'overwrite', '`sort -o`');
+      if (!target || target.value === '-') return;
+      const h = writeTargetHit(target, 'overwrite', via);
       if (h) hits.push(h);
     });
     return hits;
@@ -332,7 +355,7 @@ const truncate: Rule = {
   }
 };
 
-export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, sortOutput, awkWrites, truncate];
+export const fileRules: Rule[] = [redirects, rm, find, disks, perms, tee, copyMove, inPlaceEdit, outputOption, awkWrites, truncate];
 
 export const isWrite = (c: NormalizedCommand) =>
   c.cmd.redirects.some((r) => r.target && />/.test(r.op) && !HARMLESS_TARGET.test(r.target.value));

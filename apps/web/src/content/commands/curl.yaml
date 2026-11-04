@@ -9,7 +9,7 @@ flags:
   - { flag: "-s, --silent", meaning: "No progress bar." }
   - { flag: "-S, --show-error", meaning: "Still show errors when `-s` is used." }
   - { flag: "-L, --location", meaning: "Follow redirects." }
-  - { flag: "-o FILE", meaning: "Save the response to a file." }
+  - { flag: "-o FILE", meaning: "Save the response to a file. `-o-` means stdout, the default; install one-liners use it before `| bash`." }
   - { flag: "-O", meaning: "Save to a file named like the URL." }
   - { flag: "-I, --head", meaning: "Fetch only the response headers." }
   - { flag: "-H HEADER", meaning: "Add a request header, like `-H \"Authorization: Bearer …\"`." }
@@ -19,8 +19,12 @@ examples:
   - { command: "curl -I https://example.com", explain: "Is the site up, and what does it return?", severity: readonly }
   - { command: "curl -fsSL https://get.example.sh -o install.sh", explain: "Download an install script so you can read it first.", severity: modifies }
   - { command: "curl -fsSL https://get.example.sh | bash", explain: "The common one-liner: runs a script straight from the internet without showing it.", severity: elevated }
+  - { command: "curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh -o install.sh && bash -n install.sh", explain: "Download a pinned installer and check that it arrived whole, before you read it.", severity: modifies }
 gotchas:
   - "`-fsSL` is the usual combination for scripts: fail on errors, silent, but show errors, follow redirects."
   - "Piping into `bash` (worse: `sudo bash`) runs code you haven't seen. Save it with `-o`, read it, then run it."
   - "Commands with tokens in `-H` end up in your shell history. Use an environment variable instead."
-related: [sudo]
+  - "Without `-f`, a 404 page is saved (or piped into `bash`) as if it were the script. `bash` then fails on the HTML, usually harmlessly but confusingly."
+  - "`--proto '=https' --tlsv1.2` in an install line (rustup uses it) refuses plain HTTP and old TLS. It's a good sign, not something to remove."
+related: [sudo, bash]
+scenarios: [curl-pipe-bash]

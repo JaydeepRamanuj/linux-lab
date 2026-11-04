@@ -24,5 +24,5 @@ gotchas:
   - "Don't fix \"EACCES\" on `npm install -g` with `sudo`. Install Node with nvm (or set an npm prefix in your home folder) so global installs don't need root."
   - "`node_modules` can always be rebuilt: `rm -rf node_modules && npm install` is a safe reset."
   - "If the project has `pnpm-lock.yaml` or `yarn.lock`, use that tool instead, or you end up with two lock files."
-related: [rm, sudo]
-scenarios: [command-chaining, root-owned-files, redirection]
+related: [rm, sudo, npx]
+scenarios: [command-chaining, root-owned-files, redirection, agent-cleanup, env-vars, exit-codes]

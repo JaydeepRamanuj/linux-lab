@@ -18,4 +18,4 @@ gotchas:
   - "For system services, `journalctl -f -u name` is the equivalent of `tail -f`."
   - "With `-f`, a rotated log goes quiet: `tail` keeps watching the renamed file. `-F` follows the name instead."
 related: [nohup, grep, head, less, tee]
-scenarios: [keep-running, watch-log]
+scenarios: [keep-running, watch-log, curl-pipe-bash, exit-codes]

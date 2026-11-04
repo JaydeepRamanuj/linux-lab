@@ -1,0 +1,25 @@
+name: set
+title: Turn shell options on or off
+category: shell
+level: intermediate
+summary: A shell builtin that switches options for the current shell. Scripts use it for strict mode (`set -euo pipefail`), debugging (`set -x`) and exporting a whole file of variables (`set -a`). `-` turns an option on, `+` turns it off.
+syntax: set [-eux] [-o option]   (set +x to turn off)
+flags:
+  - { flag: "-e (errexit)", meaning: "Exit as soon as a command fails, unless that failure is tested by `if`, `&&` or `||`." }
+  - { flag: "-u (nounset)", meaning: "Treat an unset variable as an error instead of an empty string." }
+  - { flag: "-o pipefail", meaning: "A pipe fails if any command in it fails, not only the last one." }
+  - { flag: "-x (xtrace)", meaning: "Print each command before it runs. `set +x` stops." }
+  - { flag: "-a (allexport)", meaning: "Export every variable that's set from now on, until `set +a`." }
+  - { flag: "-o noclobber", meaning: "Make `>` refuse to overwrite an existing file. `>|` overrides it." }
+  - { flag: "-o", meaning: "With nothing after it, list every option and whether it's on." }
+examples:
+  - { command: "set -euo pipefail", explain: "Strict mode, on the first line after `#!/usr/bin/env bash`.", severity: readonly }
+  - { command: "set -a; source .env; set +a", explain: "Load a .env file and export every variable in it.", severity: modifies }
+  - { command: "set -x", explain: "Trace the next commands in this shell, to see exactly what runs.", severity: readonly }
+  - { command: "echo $-", explain: "Which single-letter options are on right now (`himBHs` is a normal interactive bash).", severity: readonly }
+gotchas:
+  - "Running `set -e` in your terminal closes it at the next failing command. Use it in scripts."
+  - "`set -e` doesn't stop for a failure before `||` or `&&`, inside `if`, or in a pipe without `pipefail`. That's why `cmd || true` keeps a strict script going."
+  - "`set` with no arguments prints every variable and function in the shell, which is long and includes secrets."
+related: [bash, env, export, source]
+scenarios: [env-vars, exit-codes]

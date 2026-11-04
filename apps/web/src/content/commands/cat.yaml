@@ -19,4 +19,4 @@ gotchas:
   - "`cat file | grep x` works, but `grep x file` does the same without the extra program."
   - "Plain `cat` with no file waits for you to type. Press Ctrl+D to finish, or Ctrl+C to quit."
 related: [less, head, tail, tee, echo]
-scenarios: [redirection, expansion-quoting, heredocs]
+scenarios: [redirection, expansion-quoting, heredocs, env-vars]

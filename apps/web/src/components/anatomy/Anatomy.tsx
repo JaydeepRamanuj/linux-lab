@@ -39,7 +39,7 @@ export default function Anatomy({ tokens }: { tokens: AnatomyToken[] }) {
             onMouseEnter={() => setActive(i)}
             onFocus={() => setActive(i)}
             onClick={() => setActive(i)}
-            className={`relative px-2.5 py-1.5 rounded-md border transition ${
+            className={`relative max-w-full break-all text-left px-2.5 py-1.5 rounded-md border transition ${
               active === i ? 'bg-primary-deep/25 border-primary/60' : 'bg-surface-container border-white/5 hover:border-white/15'
             } ${KIND_CLASS[t.kind]}`}
           >

@@ -18,4 +18,4 @@ gotchas:
   - "`ncdu` gives the same information as an interactive, navigable list."
   - "Plain `sort` sorts `du -h` sizes as text (`19G` before `2.8G`). Always pair `du -h` with `sort -h`."
 related: [df, find, sort, ncdu]
-scenarios: [disk-full]
+scenarios: [disk-full, agent-cleanup]
