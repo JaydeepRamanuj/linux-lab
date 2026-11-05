@@ -1,0 +1,146 @@
+---
+track: software
+order: 1
+title: "What a Package Is, and Why Repositories Are Signed"
+summary: "A package is an archive of files plus a description of what it needs and scripts that run as root when it installs. apt downloads packages from repositories it trusts because of a signing key, checks every file against signed checksums, and hands them to dpkg, which keeps the record of what's installed."
+level: essentials
+readingMinutes: 8
+prerequisites: [filesystem-layout, how-sudo-works]
+observe:
+  - command: "grep -E '^(Types|URIs|Suites|Components|Signed-By):' /etc/apt/sources.list.d/ubuntu.sources"
+    explain: "Where apt gets software from. Two repositories, the main archive and the security archive, each with its suites and components. `Signed-By` names the only key apt accepts for them. Older systems, and many guides, use the one-line format in `/etc/apt/sources.list` instead."
+    output: |
+      Types: deb
+      URIs: https://archive.ubuntu.com/ubuntu/
+      Suites: noble noble-updates noble-backports
+      Components: main universe restricted multiverse
+      Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+      Types: deb
+      URIs: https://security.ubuntu.com/ubuntu/
+      Suites: noble-security
+      Components: main universe restricted multiverse
+      Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+  - command: apt-cache policy coreutils
+    explain: "Every version apt knows about, and where each comes from. `***` marks the installed one. The original 24.04 release is in `noble`; the fix came through `noble-updates` and `noble-security`. `500` is the priority of a normal repository; `100` is what's already installed."
+    output: |
+      coreutils:
+        Installed: 9.4-3ubuntu6.3
+        Candidate: 9.4-3ubuntu6.3
+        Version table:
+       *** 9.4-3ubuntu6.3 500
+              500 https://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+              500 https://security.ubuntu.com/ubuntu noble-security/main amd64 Packages
+              100 /var/lib/dpkg/status
+           9.4-3ubuntu6 500
+              500 https://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+  - command: gpgv --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg /var/lib/apt/lists/*_noble-updates_InRelease
+    explain: "Checks the signature on the index that `apt update` downloaded, the same check apt makes. The key fingerprint matches one in Ubuntu's keyring, which came with the system. Your date will be the last time `apt update` ran."
+    output: |
+      gpgv: Signature made Thu Nov  5 03:39:43 2026 UTC
+      gpgv:                using RSA key F6ECB3762474EDA9D21B7022871920D1991BC93C
+      gpgv: Good signature from "Ubuntu Archive Automatic Signing Key (2018) <ftpmaster@ubuntu.com>"
+  - command: ls /var/lib/dpkg/info/cron.*
+    explain: "What dpkg keeps for one installed package: `.list` is every file it installed, `.md5sums` their checksums, `.conffiles` the config files you may edit, and the four scripts it runs as root around installs and removals."
+    output: |
+      /var/lib/dpkg/info/cron.conffiles
+      /var/lib/dpkg/info/cron.list
+      /var/lib/dpkg/info/cron.md5sums
+      /var/lib/dpkg/info/cron.postinst
+      /var/lib/dpkg/info/cron.postrm
+      /var/lib/dpkg/info/cron.preinst
+      /var/lib/dpkg/info/cron.prerm
+  - command: cat /var/lib/dpkg/info/cron.conffiles
+    explain: "The files dpkg treats as yours once installed. If you've edited one and an upgrade brings a new version, dpkg stops and asks which to keep instead of overwriting your change."
+    output: |
+      /etc/default/cron
+      /etc/init.d/cron
+      /etc/pam.d/cron
+      /etc/supercat/spcrc-crontab
+      /etc/supercat/spcrc-crontab-light
+  - command: dpkg --verify coreutils
+    explain: "Compares the package's files on disk with the checksums recorded at install. No output means nothing has changed. A changed file prints a line like `??5?????? /usr/bin/ls`, where the `5` means the checksum differs."
+misconceptions:
+  - myth: "A package is the program."
+    reality: "It's the program plus everything around it: its libraries listed as dependencies, default settings, a service unit, a man page, and scripts that set it all up. `dpkg -L cron` lists 47 paths for one small package, 25 of them files."
+  - myth: "`apt update` updates my software."
+    reality: "It only downloads fresh lists of what the repositories have. Nothing installed changes. `sudo apt upgrade` installs the newer versions those lists mention."
+  - myth: "Packages are signed, so a .deb from any website is safe."
+    reality: "Ubuntu signs the repository index, and apt checks each download against it. A .deb you download yourself skips all of that: nothing checks who made it, and its scripts run as root. Trust it only as far as you trust the site, as in the [install a .deb scenario](/s/install-deb)."
+  - myth: "Adding a repository's key with `apt-key add` is the normal way."
+    reality: "`apt-key` is deprecated because it trusted the key for every repository, so a third party could sign packages that replace Ubuntu's. Today the key goes in `/etc/apt/keyrings/` and only that repository's entry names it with `Signed-By`."
+commands: [apt, apt-cache, apt-file, dpkg]
+references:
+  - label: "sources.list(5): where apt gets packages from"
+    url: https://manpages.ubuntu.com/manpages/noble/man5/sources.list.5.html
+  - label: "apt-secure(8): how apt checks repository signatures"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/apt-secure.8.html
+  - label: "apt_preferences(5): priorities and pinning"
+    url: https://manpages.ubuntu.com/manpages/noble/man5/apt_preferences.5.html
+  - label: "deb(5): the .deb file format"
+    url: https://manpages.ubuntu.com/manpages/noble/man5/deb.5.html
+  - label: "dpkg(1): the low-level package tool"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/dpkg.1.html
+  - label: "Ubuntu Server docs: package management"
+    url: https://documentation.ubuntu.com/server/how-to/software/package-management/
+  - label: "Ubuntu Server docs: third-party repository usage"
+    url: https://documentation.ubuntu.com/server/explanation/software/third-party-repository-usage/
+---
+
+## The mental model
+
+A **package** is one file, like `openssl_3.0.13-0ubuntu3.16_amd64.deb`, that holds three things: the files to install, a short description (name, version, what it **depends** on), and scripts that run as root to set it up. A **repository** is a web server holding thousands of packages and an index of them. Two programs share the work: **apt** decides what to install and downloads it, and **dpkg** unpacks it and keeps the record of what's on the machine.
+
+The interesting part is trust. The download comes over the internet, often from a mirror nobody at Ubuntu runs, and it's going to run as root. apt trusts it because of one chain of checks that starts with a key already on your disk.
+
+<Flow spec={{
+  title: 'From apt update to an installed package',
+  stages: [
+    { title: 'apt update downloads the index', tag: 'InRelease', detail: 'For each suite in your sources, apt fetches `InRelease`: a list of the index files, each with its size and SHA256, signed by the archive\'s key. Then it fetches the `Packages` lists themselves into `/var/lib/apt/lists/`.' },
+    { title: 'It checks the signature', tag: 'Signed-By keyring', detail: 'The signature must come from a key in the keyring the source names, `/usr/share/keyrings/ubuntu-archive-keyring.gpg`, which the `ubuntu-keyring` package installed. A wrong or missing key stops here: `NO_PUBKEY`, and that repository is ignored.' },
+    { title: 'It checks every index against InRelease', tag: 'SHA256', detail: 'Each `Packages` file must match the hash in the signed `InRelease`. The `Packages` list in turn gives the SHA256 of every `.deb`. So one signature covers every package in the suite.' },
+    { title: 'apt install plans the change', tag: 'dependencies', detail: 'apt reads `Depends` for what you asked for, then for each of those, until everything needed is either installed or in the plan. It shows the plan and waits for `y`.' },
+    { title: 'It downloads and checks the .deb files', tag: '/var/cache/apt/archives', detail: 'Each file\'s SHA256 must match the one in the signed list. A mirror that serves a changed file fails here: `Hash Sum mismatch`.' },
+    { title: 'dpkg unpacks and configures', tag: 'as root', detail: 'dpkg runs `preinst`, puts the files in place, runs `postinst` (create a user, enable a service), and records every file in `/var/lib/dpkg`. The package is now `ii`: installed, configured.' }
+  ]
+}} />
+
+What's inside a single `.deb`:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Inside a .deb',
+  caption: 'A .deb is an `ar` archive with two compressed tars. The control part is what dpkg reads; the data part is what lands on your disk.',
+  zones: [
+    { title: 'control.tar', items: [{ text: 'control', tone: 'focus', note: 'name, version, Depends' }, { text: 'md5sums', tone: 'base', note: 'checksum of each file' }, { text: 'conffiles', tone: 'base', note: 'files you may edit' }, { text: 'preinst  postinst  prerm  postrm', tone: 'caution', note: 'run as root' }] },
+    { title: 'data.tar', items: [{ text: './usr/bin/openssl', tone: 'good' }, { text: './usr/share/man/…', tone: 'good' }, { text: './etc/ssl/openssl.cnf', tone: 'good', note: 'a conffile' }] }
+  ]
+}} />
+
+Two things follow. Packages from Ubuntu's repositories come with a checked chain from a key you already had to the bytes on your disk. A `.deb` or install script from a website comes with none of it, and its scripts still run as root. Where the installed files go is the [directory layout](/g/filesystem-layout); `dpkg -L` and `dpkg -S` show it for any package.
+
+## Under the hood
+
+**How a repository is laid out.** A repository has two parts. `dists/` holds the indexes: `dists/noble-updates/InRelease`, and under it `main/binary-amd64/Packages` for each component and architecture. `pool/` holds the `.deb` files themselves; each `Packages` entry names its file, like `pool/main/o/openssl/openssl_3.0.13-0ubuntu3.16_amd64.deb`. Your sources line picks a URL, suites and components, and apt builds the paths from those.
+
+**Suites and components on Ubuntu.** `noble` is what shipped on release day and never changes. `noble-updates` holds bug fixes, `noble-security` holds security fixes, and `noble-backports` holds newer versions of some programs, at a lower priority so apt doesn't pick them unless you ask. The components say who looks after the software: `main` (Canonical supports it), `universe` (the community), `restricted` (drivers that aren't free software) and `multiverse` (other non-free software). Ubuntu's `universe` is about 65,000 packages; `main` is about 6,000.
+
+**Versions and priorities.** apt installs the highest version from the highest-priority source. Versions compare piece by piece, with an optional **epoch** before a colon that beats everything after it: Ubuntu's `firefox` package is version `1:1snap1-0ubuntu5`, which counts as newer than any `140.0` without an epoch. Priorities come from `apt_preferences`: `500` for a normal repository, `100` for backports and for what's installed, and anything you set with a pin file in `/etc/apt/preferences.d/`. The NodeSource installer in the [curl pipe bash scenario](/s/curl-pipe-bash) writes pin files there so its `nodejs` beats Ubuntu's.
+
+**Adding a repository the right way.** A third-party repository needs two things on your machine: its signing key and a sources entry. The key goes in `/etc/apt/keyrings/vendor.gpg`, and the entry says `Signed-By: /etc/apt/keyrings/vendor.gpg`, so that key is trusted for that repository only. Keys in `/etc/apt/trusted.gpg.d/`, where the old `apt-key add` put them, are trusted for **every** repository, including Ubuntu's. Without the key you get this, and apt ignores the repository:
+
+```
+W: GPG error: https://deb.nodesource.com/node_22.x nodistro InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 2F59B5F99B1BE0B4
+E: The repository 'https://deb.nodesource.com/node_22.x nodistro InRelease' is not signed.
+```
+
+The fix is to install the key the vendor's instructions give, not to set `trusted=yes` or `AllowInsecureRepositories`, which turn the whole check off. A **PPA** (`ppa:user/name`) is the same thing hosted on Launchpad; `add-apt-repository` fetches its key and writes the entry for you. Whoever runs a repository you add can ship any package to your machine, including one that replaces a system package, so add only ones you'd trust with root.
+
+**apt, apt-get and dpkg.** dpkg works on one `.deb` at a time and doesn't download anything or resolve dependencies. It only refuses: "dependency problems prevent configuration". apt does the planning and then calls dpkg. `apt` is the version for people (progress bars, colours, a friendlier `search`); `apt-get` and `apt-cache` keep stable output for scripts. When dpkg is left halfway, by an error or a closed terminal, the [fix a broken install scenario](/s/fix-broken-install) finishes the job.
+
+**What dpkg remembers.** `/var/lib/dpkg/status` has an entry for each package with its state, which `dpkg -l` shows as two letters: `ii` installed, `iU` unpacked but not configured, `rc` removed but config files kept (see the [remove a package scenario](/s/remove-package)). `/var/lib/dpkg/info/` has the file lists and scripts for each package. `/var/lib/apt/extended_states` records which packages apt installed only as dependencies (`Auto-Installed: 1`); `autoremove` offers to remove those once nothing needs them. dpkg and apt each take a lock while they work, which is the [apt lock scenario](/s/apt-lock).
+
+**Maintainer scripts and conffiles.** The scripts are shell scripts with root's full power, and dpkg runs them with arguments like `configure` or `upgrade`. Most are a few lines generated by Debian's tools to add a user, enable a systemd unit or rebuild a cache. Files listed in `conffiles` are handled specially: an upgrade never silently overwrites one you changed, and `apt remove` leaves them behind while `apt purge` deletes them.
+
+**Updates without you.** On Ubuntu, `unattended-upgrades` installs security updates once a day through the `apt-daily-upgrade` timer ([scheduled tasks](/g/scheduled-tasks) shows how). That's often what holds the apt lock a few minutes after boot.
+
+**Other distributions.** Fedora uses `.rpm` packages with `dnf` on top of `rpm`, and its repositories live in `/etc/yum.repos.d/`. Arch uses `pacman` with `.pkg.tar.zst` files. Both also sign each package file, not only the index, so a single downloaded package can be checked on its own. Debian and Ubuntu sign the index and check packages against it. The [which package scenario](/s/which-package) has the equivalent lookup commands.

@@ -121,7 +121,7 @@ avoid:
   - "Paste a saved script into ShellGyan's Explain page for a first pass. It flags `sudo`, writes under `/etc` and `~/.bashrc`, and nested downloads. It can't tell you whether the site is trustworthy."
   - "Prefer your package manager (`apt install`, `brew`, `npm i -g`) when it has the program. Use the script when the project's own docs say to."
 related: [heredocs, add-to-path, expansion-quoting, install-deb, command-chaining]
-concepts: [standard-streams, how-sudo-works]
+concepts: [standard-streams, how-sudo-works, what-is-a-package]
 anatomy:
   "-fsSL": "Fail on HTTP errors, no progress bar, but show errors, follow redirects."
   "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh": "The script. `v0.40.1` pins a version, so this URL always serves the same file."

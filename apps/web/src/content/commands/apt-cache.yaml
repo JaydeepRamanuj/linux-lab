@@ -19,6 +19,7 @@ gotchas:
   - "It answers from the lists on disk. Run `sudo apt update` first if they might be stale."
   - "`apt show` and `apt search` give friendlier output for the same questions; `apt-cache` is steadier for scripts and has `policy` and `rdepends`."
 related: [apt, apt-file, dpkg]
+concepts: [what-is-a-package]
 scenarios: []
 distrosTitle: Same lookup on other distros
 distros:

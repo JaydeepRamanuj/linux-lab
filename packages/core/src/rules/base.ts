@@ -16,7 +16,7 @@ const READONLY = new Set([
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
   'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return', 'pstree', 'lslocks', 'systemd-cgls', 'systemd-cgtop', 'systemd-delta',
-  'namei', 'getcap'
+  'namei', 'getcap', 'gpgv', 'readelf', 'objdump'
 ]);
 
 // Subcommands of `systemd-analyze` that only report. Others (`set-log-level` and friends) change the running manager.
@@ -82,6 +82,25 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   }
   if (p === 'capsh' && c.argv.length > 0 && c.argv.every((w) => /^--(print|decode=\S+|supports=\S+|explain=\S+)$/.test(w.value))) {
     return { severity: 'readonly', reason: 'Prints or decodes capabilities.' };
+  }
+
+  // `ldconfig -p` prints the library cache; plain `ldconfig` (or `-v`) rebuilds it.
+  if (p === 'ldconfig' && c.argv.length > 0 && c.argv.every((w) => /^(-p|--print-cache|-V|--version)$/.test(w.value))) {
+    return { severity: 'readonly', reason: 'Prints the shared library cache.' };
+  }
+  if (p === 'ldd') {
+    return { severity: 'readonly', reason: "Lists the shared libraries a program needs. Only use it on programs you trust: for some files ldd runs them to find out. On a file you don't trust, use `readelf -d` or `objdump -p` instead." };
+  }
+
+  // `ldconfig -p` prints the library cache; plain `ldconfig` (or `-v`) rebuilds it.
+  if (p === 'ldconfig' && c.argv.length > 0 && c.argv.every((w) => /^(-p|--print-cache|-V|--version)$/.test(w.value))) {
+    return { severity: 'readonly', reason: 'Prints the shared library cache.' };
+  }
+  if (p === 'ldd') {
+    return {
+      severity: 'readonly',
+      reason: "Lists the shared libraries a program needs. Use it only on programs you trust: for some files ldd runs them to find out. For a file you don't trust, use `readelf -d` or `objdump -p` instead."
+    };
   }
 
   if (SHELLS.has(p) && p !== 'busybox') {

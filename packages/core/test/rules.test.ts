@@ -230,7 +230,20 @@ table('processes and services', [
   ['sudo -V', 'readonly'],
   ['sudo -i', 'elevated'],
   ['sudo', 'elevated'],
-  ['sudo -l rm -rf /tmp/x', 'elevated']
+  ['sudo -l rm -rf /tmp/x', 'elevated'],
+  // Packages and shared libraries inspection (guides G4).
+  ['ldd /usr/bin/ls', 'readonly'],
+  ['ldd --version', 'readonly'],
+  ['ldconfig -p', 'readonly'],
+  ["ldconfig -p | grep -E 'libssl|libz'", 'readonly'],
+  ['ldconfig --print-cache', 'readonly'],
+  ['ldconfig', 'modifies'],
+  ['ldconfig -v', 'modifies'],
+  ['sudo ldconfig', 'elevated'],
+  ['readelf -d /usr/bin/ls | grep NEEDED', 'readonly'],
+  ["objdump -T /usr/bin/ls | grep -o 'GLIBC_[0-9.]*' | sort -uV", 'readonly'],
+  ['gpgv --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg /var/lib/apt/lists/x_InRelease', 'readonly'],
+  ['readelf -d ./app > deps.txt', 'modifies']
 ]);
 
 table('packages', [

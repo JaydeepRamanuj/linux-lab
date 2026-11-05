@@ -36,6 +36,7 @@ gotchas:
   - "`apt` is for people; scripts should use `apt-get`, whose output doesn't change between versions."
   - "\"Could not get lock\" means another install is running. Wait for it."
 related: [dpkg, apt-cache, apt-file, sudo]
+concepts: [what-is-a-package, app-formats]
 scenarios: [apt-lock, fix-broken-install, remove-package, install-deb, which-package]
 distrosTitle: Same job on other distros
 distros:

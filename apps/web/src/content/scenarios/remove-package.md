@@ -125,6 +125,7 @@ avoid:
   - "Snaps and Flatpaks are separate: `sudo snap remove <name>`, or `flatpak uninstall <name>` then `flatpak uninstall --unused`."
   - "Removed a .deb you installed from a file? Use the package name from `dpkg -I`, not the file name: `sudo apt remove pixelpad`."
 related: [install-deb, fix-broken-install, which-package, disk-full]
+concepts: [what-is-a-package, app-formats]
 anatomy:
   "purge": "Remove the package and its system config files in /etc. `remove` keeps the config."
   "--autoremove": "Also remove dependencies that nothing needs any more."

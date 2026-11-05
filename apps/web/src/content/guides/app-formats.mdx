@@ -1,0 +1,119 @@
+---
+track: software
+order: 3
+title: "apt vs AppImage vs Snap vs Flatpak"
+summary: "There are four common ways to get a desktop app on Ubuntu, and they differ in one thing above all: whether the app uses the libraries your system already has or brings its own. That choice decides where the files go, how updates arrive, and whether the app runs in a sandbox."
+level: essentials
+readingMinutes: 7
+prerequisites: [what-is-a-package]
+observe:
+  - command: "apt-cache show firefox | grep -E '^(Version|Pre-Depends|Description)'"
+    explain: "On Ubuntu, the apt package called `firefox` holds no browser. It's a small transitional package that needs `snapd` and installs the Firefox snap. The epoch `1:` makes sure its version beats any older `.deb` of Firefox."
+    output: |
+      Version: 1:1snap1-0ubuntu5
+      Pre-Depends: debconf, snapd (>= 2.54)
+      Description-en: Transitional package - firefox -> firefox snap
+      Description-md5: 28593f0f24b1284477e30b88c6717ba4
+  - command: snap info firefox | head -n 16
+    explain: "The Snap Store's entry, fetched live. `**` after the publisher (a tick in most terminals) means the Store has verified it's really Mozilla. Each **channel** is a track and a risk level; `latest/stable` is what you get by default. The number in brackets is the revision."
+    output: |
+      name:      firefox
+      summary:   Mozilla Firefox web browser
+      publisher: Mozilla**
+      store-url: https://snapcraft.io/firefox
+      contact:   https://support.mozilla.org/kb/file-bug-report-or-feature-request-mozilla
+      license:   MPL-2.0
+      description: |
+        Firefox is a powerful, extensible web browser with support for modern web
+        application technologies.
+      snap-id: 3wdHCAVyZEmYsCMFDE9qt92UV8rC8Wdk
+      channels:
+        latest/stable:    159.0.1-1    2026-11-04 (9171) 299MB -
+        latest/candidate: 159.0.1-1    2026-11-02 (9171) 299MB -
+        latest/beta:      160.0b5-1    2026-11-05 (9179) 312MB -
+        latest/edge:      161.0a1      2026-10-26 (9149) 320MB -
+        esr/stable:       153.6.0esr-2 2026-10-28 (9161) 270MB -
+  - command: "grep -E '^/snap' /snap/README"
+    explain: "How snaps appear in the filesystem. Each revision is a compressed image mounted read-only, never unpacked, and `/snap/bin` holds the commands you type."
+    output: |
+      /snap/bin                   - Symlinks to snap applications.
+      /snap/<snapname>/<revision> - Mountpoint for snap content.
+      /snap/<snapname>/current    - Symlink to current revision, if enabled.
+  - command: "grep -E '^snap_(bin|xdg)_path' /etc/profile.d/apps-bin-path.sh"
+    explain: "Why snap apps show up at all: this login script adds `/snap/bin` to `PATH` and snapd's folder of `.desktop` files to the places your app menu looks. A snap installed in a terminal that predates the login may need a new login to appear."
+    output: |
+      snap_bin_path="/snap/bin"
+      snap_xdg_path="/var/lib/snapd/desktop"
+  - command: apt-cache policy flatpak | head -n 3
+    explain: "Ubuntu doesn't install Flatpak, but it's one `sudo apt install flatpak` away in `universe`. Fedora and Linux Mint come with it set up."
+    output: |
+      flatpak:
+        Installed: (none)
+        Candidate: 1.14.6-1ubuntu0.1
+  - command: apt-cache policy libfuse2t64 | head -n 3
+    explain: "The library many AppImages need and Ubuntu 22.04 and later don't install by default. Without it you get the `libfuse.so.2` error in the [AppImage scenario](/s/appimage-install)."
+    output: |
+      libfuse2t64:
+        Installed: (none)
+        Candidate: 2.9.9-8.1build1
+misconceptions:
+  - myth: "Snaps and Flatpaks are slow because they're emulated or run in a virtual machine."
+    reality: "They run natively on the same kernel. The extra time is on the first start: the compressed image has to be read and, for snaps, the sandbox set up. After that the speed is the same."
+  - myth: "An AppImage is safe because it doesn't install anything."
+    reality: "It runs as you with everything you can reach: your files, your SSH keys, your browser profile. There's no sandbox and no signature check. Download it only from the project's own site."
+  - myth: "Sandboxed apps can't see my files at all, so a sandboxed app is automatically safe."
+    reality: "It depends on what the app asks for. Many Flatpaks request access to your whole home folder, and snaps with **classic** confinement have no sandbox at all. The sandbox also does nothing about who built the app; the publisher still matters."
+  - myth: "Removing an app with apt also removes its snap or Flatpak."
+    reality: "Each format has its own manager and its own list. `snap remove` and `flatpak uninstall` handle theirs, and apt doesn't see them. The [remove a package scenario](/s/remove-package) lists the commands."
+commands: [apt, apt-cache, dpkg]
+references:
+  - label: "Snapcraft docs: snap confinement"
+    url: https://snapcraft.io/docs/snap-confinement
+  - label: "Snapcraft docs: interfaces"
+    url: https://snapcraft.io/docs/interfaces
+  - label: "Flatpak docs: basic concepts"
+    url: https://docs.flatpak.org/en/latest/basic-concepts.html
+  - label: "Flatpak docs: sandbox permissions"
+    url: https://docs.flatpak.org/en/latest/sandbox-permissions.html
+  - label: "flatpak(1): where installations live"
+    url: https://docs.flatpak.org/en/latest/flatpak-command-reference.html
+  - label: "AppImage type 2 runtime (static, no libfuse2 needed)"
+    url: https://github.com/AppImage/type2-runtime
+---
+
+## The mental model
+
+A [shared library](/g/shared-libraries) is used by many programs, so somebody has to make sure the versions fit. The four formats answer "who?" differently:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Who supplies the libraries',
+  caption: 'From apt to AppImage, an app depends less on what your system has and carries more of its own. The trade is size and duplication for independence from your Ubuntu release.',
+  zones: [
+    { title: 'apt (.deb)', items: [{ text: 'app', tone: 'focus' }, { text: 'system libraries', tone: 'base', note: 'shared with everything' }, { text: 'Ubuntu checks they fit', tone: 'good' }] },
+    { title: 'Flatpak', items: [{ text: 'app', tone: 'focus' }, { text: 'runtime', tone: 'caution', note: 'shared by many Flatpaks' }, { text: 'sandbox', tone: 'good', note: 'bubblewrap, portals' }] },
+    { title: 'Snap', items: [{ text: 'app + its libraries', tone: 'focus' }, { text: 'base snap', tone: 'caution', note: 'e.g. core22' }, { text: 'sandbox', tone: 'good', note: 'AppArmor, unless classic' }] },
+    { title: 'AppImage', items: [{ text: 'app + its libraries', tone: 'focus' }, { text: 'your glibc', tone: 'base', note: 'from the system' }, { text: 'no sandbox', tone: 'bad' }] }
+  ]
+}} />
+
+- **apt / .deb.** From Ubuntu's archive or a vendor's apt repository. Files go into `/usr` and `/etc` ([the layout](/g/filesystem-layout)). Installing needs root. Updates come with `sudo apt upgrade`, and security fixes install daily. No sandbox. Remove with `sudo apt remove`.
+- **Snap.** From the Snap Store, run by Canonical. Each version is mounted at `/snap/<name>/<revision>`, with its data in `~/snap/<name>`. Installing needs root. Updates are automatic, four checks a day. Sandboxed unless the snap is `classic`. Remove with `sudo snap remove`.
+- **Flatpak.** Usually from Flathub. Files go to `/var/lib/flatpak`, or `~/.local/share/flatpak` with `--user`, which needs no root; data goes in `~/.var/app/<id>`. Updates come with `flatpak update` or the software centre. Sandboxed. Remove with `flatpak uninstall`.
+- **AppImage.** From the project's website. One file, wherever you put it, with no install and no root. Updates are by hand unless the app updates itself. No sandbox. Remove it by deleting the file.
+
+A rule of thumb that holds up: **use apt when Ubuntu has the app**, because it's smallest, shares security fixes with the rest of the system, and is what everything else is tested with. Reach for a Snap or Flatpak when you need a newer version than your release has, or want the app sandboxed. Use an AppImage when the project offers nothing else; the [AppImage scenario](/s/appimage-install) shows how to make one behave like an installed app. A vendor's own `.deb` is fine if it adds an apt repository so it gets updates; a one-off `.deb` doesn't update itself ([install a .deb](/s/install-deb)).
+
+## Under the hood
+
+**Snaps are mounted, not unpacked.** A snap is a single squashfs image. snapd mounts each installed revision read-only at `/snap/<name>/<revision>` through a loop device, which is why `df` and `lsblk` on Ubuntu list a row of `loop` devices at 100% ([mounts and block devices](/g/mounts-devices)). Apps sit on a **base** snap such as `core22`, a minimal Ubuntu userland, so a snap built against 22.04 behaves the same on 24.04 or Fedora. `snap refresh --time` shows the update schedule; on Ubuntu it's `00:00~24:00/4`, four checks spread over the day. `snap refresh --hold` postpones updates and `snap revert <name>` goes back to the previous revision with its data.
+
+**Snap confinement.** A **strict** snap runs under its own AppArmor profile and seccomp filter. It sees its own files, `~/snap/<name>`, and whatever its **interfaces** allow: `home` for your home folder, `network`, `camera`, `removable-media` and so on. `snap connections <name>` lists them, and you can connect or disconnect them. A **classic** snap has no confinement and runs like an apt package; installing one needs `--classic`, which is your cue to trust it like any other software. `--devmode` installs one with the sandbox only reporting, for developers.
+
+**Flatpak runtimes and the sandbox.** A Flatpak app is built against a **runtime**, such as `org.freedesktop.Platform` or `org.gnome.Platform`, which installs once and is shared by every app that uses it, so ten GNOME apps don't carry ten copies of GTK. Installations live in `/var/lib/flatpak` for the whole system or `~/.local/share/flatpak` with `--user`, with no root needed. The sandbox (bubblewrap) starts with almost nothing: no network and no host files except the app's own folder under `~/.var/app/`. Apps ask for more in their manifest, and **portals** let a sandboxed app open a file you pick in a file chooser, print or open a link without broad permissions. Flathub is the main remote, added with `flatpak remote-add`; check an app's listing for whether it's verified and what permissions it asks for.
+
+**AppImages run from a FUSE mount.** An AppImage file is a small program, the runtime, followed by a squashfs image of the app and its libraries. When you run it, the runtime mounts that image with FUSE at `/tmp/.mount_<name>XXXXXX` and starts the app from there; the mount disappears when the app exits. Older runtimes load `libfuse.so.2` with `dlopen`, so on Ubuntu 22.04 and later they fail until you install `libfuse2t64`. The newer, statically linked runtime doesn't need it. Without FUSE at all, `./app.AppImage --appimage-extract-and-run` unpacks to a temporary folder instead, and `--appimage-extract` unpacks into `squashfs-root/` for a look inside. An AppImage still uses your system's glibc, so it's built on an old distribution to run on new ones; one built on a newer system than yours fails with the `GLIBC_… not found` error.
+
+**Why Ubuntu ships Firefox as a snap.** Mozilla builds and publishes the snap itself, so one build reaches every Ubuntu release at once instead of Ubuntu repackaging each version for each release. The apt package `firefox` is a transitional package that installs the snap. Mozilla also runs its own apt repository for people who want a `.deb`; adding it means pinning its packages above Ubuntu's, as in the pin files described in [what a package is](/g/what-is-a-package).
+
+**Other distributions.** Fedora and Linux Mint ship Flatpak and favour it for desktop apps; Mint disables snap support by default. Snaps work on Fedora and Arch once snapd is installed, but strict confinement relies on AppArmor features that not every kernel has; where they're missing, `snap debug confinement` prints `partial` instead of `strict`, and the sandbox is weaker. AppImages run anywhere with a new enough glibc and, for the older runtime, FUSE 2.

@@ -27,6 +27,7 @@ gotchas:
   - "\"no path found matching pattern\" can mean the path is a symlink (like `/usr/bin/awk`, managed by alternatives) or that the program wasn't installed from a package. `readlink -f` finds the real file."
   - "`dpkg -l | grep …` prints very wide lines when piped. `dpkg -l NAME` on its own fits the terminal."
 related: [apt, apt-cache, apt-file, readlink]
+concepts: [what-is-a-package, shared-libraries]
 scenarios: [apt-lock, command-not-found, fix-broken-install, remove-package, install-deb, which-package]
 distrosTitle: Same lookup on other distros
 distros:

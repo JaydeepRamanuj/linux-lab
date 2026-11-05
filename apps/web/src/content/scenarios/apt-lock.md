@@ -71,7 +71,7 @@ avoid:
   - "Right after boot, give automatic updates a few minutes before installing things."
   - "Don't close a terminal while `apt` is running. If you must stop it, use `Ctrl+C` and then run `sudo dpkg --configure -a`."
 related: [fix-broken-install, system-service]
-concepts: [file-descriptors, scheduled-tasks]
+concepts: [what-is-a-package, file-descriptors, scheduled-tasks]
 anatomy:
   "-p": "Only show the process with this ID."
   "2841": "The PID from the error message."

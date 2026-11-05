@@ -19,6 +19,7 @@ gotchas:
   - "It matches file names only. Read `apt show PACKAGE` before installing what it finds."
   - "Commands reached through an alternatives link (like ImageMagick's `convert`) are listed under their real file name, e.g. `convert-im6.q16`."
 related: [dpkg, apt, apt-cache]
+concepts: [what-is-a-package, shared-libraries]
 scenarios: [which-package]
 distrosTitle: Same lookup on other distros
 distros:

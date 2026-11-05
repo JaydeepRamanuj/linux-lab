@@ -134,6 +134,7 @@ avoid:
   - "If you'd rather not keep the app, `sudo apt remove pixelpad` also clears the error: apt accepts removing the broken package as the fix."
   - "Don't close the terminal while apt or dpkg is running. An interrupted upgrade is the other common way to end up here."
 related: [install-deb, apt-lock, remove-package]
+concepts: [what-is-a-package, shared-libraries]
 anatomy:
   "--fix-broken": "Repair the package database: install what's missing, or remove what can't be satisfied. Short form: `-f`."
   "install": "With no package names, it installs nothing new of its own choosing: only what the fix needs."

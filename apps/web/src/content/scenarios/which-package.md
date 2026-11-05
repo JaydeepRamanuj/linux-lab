@@ -92,6 +92,7 @@ avoid:
   - "The reverse question, \"what did this package install?\", is `dpkg -L <package>`. Add `| grep bin/` to see just the commands."
   - "Fedora: `dnf provides '*/bin/ifconfig'` and `rpm -qf /usr/bin/rg`. Arch: `pacman -F ifconfig` and `pacman -Qo /usr/bin/rg`."
 related: [command-not-found, install-deb, remove-package]
+concepts: [what-is-a-package]
 anatomy:
   "search": "Find packages that contain a file whose path includes this text."
   "bin/ifconfig": "The command name with `bin/` in front, so it only matches programs, not man pages or docs."

@@ -1,0 +1,122 @@
+---
+track: software
+order: 2
+title: "Shared Libraries and \"Error While Loading Shared Libraries\""
+summary: "Most programs don't contain all their own code. They name the libraries they need, and a small loader finds those files and connects them every time the program starts. When one is missing or too old, the program never starts at all, and the error names exactly what's missing."
+level: deeper
+readingMinutes: 7
+prerequisites: [what-is-a-package, pressing-enter]
+observe:
+  - command: file /usr/bin/ls
+    explain: "`dynamically linked` means `ls` needs other files to run, and `interpreter` names the loader that will find them. A program with everything built in says `statically linked`."
+    output: |
+      /usr/bin/ls: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=44900829b39271d878615772bb2a6ffa422f0891, for GNU/Linux 3.2.0, stripped
+  - command: readelf -d /usr/bin/ls | grep NEEDED
+    explain: "What the program asks for, by name only. It doesn't say where the files are: finding them is the loader's job. This reads the file without running it, so it's safe on anything."
+    output: |2
+       0x0000000000000001 (NEEDED)             Shared library: [libselinux.so.1]
+       0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+  - command: ldd /usr/bin/ls
+    explain: "The loader's answer: each library, including the ones those libraries need in turn (`libpcre2-8` comes from `libselinux`), and the file it found. `linux-vdso.so.1` is a small piece of the kernel mapped into every process; it has no file. Use `ldd` only on programs you trust: for some files it runs them to find out."
+    output: |
+      	linux-vdso.so.1 (0x00007fff7b3bf000)
+      	libselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007291a7d17000)
+      	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007291a7a00000)
+      	libpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007291a7c7d000)
+      	/lib64/ld-linux-x86-64.so.2 (0x00007291a7d70000)
+  - command: "ldconfig -p | grep -E 'libssl|libz\\.'"
+    explain: "The loader's index of every library in the standard folders, so it doesn't have to search them on each start. `sudo ldconfig` rebuilds it; packages that install libraries run it for you."
+    output: |
+      	libz.so.1 (libc6,x86-64) => /lib/x86_64-linux-gnu/libz.so.1
+      	libssl.so.3 (libc6,x86-64) => /lib/x86_64-linux-gnu/libssl.so.3
+  - command: ls -l /usr/lib/x86_64-linux-gnu/libz.so*
+    explain: "The name programs ask for, `libz.so.1`, is a symlink to the real file with the full version. An update replaces `libz.so.1.3` and moves the link; every program keeps asking for `libz.so.1`."
+    output: |
+      lrwxrwxrwx 1 root root     11 Oct 21 20:56 /usr/lib/x86_64-linux-gnu/libz.so.1 -> libz.so.1.3
+      -rw-r--r-- 1 root root 113000 Oct 21 20:56 /usr/lib/x86_64-linux-gnu/libz.so.1.3
+  - command: dpkg -S /usr/lib/x86_64-linux-gnu/libz.so.1
+    explain: "Which package provides a library. Library packages are named after the library and its version number: `zlib1g` for `libz.so.1`, `libssl3t64` for `libssl.so.3`."
+    output: "zlib1g:amd64: /usr/lib/x86_64-linux-gnu/libz.so.1"
+  - command: "objdump -T /usr/bin/ls | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -n 3"
+    explain: "The newest C library versions this program needs. This `ls` needs `GLIBC_2.38`, so it runs on Ubuntu 24.04 (glibc 2.39) and not on 22.04 (glibc 2.35). `ldd --version` prints yours."
+    output: |
+      GLIBC_2.33
+      GLIBC_2.34
+      GLIBC_2.38
+  - command: "awk '{print $6}' /proc/$$/maps | grep '\\.so' | sort -u"
+    explain: "The libraries your running shell has loaded right now: the loader, the C library, and `libtinfo` for the terminal. Every process's memory map is in `/proc` ([/proc and /sys](/g/proc-sys))."
+    output: |
+      /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      /usr/lib/x86_64-linux-gnu/libc.so.6
+      /usr/lib/x86_64-linux-gnu/libtinfo.so.6.4
+misconceptions:
+  - myth: "A missing library means the program is broken."
+    reality: "The program is fine; its environment is missing one file. Search for the exact name with `apt-file search libfoo.so.2` ([which package scenario](/s/which-package)) and install that package. Usually that's the whole fix."
+  - myth: "If it wants `libssl.so.1.1` and I have `libssl.so.3`, a symlink will do."
+    reality: "The number after `.so.` changes exactly when the library stops being compatible. A symlink gets the program past the loader, then it crashes or misbehaves when it calls something that changed. Get a build of the program made for your release, or the format that bundles its own libraries ([apt vs AppImage vs Snap vs Flatpak](/g/app-formats))."
+  - myth: "Putting `export LD_LIBRARY_PATH=…` in `~/.bashrc` is a good permanent fix."
+    reality: "It applies to every program you start, so a folder of old libraries meant for one app can break unrelated ones. Keep it to a wrapper script for that one app, or install the library where the loader looks."
+  - myth: "`ldd` lists everything a program will load."
+    reality: "It lists what the program names in its header. Programs can also load libraries later with `dlopen`, by name, when they need them: plugins, GPU drivers, and the FUSE library an AppImage looks for. Those never show in `ldd`."
+commands: [dpkg, apt-file, apt-cache]
+references:
+  - label: "ld.so(8): the dynamic loader and its search order"
+    url: https://man7.org/linux/man-pages/man8/ld.so.8.html
+  - label: "ldconfig(8): the library cache"
+    url: https://man7.org/linux/man-pages/man8/ldconfig.8.html
+  - label: "ldd(1): print shared library dependencies, and its security note"
+    url: https://man7.org/linux/man-pages/man1/ldd.1.html
+  - label: "Program Library HOWTO: shared libraries"
+    url: https://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
+---
+
+## The mental model
+
+Hundreds of programs need to read compressed data, talk TLS or draw text. Instead of each carrying its own copy of that code, one copy sits in a **shared library**, a file ending in `.so` ("shared object"), and every program that needs it uses that file. A security fix to `libssl.so.3` fixes every program that uses it at once, and the code is in memory only once however many programs share it.
+
+The price is that a program can't run on its own. Its file names what it needs, and something has to find those files every single time it starts:
+
+<Flow spec={{
+  title: 'What happens before main() runs',
+  stages: [
+    { title: 'The kernel reads the program file', tag: 'execve', detail: 'The ELF header says the program is dynamically linked and names an interpreter, `/lib64/ld-linux-x86-64.so.2`. The kernel loads that loader along with the program and starts the loader first.' },
+    { title: 'The loader reads the NEEDED list', tag: 'ld.so', detail: '`ls` asks for `libselinux.so.1` and `libc.so.6`. Names only, no folders.' },
+    { title: 'It finds each file', tag: '/etc/ld.so.cache', detail: 'First any folders built into the program or set in `LD_LIBRARY_PATH`, then the cache that `ldconfig` builds from the folders in `/etc/ld.so.conf.d/`, then `/lib` and `/usr/lib`. Each library it loads has its own NEEDED list, so it repeats until nothing is missing.' },
+    { title: 'It connects the calls', tag: 'symbols', detail: 'Each function the program calls from a library, like `printf`, is looked up by name, and versioned names like `GLIBC_2.38` must exist in the library that was found.' },
+    { title: 'The program starts', tag: 'main()', detail: 'Only now does the program\'s own code run. Everything above took a millisecond or two.' }
+  ]
+}} />
+
+So the error comes from the loader, before the program has done anything. It's always one of two shapes:
+
+| Error | What it means | Usual fix |
+|---|---|---|
+| `error while loading shared libraries: libfoo.so.2: cannot open shared object file: No such file or directory` | No file with that name anywhere the loader looks. Exit status 127. | `apt-file search libfoo.so.2`, then install that package. |
+| ``version `GLIBC_2.38' not found (required by ./app)`` | The file exists, but it's older than the one the program was built against. | A build of the app for your release, or a newer release. Never replace the system's C library. |
+
+## Under the hood
+
+**Sonames: why the number matters.** A library's file carries its official name, the **soname**: `readelf -d /usr/lib/x86_64-linux-gnu/libz.so.1.3 | grep SONAME` prints `libz.so.1`. A program built against it records that soname in its NEEDED list. The library's authors change the number only when they break compatibility, so `libssl.so.1.1` and `libssl.so.3` are different libraries as far as the loader is concerned, and both can be installed side by side. Within one soname, newer versions must keep working with old programs; that's the promise that lets apt update a library under hundreds of programs.
+
+**How Debian names library packages.** One package per soname: `zlib1g` holds `libz.so.1`, `libssl3t64` holds `libssl.so.3`. The `t64` on many names in Ubuntu 24.04 comes from a switch to 64-bit time values on 32-bit systems; package names changed on every architecture, while the file names stayed the same. That's why old instructions say `libfuse2` and the [AppImage scenario](/s/appimage-install) says `libfuse2t64`. Header files and the plain `libfoo.so` link that compilers use are in a separate `-dev` package (`zlib1g-dev`), which you need only to build software.
+
+**The search order in full.** For each name, the loader tries, in order: the program's own `RPATH`, an older field some programs still set when they were built; then `LD_LIBRARY_PATH`; then the program's `RUNPATH`, the newer field (a program that has one ignores its `RPATH`); then `/etc/ld.so.cache`; then the default folders `/lib` and `/usr/lib` and their `x86_64-linux-gnu` subfolders. `LD_DEBUG=libs ./app` prints each path it tries, which settles any argument about where a library came from:
+
+```
+find library=libselinuy.so.1 [0]; searching
+ search cache=/etc/ld.so.cache
+ search path=/lib/x86_64-linux-gnu/glibc-hwcaps/x86-64-v3:…:/usr/lib		(system search path)
+  trying file=/lib/x86_64-linux-gnu/libselinuy.so.1
+  …
+./app: error while loading shared libraries: libselinuy.so.1: cannot open shared object file: No such file or directory
+```
+
+**Libraries you install yourself.** `/usr/local/lib` is in Ubuntu's `/etc/ld.so.conf.d/libc.conf`, so `make install` can put libraries there. But the cache doesn't know about them until `sudo ldconfig` runs, which is why a freshly built library can still give "cannot open shared object file". Libraries for one app belong next to that app, found through its `RUNPATH` or a wrapper script that sets `LD_LIBRARY_PATH` just for it. That's how apps in `/opt` work.
+
+**The C library is special.** `libc.so.6` (glibc) and the loader come from one package, `libc6`, and everything on the system depends on them. glibc keeps old programs working through **symbol versions**: a function can exist as `memcpy@GLIBC_2.2.5` and `memcpy@GLIBC_2.14`, and an old program gets the old one. It doesn't work the other way. A program built on a newer system asks for versions an older glibc doesn't have, which is the `GLIBC_2.38 not found` error. Developers who want one binary for many distributions build it on the oldest system they support. Never install a different glibc over the system one: every program, including `apt`, `sudo` and your shell, depends on it.
+
+**Loaded later, by name.** `dlopen()` loads a library while the program runs, for plugins, GPU drivers and optional features. The AppImage runtime does this for FUSE, which is why its error reads `dlopen(): error loading libfuse.so.2` and why `ldd` doesn't list it. The [mounts and block devices guide](/g/mounts-devices) explains what FUSE is used for.
+
+**Static linking.** A statically linked program copies the library code into itself and needs no loader. Most Go programs and many Rust tools are built this way, which is why a single downloaded binary often just runs. The cost is that a security fix in a library needs a new build of every program that copied it.
+
+**Never run `ldd` on a file you don't trust.** For some executables, `ldd` works by running them with a special environment variable, and a malicious file can ignore that and run its own code. `readelf -d` and `objdump -p` only read the file. The ldd(1) man page has the details.
