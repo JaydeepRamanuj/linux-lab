@@ -207,6 +207,8 @@
     background: var(--color-surface-high);
     padding: 0.1em 0.4em;
     border-radius: 0.25rem;
+    /* Long paths like /proc/sys/net/ipv4/… break instead of pushing past a phone screen. */
+    overflow-wrap: anywhere;
   }
   & pre {
     background: var(--color-surface-lowest) !important;
@@ -216,4 +218,70 @@
     font-size: 12.5px;
     overflow-x: auto;
   }
+}
+
+/* Guide bodies: section-sized H2s, and the collapsible "Under the hood" (lib/rehypeUnderTheHood.ts) */
+.guide-md {
+  & h2 {
+    font-size: 1.375rem;
+    margin-top: 2em;
+  }
+  & h3 {
+    font-family: var(--font-display);
+    color: var(--color-on-surface);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-top: 1.5em;
+  }
+  & figure { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+  & table { width: 100%; font-size: 14px; border-collapse: collapse; display: block; overflow-x: auto; }
+  & th, & td { text-align: left; padding: 0.45rem 0.75rem; border-bottom: 1px solid rgb(255 255 255 / 0.06); vertical-align: top; }
+  & th { color: var(--color-on-surface); font-weight: 600; }
+  & blockquote { border-left: 2px solid var(--color-primary-container); padding-left: 1rem; color: var(--color-on-surface); }
+}
+
+details.deeper {
+  margin-top: 2rem;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  border-radius: 0.875rem;
+  background: var(--color-surface-low);
+  & > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.875rem;
+  }
+  & > summary::-webkit-details-marker { display: none; }
+  & > summary::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-right: 2px solid var(--color-secondary);
+    border-bottom: 2px solid var(--color-secondary);
+    transform: rotate(-45deg);
+    transition: transform 0.2s;
+  }
+  &[open] > summary::before { transform: rotate(45deg); }
+  & > summary::after {
+    content: 'Deeper detail · click to expand';
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--text-label);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-outline);
+    text-align: right;
+  }
+  &[open] > summary::after { content: 'Deeper detail'; }
+  & > summary:hover { background: rgb(255 255 255 / 0.03); }
+  & > summary h2 { margin: 0 !important; }
+  & > .deeper-body { padding: 0 1.25rem 1.25rem; }
+  & > .deeper-body > * + * { margin-top: 0.9em; }
+}
+@media (max-width: 480px) {
+  details.deeper > summary::after { content: none; }
 }

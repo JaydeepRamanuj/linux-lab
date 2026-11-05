@@ -81,6 +81,7 @@ avoid:
   - "Shortcut once you trust it: `kill $(lsof -t -i :3000 -sTCP:LISTEN)`. `-t` prints only PIDs, and `-sTCP:LISTEN` keeps only the listener. Without it, the PIDs of connected clients are killed too."
   - "If something you didn't start owns the port (like a system service), `sudo lsof -i :3000` shows it; pick another port instead of killing it."
 related: [command-chaining, stopped-job, frozen-app]
+concepts: [ports-sockets]
 anatomy:
   "<PID>": "The process ID from the lsof output (48213 in this example)."
   ":3000": "The port to look up. Without a host, lsof matches it on every address."

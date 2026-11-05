@@ -1,0 +1,115 @@
+---
+track: permissions
+order: 1
+title: The rwx Permission Model
+summary: How Linux decides whether you can read, change or run a file, why folders read the same three letters differently, and what 755 and 644 encode.
+level: essentials
+readingMinutes: 7
+observe:
+  - command: ls -l deploy.sh
+    explain: "The first column is the file type and the nine permission bits. Then come the link count, the owner, the group, the size and the date."
+    output: |
+      -rw-r--r-- 1 jd jd 27 Nov  5 06:01 deploy.sh
+  - command: stat -c '%A %a %U:%G %n' deploy.sh
+    explain: "`stat` prints the same bits as letters (`%A`) and as an octal number (`%a`), with the owner and group. Handy when you want the number to pass to `chmod`."
+    output: |
+      -rw-r--r-- 644 jd:jd deploy.sh
+  - command: ls -ld ~ /tmp
+    explain: "`-d` shows the folders themselves, not what's in them. Your home folder is closed to others (`---`). `/tmp` is open to everyone, and its last letter is `t`, the sticky bit: anyone can create files there, but only a file's owner can delete it."
+    output: |
+      drwxr-x---  7 jd   jd   4096 Aug 21 07:14 /home/jd
+      drwxrwxrwt 10 root root 4096 Nov  5 06:01 /tmp
+  - command: id
+    explain: "Who the kernel thinks you are: your user ID, your primary group and every other group you're in. These numbers, not names, are what the permission check compares."
+    output: |
+      uid=1000(jd) gid=1000(jd) groups=1000(jd),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users)
+  - command: umask
+    explain: "The bits taken away from every new file and folder you create. `0022` removes write for group and others, so new files come out `644` and new folders `755`. `0002` (also common on Ubuntu, see below) leaves group write on."
+    output: |
+      0022
+misconceptions:
+  - myth: "`chmod 777` is the fix for a permission problem."
+    reality: "It lets every user and every program on the machine change or replace the file. The real problem is almost always a missing `x` bit or the wrong owner. See the scenarios below for both."
+  - myth: "If others can read a file, its owner can too."
+    reality: "The kernel checks exactly one class: owner, group or others, whichever matches you first. The owner of a `044` file (`----r--r--`) gets Permission denied while everyone else can read it."
+  - myth: "To delete a file, you need write permission on the file."
+    reality: "Deleting removes a name from a folder, so it's the folder's `w` and `x` that count. You can delete a read-only file in your own folder (`rm` asks first), and you can't delete your own file from someone else's folder."
+  - myth: "Adding yourself to a group works straight away."
+    reality: "A process gets its groups when you log in, and its children inherit them. `id` shows your current groups. A new group shows up after you log out and back in."
+commands: [ls]
+references:
+  - label: "chmod(1): change file mode bits"
+    url: https://man7.org/linux/man-pages/man1/chmod.1.html
+  - label: "path_resolution(7): how the kernel checks permissions on each part of a path"
+    url: https://man7.org/linux/man-pages/man7/path_resolution.7.html
+  - label: "inode(7): file type and mode bits"
+    url: https://man7.org/linux/man-pages/man7/inode.7.html
+  - label: "umask(2): the file mode creation mask"
+    url: https://man7.org/linux/man-pages/man2/umask.2.html
+  - label: "GNU coreutils manual: File permissions"
+    url: https://www.gnu.org/software/coreutils/manual/html_node/File-permissions.html
+---
+
+## The mental model
+
+Every file and folder stores three things the permission check needs: an **owner** (a user ID), a **group** (a group ID) and nine **permission bits**. The bits are three sets of read, write and execute: one set for the owner, one for the group, one for everyone else.
+
+<Zones spec={{
+  kind: 'zones',
+  title: '-rwxr-xr-x  jd  jd  deploy.sh',
+  caption: 'The nine bits in `ls -l`, split into their three classes. This file is `755`: owner 7 (rwx), group 5 (r-x), others 5 (r-x).',
+  zones: [
+    { title: 'Owner (jd)', items: [{ text: 'r  read', tone: 'good' }, { text: 'w  write', tone: 'good' }, { text: 'x  execute', tone: 'good' }] },
+    { title: 'Group (jd)', items: [{ text: 'r  read', tone: 'good' }, { text: '-  no write', tone: 'ghost' }, { text: 'x  execute', tone: 'good' }] },
+    { title: 'Others', items: [{ text: 'r  read', tone: 'good' }, { text: '-  no write', tone: 'ghost' }, { text: 'x  execute', tone: 'good' }] }
+  ]
+}} />
+
+When a program asks to open or run a file, the kernel picks **one** class for it and checks only that class's bits:
+
+<Flow spec={{
+  title: 'The permission check',
+  stages: [
+    { title: 'A process asks for access', tag: 'your program', detail: 'Every program runs as a user. `cat notes.txt` asks to read; `./deploy.sh` asks to execute; `echo x > notes.txt` asks to write. The kernel gets the process\'s user ID and groups along with the request.' },
+    { title: 'Is the process root?', tag: 'kernel', detail: 'Root (user ID 0) skips the read and write checks. It can run a file only if at least one of the three `x` bits is set.' },
+    { title: 'Does the process own the file?', tag: 'kernel', detail: 'If the user IDs match, the **owner** bits decide, and nothing else is looked at.' },
+    { title: 'Is it in the file\'s group?', tag: 'kernel', detail: 'If any of the process\'s groups matches, the **group** bits decide.' },
+    { title: 'Otherwise: others', tag: 'kernel', detail: 'Everyone else gets the **others** bits.' },
+    { title: 'Allow, or Permission denied', tag: 'kernel', detail: 'If the chosen class has the bit, the request goes ahead. If not, the program gets the error `EACCES`, which it prints as Permission denied.' }
+  ]
+}} />
+
+That's the whole rule. "First match wins" explains the strange cases: an owner with fewer rights than others really does get fewer rights.
+
+### Files and folders read the bits differently
+
+| Bit | On a file | On a folder |
+|---|---|---|
+| `r` | Read the contents | List the names inside |
+| `w` | Change the contents | Create, delete and rename entries |
+| `x` | Run it as a program | Enter it, and reach anything inside by name |
+
+Two consequences come up all the time:
+
+- **Deleting is a folder permission.** Removing `notes.txt` changes the folder, not the file, so you need `w` and `x` on the folder.
+- **Every folder on the path needs `x`.** To open `/home/jd/app/deploy.sh` you need `x` on `/`, `/home`, `/home/jd` and `/home/jd/app`. A folder that is closed to you blocks everything under it, whatever the files' own bits say.
+
+### The numbers
+
+`chmod` also takes the bits as three octal digits, one per class: **read = 4, write = 2, execute = 1**, added up. `755` is `rwxr-xr-x`, `644` is `rw-r--r--`, `600` is `rw-------`. The [chmod numbers scenario](/s/chmod-numbers) has the table and which number to use when.
+
+## Under the hood
+
+**Where the bits live.** Permissions belong to the file's inode, the record that also holds its owner, size and timestamps, not to its name. That's why a hard link to a file has the same permissions under every name. `ls -l` puts the file type in front of the bits: `-` for a regular file, `d` for a folder, `l` for a symlink, `c` and `b` for devices, `s` for a socket and `p` for a pipe.
+
+**Three more bits.** There are twelve bits, not nine. The other three are setuid, setgid and sticky. They show up as `s` or `t` in place of an `x`, and as a fourth, leading octal digit: `/tmp` is `1777`, sticky plus `rwxrwxrwx`. Without the sticky bit, anyone who can write to `/tmp` could delete everyone else's files there.
+
+**Symlinks don't have permissions of their own.** A symlink always shows `lrwxrwxrwx`, and the kernel ignores those bits. It follows the link and checks the target's.
+
+**Scripts need `r` as well as `x`.** To run a compiled program, the kernel needs only `x`: it loads the file itself. A script is different. The kernel reads the `#!` line and starts the interpreter, and the interpreter then has to *read* the script like any other file. So a script with `--x` permissions fails with Permission denied, and `bash deploy.sh` works with only `r`, because there bash is just reading a file. The [Press Enter guide](/g/pressing-enter) covers what happens at that step.
+
+**Execute can be switched off for a whole filesystem.** A filesystem mounted with the `noexec` option refuses to run anything on it, whatever the bits say. Some systems mount `/tmp` or removable drives that way, and the error is the same Permission denied.
+
+**New files and the umask.** A program creating a file asks for a mode, usually `666` for files and `777` for folders. The kernel removes the bits in your umask first. With `022` that gives `644` and `755`. Ubuntu's `/etc/login.defs` sets `UMASK 022`, but also `USERGROUPS_ENAB yes`. At a normal login, that turns the umask into `002` for users whose group has their own name. Your group is only you, so group write does no harm. Shells started some other way, such as a container or WSL, may keep `022`. Run `umask` to see yours.
+
+**A `+` after the bits** in `ls -l` (`-rw-r--r--+`) means the file also has an access control list: extra per-user or per-group rules beyond the three classes. `getfacl` shows them. Most desktop systems never use them.

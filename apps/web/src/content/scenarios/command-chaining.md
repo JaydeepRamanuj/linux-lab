@@ -90,6 +90,7 @@ avoid:
   - "Read a chain left to right, and for each operator ask whether the previous command succeeded."
   - "`echo $?` prints the exit code of the last command. The exit codes scenario covers what the numbers mean, `|| true` and `set -e`."
 related: [port-in-use, redirection, expansion-quoting, exit-codes]
+concepts: [pressing-enter]
 anatomy:
   '"failed"': "The text to print. Quoted, so it's passed as one argument."
 ---

@@ -1,0 +1,43 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { ChevronRight, Clock } from 'lucide-react';
+import { CategoryIcon, Prose } from '../ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { trackById } from '../../data/tracks';
+import { LEVEL_LABEL } from '../../lib/guides';
+
+interface Props {
+  guide: CollectionEntry<'guides'>;
+  /** Show the track chip (off on a track's own page). */
+  showTrack?: boolean;
+}
+const { guide, showTrack = true } = Astro.props;
+const g = guide.data;
+const track = trackById(g.track)!;
+const accent = ACCENTS[track.color];
+---
+
+<a href={`/g/${guide.id}`} class="group card card-hover p-5 flex flex-col gap-3 min-w-0">
+  <div class="flex flex-wrap items-center gap-2">
+    {
+      showTrack && (
+        <span class={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-lowest font-mono text-[11px] ${accent.text}`}>
+          <CategoryIcon name={track.icon} className="h-3.5 w-3.5" />
+          {track.name}
+        </span>
+      )
+    }
+    <span class:list={['px-2 py-0.5 rounded-md label-caps', g.level === 'essentials' ? 'bg-surface-high text-primary' : 'bg-surface-high text-secondary']}>{LEVEL_LABEL[g.level]}</span>
+    <span class="inline-flex items-center gap-1 font-mono text-[11px] text-outline">
+      <Clock className="h-3 w-3" />
+      {g.readingMinutes} min
+    </span>
+  </div>
+  <div class="flex items-start gap-3">
+    <div class="flex-1 min-w-0 space-y-1">
+      <h3 class="font-display text-[17px] font-semibold text-on-surface group-hover:text-white transition">{g.title}</h3>
+      <p class="text-sm text-on-surface-variant leading-relaxed"><Prose text={g.summary} /></p>
+    </div>
+    <ChevronRight className="h-4 w-4 mt-1 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0" />
+  </div>
+</a>

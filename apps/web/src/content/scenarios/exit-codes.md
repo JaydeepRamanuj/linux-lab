@@ -141,6 +141,7 @@ avoid:
   - "`if cmd; then … fi` and `cmd && next` test the exit code, not the output. A program that prints \"error\" but exits 0 counts as success."
   - "`exit 3` ends a script with code 3. `bash -c 'exit 3'; echo $?` prints `3`."
 related: [command-chaining, redirection, env-vars, expansion-quoting]
+concepts: [pressing-enter]
 anatomy:
   "test": "`npm test` runs the test script. It exits 1 if any test fails."
   "||": "Run the next command only if the previous one failed (non-zero exit code)."

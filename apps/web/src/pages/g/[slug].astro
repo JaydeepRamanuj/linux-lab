@@ -1,0 +1,260 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import { Clock, Microscope, Lightbulb, X, Check, MapPin, BookOpen, Library, ExternalLink, ArrowLeft, ArrowRight, Route, Info } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import AnatomyBlock from '../../components/anatomy/AnatomyBlock.astro';
+import Flow from '../../components/guide/Flow.astro';
+import Layers from '../../components/guide/Layers.astro';
+import Zones from '../../components/guide/Zones.astro';
+import { CommandWell, Prose, CategoryIcon } from '../../components/ui/ui';
+import { ACCENTS, SEVERITY } from '../../lib/theme';
+import { trackById } from '../../data/tracks';
+import { buildAnatomy } from '../../lib/anatomy';
+import { assertContentValid } from '../../lib/contentChecks';
+import { publishedGuides, LEVEL_LABEL } from '../../lib/guides';
+import { moduleById } from '../../data/modules';
+
+export async function getStaticPaths() {
+  await assertContentValid();
+  const guides = await publishedGuides();
+  return guides.map((guide) => ({ params: { slug: guide.id }, props: { guide } }));
+}
+
+interface Props {
+  guide: CollectionEntry<'guides'>;
+}
+const { guide } = Astro.props;
+const g = guide.data;
+const track = trackById(g.track)!;
+const accent = ACCENTS[track.color];
+const { Content } = await render(guide);
+
+const guides = await publishedGuides();
+const prerequisites = g.prerequisites.map((id) => guides.find((x) => x.id === id)).filter((x): x is CollectionEntry<'guides'> => Boolean(x));
+const inTrack = guides.filter((x) => x.data.track === g.track);
+const position = inTrack.findIndex((x) => x.id === guide.id);
+const prev = inTrack[position - 1];
+const next = inTrack[position + 1];
+
+const observe = await Promise.all(g.observe.map(async (o) => ({ ...o, anatomy: await buildAnatomy(o.command) })));
+
+// "Where this shows up": the guide's own lists plus every scenario or command that names it in `concepts`.
+const scenarios = (await getCollection('scenarios', (s) => !s.data.draft))
+  .filter((s) => g.scenarios.includes(s.id) || s.data.concepts.includes(guide.id))
+  .sort((a, b) => a.data.number - b.data.number);
+const commands = (await getCollection('commands'))
+  .filter((c) => g.commands.includes(c.data.name) || c.data.concepts.includes(guide.id))
+  .sort((a, b) => a.data.name.localeCompare(b.data.name));
+---
+
+<Base title={g.title} description={g.summary.replace(/`/g, '')} current="learn">
+  <div class="max-w-4xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8 sm:gap-10">
+    <Breadcrumbs items={[{ label: 'Learn', href: '/learn' }, { label: track.name, href: `/learn/${track.id}` }, { label: g.title }]} back={{ href: `/learn/${track.id}`, label: 'Back to track' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10 space-y-5">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-secondary/10"></div>
+      <div class="relative flex flex-wrap items-center gap-2">
+        <a href={`/learn/${track.id}`} class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-lowest font-mono text-[11px] ${accent.text} hover:brightness-125`}>
+          <CategoryIcon name={track.icon} className="h-3.5 w-3.5" />
+          {track.name}
+        </a>
+        <span class:list={['px-2.5 py-1 rounded-md bg-surface-high label-caps', g.level === 'essentials' ? 'text-primary' : 'text-secondary']}>{LEVEL_LABEL[g.level]}</span>
+        <span class="inline-flex items-center gap-1 font-mono text-[11px] text-outline">
+          <Clock className="h-3.5 w-3.5" />
+          {g.readingMinutes} min read
+        </span>
+      </div>
+      <div class="relative space-y-3">
+        <h1 class="text-3xl sm:text-[2.5rem] font-bold leading-[1.15] tracking-[-0.02em]">{g.title}</h1>
+        <p class="text-base sm:text-lg text-on-surface-variant leading-relaxed"><Prose text={g.summary} /></p>
+      </div>
+      {
+        prerequisites.length > 0 && (
+          <div class="relative flex flex-wrap items-center gap-2 text-sm">
+            <span class="flex items-center gap-1.5 label-caps text-outline">
+              <Route className="h-3.5 w-3.5" />
+              Read first
+            </span>
+            {prerequisites.map((p) => (
+              <a href={`/g/${p.id}`} class="rounded-lg bg-surface-low border border-white/6 hover:border-primary-container/40 transition px-2.5 py-1 text-[13px] text-on-surface">
+                {p.data.title}
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </section>
+
+    <article class="card p-5 sm:p-8">
+      <div class="md guide-md">
+        <Content components={{ Flow, Layers, Zones }} />
+      </div>
+    </article>
+
+    {
+      observe.length > 0 && (
+        <section class="card p-5 sm:p-8 space-y-6">
+          <div class="space-y-1">
+            <h2 class="flex items-center gap-2 text-[22px] font-semibold">
+              <Microscope className="h-5 w-5 text-tertiary" />
+              See it on your machine
+            </h2>
+            <p class="text-sm text-on-surface-variant">
+              Every command here only reads. The rule engine rates each one <span class={SEVERITY.readonly.text}>{SEVERITY.readonly.label}</span>, and
+              the build fails if one isn't.
+            </p>
+          </div>
+          {observe.map((o) => (
+            <div class="flex flex-col gap-3 pt-5 border-t border-white/5 first-of-type:border-0 first-of-type:pt-0">
+              <p class="text-sm text-on-surface leading-relaxed">
+                <Prose text={o.explain} />
+              </p>
+              <CommandWell command={o.command} client:visible />
+              {o.output && <pre class="well px-4 py-3 font-mono text-[12px] leading-relaxed text-on-surface-variant overflow-x-auto whitespace-pre">{o.output.replace(/\n$/, '')}</pre>}
+              <details class="group/anat rounded-xl bg-surface-low border border-white/5 px-4 py-3">
+                <summary class="cursor-pointer list-none flex items-center gap-2 label-caps text-outline hover:text-on-surface [&::-webkit-details-marker]:hidden">
+                  <span class="transition group-open/anat:rotate-90">›</span>
+                  What each part does
+                </summary>
+                <div class="pt-3">
+                  <AnatomyBlock data={o.anatomy} label="Command anatomy" />
+                </div>
+              </details>
+            </div>
+          ))}
+        </section>
+      )
+    }
+
+    {
+      g.misconceptions.length > 0 && (
+        <section class="card p-5 sm:p-8 space-y-5">
+          <h2 class="flex items-center gap-2 text-[22px] font-semibold">
+            <Lightbulb className="h-5 w-5 text-caution" />
+            Common misconceptions
+          </h2>
+          <div class="space-y-3">
+            {g.misconceptions.map((m) => (
+              <div class="rounded-xl bg-surface-low border border-white/5 p-4 space-y-2.5">
+                <p class="flex items-start gap-2.5 text-sm text-on-surface-variant">
+                  <X className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+                  <span>
+                    <span class="sr-only">Myth: </span>
+                    <Prose text={m.myth} />
+                  </span>
+                </p>
+                <p class="flex items-start gap-2.5 text-sm text-on-surface leading-relaxed">
+                  <Check className="h-4 w-4 text-safe shrink-0 mt-0.5" />
+                  <span>
+                    <span class="sr-only">Reality: </span>
+                    <Prose text={m.reality} />
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      (scenarios.length > 0 || commands.length > 0) && (
+        <section class="space-y-5">
+          <h2 class="flex items-center gap-2 text-[22px] font-semibold">
+            <MapPin className="h-5 w-5 text-secondary" />
+            Where this shows up
+          </h2>
+          {scenarios.length > 0 && (
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {scenarios.map((s) => {
+                const m = moduleById(s.data.module)!;
+                return (
+                  <a href={`/s/${s.id}`} class="group card card-hover p-4 flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-lg bg-surface-high flex items-center justify-center shrink-0">
+                      <CategoryIcon name={m.icon} className={`h-4.5 w-4.5 ${ACCENTS[m.color].text}`} />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="font-mono text-[11px] text-tertiary">Scenario #{String(s.data.number).padStart(2, '0')}</div>
+                      <div class="font-display font-semibold text-on-surface text-[15px] leading-snug">{s.data.title}</div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+          {commands.length > 0 && (
+            <div class="space-y-2">
+              <div class="flex items-center gap-1.5 label-caps text-outline">
+                <BookOpen className="h-3.5 w-3.5 text-tertiary" />
+                Commands
+              </div>
+              <div class="flex flex-wrap gap-2">
+                {commands.map((c) => (
+                  <a href={`/c/${c.id}`} class="rounded-lg bg-surface-container border border-white/6 hover:border-primary-container/40 transition px-3 py-2 text-[12px]">
+                    <span class="font-mono text-tertiary">{c.data.name}</span>
+                    <span class="text-outline ml-2">{c.data.title}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )
+    }
+
+    {
+      g.references.length > 0 && (
+        <section class="space-y-3">
+          <h2 class="flex items-center gap-2 label-caps text-on-surface">
+            <Library className="h-4 w-4 text-primary" />
+            References
+          </h2>
+          <ul class="space-y-1.5">
+            {g.references.map((r) => (
+              <li>
+                <a href={r.url} rel="noopener noreferrer" target="_blank" class="inline-flex items-start gap-1.5 text-sm text-tertiary hover:underline underline-offset-3">
+                  <ExternalLink className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  {r.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      (prev || next) && (
+        <nav class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="More in this track">
+          {prev ? (
+            <a href={`/g/${prev.id}`} class="group card card-hover p-4 flex items-center gap-3">
+              <ArrowLeft className="h-4 w-4 text-outline group-hover:text-primary shrink-0" />
+              <span class="min-w-0">
+                <span class="block label-caps text-outline">Previous</span>
+                <span class="block font-display font-semibold text-on-surface">{prev.data.title}</span>
+              </span>
+            </a>
+          ) : (
+            <span class="hidden sm:block" />
+          )}
+          {next && (
+            <a href={`/g/${next.id}`} class="group card card-hover p-4 flex items-center justify-end gap-3 text-right">
+              <span class="min-w-0">
+                <span class="block label-caps text-outline">Next in {track.name}</span>
+                <span class="block font-display font-semibold text-on-surface">{next.data.title}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary shrink-0" />
+            </a>
+          )}
+        </nav>
+      )
+    }
+
+    <p class="flex items-center gap-2 text-xs text-outline">
+      <Info className="h-3.5 w-3.5 text-tertiary shrink-0" />
+      Paths and output assume Ubuntu/Debian unless the text says otherwise. Sample output is trimmed.
+    </p>
+  </div>
+</Base>

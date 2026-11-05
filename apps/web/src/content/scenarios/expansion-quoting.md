@@ -117,6 +117,7 @@ avoid:
   - "To loop over files, use `for f in *` or `find … -print0`, not `$(ls)`. A glob gives each name as one piece."
   - "`printenv HOME` or `echo \"$HOME\"` shows a variable's value; `declare -p file` shows it with quotes, so trailing spaces are visible."
 related: [redirection, command-chaining, find-files, heredocs, env-vars, agent-cleanup]
+concepts: [pressing-enter]
 anatomy:
   '"$file"': "The variable `file`, in double quotes: its value is filled in but stays one argument, spaces and all."
 ---

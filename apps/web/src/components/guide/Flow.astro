@@ -1,0 +1,13 @@
+---
+// MDX entry point for the Flow widget. Hydrated here, because a client directive can't be added to a
+// component passed through MDX's `components` map.
+import FlowView from '../widgets/Flow';
+import type { FlowSpec } from '../widgets/Flow';
+
+interface Props {
+  spec: FlowSpec;
+}
+const { spec } = Astro.props;
+---
+
+<FlowView spec={spec} client:visible />

@@ -10,6 +10,8 @@ import AnatomyBlock from '../../components/anatomy/AnatomyBlock.astro';
 import { SeverityBadge, CommandWell, Prose } from '../../components/ui/ui';
 import { COMMAND_CATEGORIES, LEVELS } from '../../data/commandCategories';
 import { buildAnatomy } from '../../lib/anatomy';
+import ConceptLinks from '../../components/guide/ConceptLinks.astro';
+import { guidesForCommand } from '../../lib/guides';
 
 export async function getStaticPaths() {
   await assertContentValid();
@@ -35,6 +37,7 @@ const allCommands = await getCollection('commands');
 const related = c.related.map((name) => allCommands.find((x) => x.data.name === name)).filter((x): x is CollectionEntry<'commands'> => Boolean(x));
 const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filter((s) => c.scenarios.includes(s.id));
 const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string, string][];
+const concepts = await guidesForCommand(command);
 ---
 
 <Base title={`${c.name}: ${c.title}`} description={c.summary} current="library">
@@ -142,6 +145,8 @@ const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string,
         </section>
       )
     }
+
+    <ConceptLinks title="Concepts behind this command" guides={concepts} />
 
     {
       (related.length > 0 || scenarios.length > 0) && (

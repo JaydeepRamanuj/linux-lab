@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "apps/web", "dev", "--port", "4321"],
       "port": 4321
+    },
+    {
+      "name": "web-node",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd apps\\web && node node_modules\\astro\\bin\\astro.mjs dev --port 4321"],
+      "port": 4321
     }
   ]
 }

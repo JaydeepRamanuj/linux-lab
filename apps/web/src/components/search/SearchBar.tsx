@@ -29,7 +29,8 @@ function loadIndex() {
 
 const GROUPS: { type: SearchItem['type']; label: string; tone: string }[] = [
   { type: 'scenario', label: 'Scenarios', tone: 'text-primary' },
-  { type: 'command', label: 'Commands', tone: 'text-tertiary' }
+  { type: 'command', label: 'Commands', tone: 'text-tertiary' },
+  { type: 'guide', label: 'Guides', tone: 'text-secondary' }
 ];
 
 export default function SearchBar({ variant = 'header', hotkey = false }: { variant?: 'header' | 'hero'; hotkey?: boolean }) {
@@ -127,7 +128,7 @@ export default function SearchBar({ variant = 'header', hotkey = false }: { vari
           }}
           onMouseEnter={ensureIndex}
           onKeyDown={handleKeyDown}
-          aria-label="Search scenarios and commands"
+          aria-label="Search scenarios, commands and guides"
           placeholder={hero ? "Describe your problem: 'port already in use', 'permission denied'…" : 'Search…'}
           className={`w-full bg-surface-low border border-white/8 text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container/60 focus:ring-2 focus:ring-primary-container/20 transition [&::-webkit-search-cancel-button]:hidden ${
             hero
@@ -193,7 +194,11 @@ export default function SearchBar({ variant = 'header', hotkey = false }: { vari
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium text-on-surface truncate">{item.title}</div>
-                          <div className="text-xs text-outline truncate font-mono mt-0.5">{commandPreview(item.command)}</div>
+                          {item.command ? (
+                            <div className="text-xs text-outline truncate font-mono mt-0.5">{commandPreview(item.command)}</div>
+                          ) : (
+                            <div className="text-xs text-outline truncate mt-0.5">{item.subtitle}</div>
+                          )}
                         </div>
                         {active ? (
                           <CornerDownLeft className="h-3.5 w-3.5 text-outline shrink-0" />

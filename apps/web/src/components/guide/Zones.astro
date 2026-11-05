@@ -1,0 +1,23 @@
+---
+// MDX entry point for the existing Zones widget, framed like the other guide widgets.
+import ZonesView from '../widgets/Zones';
+import type { ZonesSpec } from '../widgets/Zones';
+import { Prose } from '../ui/ui';
+
+interface Props {
+  spec: ZonesSpec;
+}
+const { spec } = Astro.props;
+---
+
+<figure class="not-prose well p-4 sm:p-5 my-6 space-y-3">
+  {spec.title && <figcaption class="label-caps text-outline">{spec.title}</figcaption>}
+  <ZonesView spec={spec} />
+  {
+    spec.caption && (
+      <p class="text-xs text-on-surface-variant leading-relaxed">
+        <Prose text={spec.caption} />
+      </p>
+    )
+  }
+</figure>

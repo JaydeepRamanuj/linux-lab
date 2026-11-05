@@ -1,15 +1,23 @@
 ---
 import { getCollection } from 'astro:content';
-import { ArrowRight, Zap, Shapes, BookOpen, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Zap, Shapes, BookOpen, ShieldAlert, Wrench, GraduationCap } from 'lucide-react';
 import Base from '../layouts/Base.astro';
 import SearchBar from '../components/search/SearchBar';
 import { CategoryIcon, CommandText, CopyButton, commandPreview } from '../components/ui/ui';
 import { ACCENTS, SEVERITY, SEVERITY_LEVELS } from '../lib/theme';
 import { MODULES } from '../data/modules';
+import { TAGLINE } from '../data/site';
 
 const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).sort((a, b) => a.data.number - b.data.number);
 const commands = await getCollection('commands');
+const guides = await getCollection('guides', (g) => !g.data.draft);
 const total = scenarios.length;
+
+const ENTRY_POINTS = [
+  { href: '#modules', Icon: Wrench, tone: 'text-primary', box: 'bg-primary-container/15 border-primary-container/30', title: 'Fix something', text: `${total} problem-first walkthroughs, from “permission denied” to a port that's already in use.` },
+  { href: '/library', Icon: BookOpen, tone: 'text-tertiary', box: 'bg-tertiary-container/20 border-tertiary/30', title: 'Look up a command', text: `${commands.length} commands with their common flags, examples, gotchas and a danger rating.` },
+  { href: '/learn', Icon: GraduationCap, tone: 'text-secondary', box: 'bg-secondary/10 border-secondary/30', title: 'Understand the system', text: `How the shell, permissions and processes actually work. ${guides.length} ${guides.length === 1 ? 'guide' : 'guides'} so far.` }
+];
 ---
 
 <Base title="ShellGyan" current="scenarios">
@@ -17,7 +25,7 @@ const total = scenarios.length;
     <section class="text-center max-w-3xl mx-auto space-y-6">
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-low border border-white/8 label-caps text-on-surface-variant">
         <Zap className="h-3.5 w-3.5 text-caution" />
-        Linux command survival guide
+        {TAGLINE}
         <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
       </div>
       <h1 class="text-[2.25rem] sm:text-display font-bold tracking-[-0.02em] leading-[1.1]">
@@ -34,7 +42,26 @@ const total = scenarios.length;
       </div>
     </section>
 
-    <section class="space-y-6">
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4" aria-label="Where to start">
+      {
+        ENTRY_POINTS.map((e) => (
+          <a href={e.href} class="group card card-hover p-5 flex items-start gap-4 hover:-translate-y-0.5">
+            <div class={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${e.box}`}>
+              <e.Icon className={`h-5 w-5 ${e.tone}`} />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 class="flex items-center gap-1.5 text-base font-semibold text-on-surface">
+                {e.title}
+                <ArrowRight className="h-3.5 w-3.5 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition" />
+              </h2>
+              <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{e.text}</p>
+            </div>
+          </a>
+        ))
+      }
+    </section>
+
+    <section id="modules" class="space-y-6 scroll-mt-24">
       <div class="flex items-center justify-between gap-4">
         <h2 class="flex items-center gap-2 label-caps text-on-surface">
           <Shapes className="h-4 w-4 text-primary" />
@@ -126,26 +153,15 @@ const total = scenarios.length;
       </div>
     </section>
 
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <a href="/library" class="group card card-hover p-6 flex items-start gap-4">
-        <div class="w-10 h-10 rounded-lg bg-tertiary-container/20 border border-tertiary/30 flex items-center justify-center shrink-0">
-          <BookOpen className="h-5 w-5 text-tertiary" />
-        </div>
-        <div class="flex-1">
-          <h3 class="font-semibold text-on-surface">Command library</h3>
-          <p class="text-sm text-on-surface-variant mt-1">{commands.length} commands with their common flags, examples, gotchas and severity.</p>
-        </div>
-        <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition mt-1" />
-      </a>
-      <div class="card p-6 flex items-start gap-4 opacity-70">
-        <div class="w-10 h-10 rounded-lg bg-elevated-surface border border-elevated-border/60 flex items-center justify-center shrink-0">
-          <ShieldAlert className="h-5 w-5 text-elevated" />
-        </div>
-        <div>
-          <h3 class="font-semibold text-on-surface">Command explainer <span class="label-caps text-outline ml-1">soon</span></h3>
-          <p class="text-sm text-on-surface-variant mt-1">Paste what your coding agent wants to run and see every part explained, with a severity verdict.</p>
-        </div>
+    <a href="/explain" class="group card card-hover p-6 flex items-start gap-4">
+      <div class="w-10 h-10 rounded-lg bg-elevated-surface border border-elevated-border/60 flex items-center justify-center shrink-0">
+        <ShieldAlert className="h-5 w-5 text-elevated" />
       </div>
-    </section>
+      <div class="flex-1">
+        <h2 class="font-semibold text-on-surface">Command explainer</h2>
+        <p class="text-sm text-on-surface-variant mt-1">Paste what your coding agent wants to run and see every part explained, with a severity verdict.</p>
+      </div>
+      <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition mt-1" />
+    </a>
   </div>
 </Base>

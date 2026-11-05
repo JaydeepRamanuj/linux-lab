@@ -1,0 +1,90 @@
+---
+import { GraduationCap, ArrowRight } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import { CategoryIcon, Prose } from '../../components/ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { TRACKS } from '../../data/tracks';
+import { publishedGuides, LEVEL_LABEL } from '../../lib/guides';
+
+const guides = await publishedGuides();
+const live = TRACKS.filter((t) => guides.some((g) => g.data.track === t.id)).length;
+---
+
+<Base
+  title="How Linux works"
+  description="Guides to the system your commands run on: the shell, the filesystem, permissions, processes, the kernel, services, networking and packages."
+  current="learn"
+>
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Learn' }]} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-secondary/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 bg-secondary/10 border-secondary/30">
+          <GraduationCap className="h-6 w-6 text-secondary" />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Guides</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">How Linux works</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">
+            The scenarios fix a problem. These guides explain the part of the system underneath it, so you can handle the next problem yourself.
+            Each one starts with a five-minute mental model, keeps the deeper detail folded away, and gives you read-only commands to see it on
+            your own machine.
+          </p>
+          <p class="font-mono text-[11px] text-outline pt-1">
+            {guides.length} {guides.length === 1 ? 'guide' : 'guides'} <span class="text-outline-variant mx-1">•</span>
+            {live} of {TRACKS.length} tracks started
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {
+        TRACKS.map((t, i) => {
+          const accent = ACCENTS[t.color];
+          const inTrack = guides.filter((g) => g.data.track === t.id);
+          return (
+            <section class:list={['card p-5 sm:p-6 flex flex-col gap-4 min-w-0', inTrack.length === 0 && 'opacity-75']}>
+              <a href={`/learn/${t.id}`} class="group flex items-start gap-4">
+                <div class={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${accent.bg} ${accent.ring}`}>
+                  <CategoryIcon name={t.icon} className={`h-5 w-5 ${accent.text}`} />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <span class="label-caps text-outline-variant">Track 0{i + 1}</span>
+                  <h2 class="flex items-center gap-1.5 text-lg font-semibold text-on-surface group-hover:text-white">
+                    {t.name}
+                    <ArrowRight className="h-3.5 w-3.5 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition" />
+                  </h2>
+                  <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{t.description}</p>
+                </div>
+              </a>
+              {inTrack.length > 0 ? (
+                <ol class="space-y-1.5">
+                  {inTrack.map((g) => (
+                    <li>
+                      <a href={`/g/${g.id}`} class="group flex items-start gap-3 rounded-lg bg-surface-low border border-white/5 hover:border-primary-container/40 transition px-3 py-2.5">
+                        <span class={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${accent.dot}`} />
+                        <span class="flex-1 min-w-0">
+                          <span class="block text-sm font-medium text-on-surface">{g.data.title}</span>
+                          <span class="block text-xs text-outline mt-0.5">
+                            <Prose text={g.data.summary} />
+                          </span>
+                        </span>
+                        <span class="label-caps text-outline-variant shrink-0 mt-0.5 hidden sm:inline">{LEVEL_LABEL[g.data.level]}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p class="text-xs text-outline italic">Guides for this track are on the way.</p>
+              )}
+            </section>
+          );
+        })
+      }
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,117 @@
+---
+track: shell
+order: 1
+title: What Happens When You Press Enter
+summary: The shell splits your line into words, expands them, finds what the first word names, then starts a copy of itself that becomes that program, and waits for its exit code.
+level: essentials
+readingMinutes: 8
+observe:
+  - command: type cd ls ll
+    explain: "`type` answers the question the shell asks in step 4: what does this name mean? `cd` is built into the shell, and `ls` and `ll` are aliases from Ubuntu's default `~/.bashrc`."
+    output: |
+      cd is a shell builtin
+      ls is aliased to `ls --color=auto'
+      ll is aliased to `ls -alF'
+  - command: type -a echo
+    explain: "`-a` lists every match, in the order the shell checks them. The builtin wins. The two files are the same program: on current Ubuntu `/bin` is a link to `/usr/bin`, and both are on `PATH`."
+    output: |
+      echo is a shell builtin
+      echo is /usr/bin/echo
+      echo is /bin/echo
+  - command: echo "$PATH" | tr ':' '\n'
+    explain: "The folders searched for a program, one per line, in order. The first folder with a matching executable file wins."
+    output: |
+      /usr/local/sbin
+      /usr/local/bin
+      /usr/sbin
+      /usr/bin
+      /sbin
+      /bin
+      /usr/games
+      /usr/local/games
+      /snap/bin
+  - command: bash -xc 'echo ~/*.md "$HOME"'
+    explain: "`-x` prints each command after expansion, just before it runs, with a `+` in front. The `~`, the `*` and the variable are all gone: `echo` only ever sees the finished words."
+    output: |
+      + echo /home/jd/notes.md /home/jd/todo.md /home/jd
+      /home/jd/notes.md /home/jd/todo.md /home/jd
+  - command: echo $$; bash -c 'echo "child $$, parent $PPID"'
+    explain: "`$$` is the current shell's process ID. The second command runs in a new process, whose parent is your shell. Every external command you run gets a new PID like this."
+    output: |
+      4120
+      child 51877, parent 4120
+  - command: ls /nope; echo $?
+    explain: "`$?` holds the last command's exit code: `0` is success and anything else is failure. `ls` uses `2` for \"couldn't access a file you named\". The shell itself uses `127` for command not found and `126` for found but not executable."
+    output: |
+      ls: cannot access '/nope': No such file or directory
+      2
+misconceptions:
+  - myth: "`which` tells you what will run."
+    reality: "`which` only searches `PATH`. Aliases, functions and builtins come first, and `which` doesn't know about them. `type` asks the shell itself."
+  - myth: "The program sees the `*` and the `$VAR`."
+    reality: "The shell expands them before the program starts. `ls *.txt` hands `ls` a list of file names. If nothing matches, bash passes the pattern through unchanged, so the program gets a literal `*.txt`."
+  - myth: "Quotes get passed to the program."
+    reality: "Quotes only tell the shell where a word starts and ends and what not to expand. They're removed before the program runs: `echo \"a  b\"` receives one argument, `a  b`, with no quote characters."
+  - myth: "`./script.sh` and `bash script.sh` do the same thing."
+    reality: "`./script.sh` asks the kernel to run the file, so it needs the `x` bit, and the `#!` line picks the interpreter. `bash script.sh` runs bash, which reads the file as data: it needs only `r`, and the `#!` line is ignored."
+  - myth: "`cd` is a program like `ls`."
+    reality: "A program runs in its own process, and a process can change only its own working folder. A `cd` program would change folder and exit, leaving your shell where it was. So `cd`, `export` and `source` are builtins: they change the shell itself."
+commands: [type, which, command, bash, echo]
+references:
+  - label: "Bash Reference Manual: Shell Operation"
+    url: https://www.gnu.org/software/bash/manual/html_node/Shell-Operation.html
+  - label: "Bash Reference Manual: Shell Expansions"
+    url: https://www.gnu.org/software/bash/manual/html_node/Shell-Expansions.html
+  - label: "Bash Reference Manual: Command Search and Execution"
+    url: https://www.gnu.org/software/bash/manual/html_node/Command-Search-and-Execution.html
+  - label: "fork(2): create a child process"
+    url: https://man7.org/linux/man-pages/man2/fork.2.html
+  - label: "execve(2): execute a program, including the #! rules"
+    url: https://man7.org/linux/man-pages/man2/execve.2.html
+---
+
+## The mental model
+
+The shell is an ordinary program whose job is to start other programs. Every line you type goes through the same stages. Most error messages tell you which stage failed, once you know the stages.
+
+<Flow spec={{
+  title: 'ls -l ~/projects | grep app',
+  stages: [
+    { title: 'Read the line', tag: 'shell', detail: 'Pressing Enter hands the whole line to bash. Nothing has run yet. Bash saves it to your history.' },
+    { title: 'Split it into words and operators', tag: 'shell', detail: 'Bash splits on spaces, but not inside quotes, and picks out operators like `|`, `&&`, `;` and `>`. Those decide the structure: here, two commands joined by a pipe. An alias is swapped in at this point if the first word is one.', code: 'ls  -l  ~/projects  |  grep  app' },
+    { title: 'Expand each word', tag: 'shell', detail: 'In a fixed order: braces `{a,b}`, then `~`, `$VAR`, `$(command)` and `$((maths))`, then splitting unquoted results on spaces, then globs like `*.txt`, then removing the quotes. The [quoting scenario](/s/expansion-quoting) shows why the order matters.', code: 'ls  -l  /home/jd/projects  |  grep  app' },
+    { title: 'Find what the first word names', tag: 'shell', detail: 'A function? A builtin like `cd`? Otherwise, if the name has no `/` in it, bash searches each folder in `PATH` in order and takes the first executable file it finds. If nothing matches: `command not found`, exit code 127.', code: 'ls → /usr/bin/ls    grep → /usr/bin/grep' },
+    { title: 'Fork: copy the shell', tag: 'kernel', detail: 'For each external command, bash asks the kernel for a copy of itself, a child process. The child inherits the working folder, the exported environment variables and the open file descriptors. For a pipeline, bash first creates the pipe, so the commands start together, connected.' },
+    { title: 'Set up redirections', tag: 'child', detail: 'The child points its stdin, stdout and stderr (fds 0, 1 and 2) where the line said: here, `ls`\'s stdout goes into the pipe and `grep`\'s stdin comes out of it. `>` and `2>&1` are handled here too.' },
+    { title: 'Exec: become the program', tag: 'kernel', detail: 'The child asks the kernel to replace it with `/usr/bin/ls`, passing the words as arguments. The kernel checks the `x` bit, loads the program and starts it. For a script, it reads the `#!` line and starts that interpreter instead.' },
+    { title: 'Wait for the exit code', tag: 'shell', detail: 'Bash waits for the child to finish. The program\'s exit code lands in `$?`. That number is what `&&`, `||` and `if` look at. Then bash prints the prompt again. With `&` at the end of the line, bash doesn\'t wait.' }
+  ]
+}} />
+
+Two things follow from this, and they explain a lot of confusing behaviour:
+
+- **The program never sees your line.** It gets a finished list of words. Globs, variables, `~` and quotes were all handled by the shell before the program started.
+- **A command runs in a separate process.** It can't change your shell. Anything that has to, like `cd`, `export` or `source`, must be a builtin. When a fix says "open a new terminal" or "run `source ~/.bashrc`", that's why.
+
+Each failure maps to a stage:
+
+| Message | Stage | Means |
+|---|---|---|
+| `syntax error near unexpected token` | Split | A quote or bracket isn't closed, or an operator is out of place |
+| `command not found` (127) | Find | Not an alias, function or builtin, and not found on `PATH`. See [command not found](/s/command-not-found) |
+| `Permission denied` (126) | Exec | The file was found but isn't executable. See [Permission denied](/s/permission-denied-script) |
+| `required file not found`, or `No such file or directory` for a file that exists | Exec | The `#!` interpreter is missing, or bash remembered an old path (both below) |
+
+## Under the hood
+
+**The lookup order, exactly.** Aliases are expanded while the line is split. For the command name that results, bash checks: a function with that name, then a builtin, then its hash table of programs it has found before, then a search of `PATH`. A name with a `/` in it, like `./deploy.sh` or `/usr/bin/python3`, skips all of that and is run as a path. That's why a script in the current folder needs `./`: the current folder isn't on `PATH`.
+
+**Bash remembers where it found things.** After the first `PATH` search, bash keeps the result in a hash table (`hash` lists it). If you then delete or move that program, bash still tries the remembered path. You get `No such file or directory`, even though another copy exists further along `PATH`. `hash -r` clears the table, and so does opening a new terminal.
+
+**`fork` then `exec`.** The kernel has no "start this program" call. A process makes a copy of itself with `fork`, and the copy replaces its own program with `execve`. Everything the child inherits comes from that copy: environment, working folder, open files, user and groups. The [environment variables scenario](/s/env-vars) depends on this: `PORT=4000 npm run dev` sets a variable in that one child only.
+
+**The `#!` line is read by the kernel.** When `execve` gets a file that starts with `#!`, the kernel runs the interpreter named on that line with the script's path as an argument. If that interpreter doesn't exist, the call fails with "no such file". Bash 5.2 (Ubuntu 24.04) reports it as `cannot execute: required file not found`; older versions say `bad interpreter`. A script saved with Windows line endings fails the same way: the interpreter's name ends in an invisible carriage return, `/bin/bash\r`, and there's no such file. A file with no `#!` line and no binary header gets run by bash itself, as a shell script.
+
+**Builtins and pipelines.** Builtins run inside the shell, with no fork. The exception is a builtin in a pipeline: each part of a pipeline runs in its own process, so `cd /tmp | cat` changes the folder of a short-lived child, and your shell stays put. In a pipeline, `$?` is the last command's code unless `set -o pipefail` is on. The [exit codes scenario](/s/exit-codes) covers that.
+
+**Ubuntu's "did you mean" message.** When the lookup fails, bash calls a function named `command_not_found_handle` if one is defined. Ubuntu defines one that suggests packages: `Command 'tree' not found, but can be installed with: sudo apt install tree`.

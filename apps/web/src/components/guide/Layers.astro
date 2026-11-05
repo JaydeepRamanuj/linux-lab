@@ -1,0 +1,12 @@
+---
+// MDX entry point for the Layers widget. Static: no JavaScript ships for it.
+import LayersView from '../widgets/Layers';
+import type { LayersSpec } from '../widgets/Layers';
+
+interface Props {
+  spec: LayersSpec;
+}
+const { spec } = Astro.props;
+---
+
+<LayersView spec={spec} />

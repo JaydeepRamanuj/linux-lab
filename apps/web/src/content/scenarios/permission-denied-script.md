@@ -88,6 +88,7 @@ avoid:
   - "If you see `bad interpreter: /bin/bash^M`, the file has Windows line endings. Fix it with `sed -i 's/\\r$//' deploy.sh`."
   - "You can always run a script without the bit: `bash deploy.sh` reads the file instead of executing it."
 related: [appimage-install, chmod-numbers, root-owned-files]
+concepts: [permissions-model, pressing-enter]
 anatomy:
   "+x": "Add (+) execute permission (x). Who gets it is limited by your umask, usually everyone."
 ---

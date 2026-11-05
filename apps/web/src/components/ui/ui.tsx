@@ -146,11 +146,30 @@ export function SectionTitle({
 
 // Render inline `code` spans inside plain prose strings. As in Markdown, ``double backticks`` (with a space inside
 // each end) wrap code that itself contains a backtick: `` `cmd` `` shows `cmd` with its backticks.
+// Markdown links work too, for site paths (`[port in use](/s/port-in-use)`) and https URLs; anything else stays text.
+// So does **bold**.
+const LINK = /^\[([^\]]+)\]\(((?:\/|https:\/\/)[^)\s]*)\)$/;
+
 export function Prose({ text, className = '' }: { text: string; className?: string }) {
-  const parts = text.split(/(``.+?``|`[^`]+`)/g);
+  const parts = text.split(/(``.+?``|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|\*\*[^*]+\*\*)/g);
   return (
     <span className={className}>
       {parts.map((p, i) => {
+        if (p.length > 4 && p.startsWith('**') && p.endsWith('**')) {
+          return (
+            <strong key={i} className="font-semibold text-on-surface">
+              <Prose text={p.slice(2, -2)} />
+            </strong>
+          );
+        }
+        const link = LINK.exec(p);
+        if (link) {
+          return (
+            <a key={i} href={link[2]} className="text-tertiary underline underline-offset-3 hover:brightness-125">
+              <Prose text={link[1]!} />
+            </a>
+          );
+        }
         const code = p.startsWith('``') && p.endsWith('``') && p.length > 4 ? p.slice(2, -2).replace(/^ (.*) $/, '$1') : p.startsWith('`') && p.endsWith('`') && p.length > 1 ? p.slice(1, -1) : null;
         return code === null ? (
           p

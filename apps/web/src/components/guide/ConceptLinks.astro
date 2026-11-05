@@ -1,0 +1,48 @@
+---
+// "Why this works" (scenario pages) and "Concepts behind this command" (command pages): links to guides.
+import type { CollectionEntry } from 'astro:content';
+import { GraduationCap, ChevronRight } from 'lucide-react';
+import { CategoryIcon, Prose } from '../ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { trackById } from '../../data/tracks';
+
+interface Props {
+  title: string;
+  intro?: string;
+  guides: CollectionEntry<'guides'>[];
+}
+const { title, intro, guides } = Astro.props;
+---
+
+{
+  guides.length > 0 && (
+    <section class="card p-5 sm:p-8 space-y-4">
+      <div class="space-y-1">
+        <h2 class="flex items-center gap-2 text-[22px] font-semibold">
+          <GraduationCap className="h-5 w-5 text-secondary" />
+          {title}
+        </h2>
+        {intro && <p class="text-sm text-on-surface-variant">{intro}</p>}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {guides.map((g) => {
+          const t = trackById(g.data.track)!;
+          return (
+            <a href={`/g/${g.id}`} class="group flex items-start gap-3 rounded-xl bg-surface-low border border-white/5 hover:border-primary-container/40 transition p-4 min-w-0">
+              <div class={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${ACCENTS[t.color].bg} ${ACCENTS[t.color].ring}`}>
+                <CategoryIcon name={t.icon} className={`h-4.5 w-4.5 ${ACCENTS[t.color].text}`} />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-display font-semibold text-on-surface leading-snug">{g.data.title}</div>
+                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  <Prose text={g.data.summary} />
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 mt-0.5 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0" />
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )
+}

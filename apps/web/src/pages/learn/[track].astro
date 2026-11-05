@@ -1,0 +1,54 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import GuideCard from '../../components/guide/GuideCard.astro';
+import { CategoryIcon } from '../../components/ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { TRACKS } from '../../data/tracks';
+import type { Track } from '../../data/tracks';
+import { publishedGuides } from '../../lib/guides';
+
+export function getStaticPaths() {
+  return TRACKS.map((track, index) => ({ params: { track: track.id }, props: { track, index } }));
+}
+
+interface Props {
+  track: Track;
+  index: number;
+}
+const { track, index } = Astro.props;
+const accent = ACCENTS[track.color];
+const guides = (await publishedGuides()).filter((g) => g.data.track === track.id);
+---
+
+<Base title={`${track.name} · Guides`} description={track.description} current="learn">
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 space-y-8">
+    <Breadcrumbs items={[{ label: 'Learn', href: '/learn' }, { label: track.name }]} back={{ href: '/learn', label: 'All tracks' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-secondary/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${accent.bg} ${accent.ring}`}>
+          <CategoryIcon name={track.icon} className={`h-6 w-6 ${accent.text}`} />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Track 0{index + 1}</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">{track.name}</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">{track.description}</p>
+        </div>
+      </div>
+    </section>
+
+    {
+      guides.length ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {guides.map((guide) => (
+            <GuideCard guide={guide} showTrack={false} />
+          ))}
+        </div>
+      ) : (
+        <p class="card p-8 text-center text-on-surface-variant">Guides for this track are on the way.</p>
+      )
+    }
+  </div>
+</Base>

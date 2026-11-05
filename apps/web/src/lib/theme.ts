@@ -1,4 +1,4 @@
-import { LifeBuoy, Activity, FolderLock, Package, Bot, AlertTriangle, ShieldAlert, X, Circle } from 'lucide-react';
+import { LifeBuoy, Activity, FolderLock, Package, Bot, AlertTriangle, ShieldAlert, X, Circle, SquareTerminal, FolderTree, KeyRound, GitFork, Cpu, ServerCog, Network } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Severity } from '@shellgyan/core/severity';
 
@@ -7,10 +7,18 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Activity,
   FolderLock,
   Package,
-  Bot
+  Bot,
+  // Guide tracks
+  SquareTerminal,
+  FolderTree,
+  KeyRound,
+  GitFork,
+  Cpu,
+  ServerCog,
+  Network
 };
 
-export type Accent = 'indigo' | 'purple' | 'orange' | 'emerald' | 'rose';
+export type Accent = 'indigo' | 'purple' | 'orange' | 'emerald' | 'rose' | 'cyan';
 
 // Per-category accent classes, spelled out so Tailwind can see them.
 export const ACCENTS: Record<Accent, { text: string; bg: string; ring: string; dot: string }> = {
@@ -18,7 +26,8 @@ export const ACCENTS: Record<Accent, { text: string; bg: string; ring: string; d
   purple: { text: 'text-secondary', bg: 'bg-secondary/10', ring: 'border-secondary/30', dot: 'bg-secondary' },
   orange: { text: 'text-caution', bg: 'bg-caution/10', ring: 'border-caution/30', dot: 'bg-caution' },
   emerald: { text: 'text-safe', bg: 'bg-safe/10', ring: 'border-safe/30', dot: 'bg-safe' },
-  rose: { text: 'text-danger', bg: 'bg-danger/10', ring: 'border-danger/30', dot: 'bg-danger' }
+  rose: { text: 'text-danger', bg: 'bg-danger/10', ring: 'border-danger/30', dot: 'bg-danger' },
+  cyan: { text: 'text-tertiary', bg: 'bg-tertiary/10', ring: 'border-tertiary/30', dot: 'bg-tertiary' }
 };
 
 // The four severity levels (plan §5.3) are defined once, in the rule engine.

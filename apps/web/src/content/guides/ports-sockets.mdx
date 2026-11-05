@@ -1,0 +1,106 @@
+---
+track: processes
+order: 4
+title: "Ports and Sockets: What \"Address Already in Use\" Means"
+summary: A socket is a file descriptor for network traffic, a port is the number the kernel uses to deliver traffic to it, and only one listener can hold an address and port at a time.
+level: essentials
+readingMinutes: 7
+observe:
+  - command: ss -ltn
+    explain: "Every listening TCP socket on the machine: `-l` listening, `-t` TCP, `-n` numbers instead of names. `0.0.0.0:3000` is a dev server reachable on every address. `127.0.0.53%lo:53` is Ubuntu's local DNS stub, reachable only from this machine."
+    output: |
+      State  Recv-Q Send-Q Local Address:Port Peer Address:Port Process
+      LISTEN 0      511          0.0.0.0:3000      0.0.0.0:*
+      LISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*
+      LISTEN 0      4096      127.0.0.54:53        0.0.0.0:*
+  - command: ss -ltnp 'sport = :3000'
+    explain: "Add `-p` to see which process holds the socket, and a filter to show only port 3000. Without `sudo`, `-p` shows only your own processes; other users' sockets appear with an empty Process column."
+    output: |
+      State  Recv-Q Send-Q Local Address:Port Peer Address:Port Process
+      LISTEN 0      511          0.0.0.0:3000      0.0.0.0:*    users:(("node",pid=48213,fd=23))
+  - command: ss -tn
+    explain: "Established connections. Each one is two addresses and two ports. Here a browser tab on this machine talks to the dev server, so both ends show up: the client's random port `53584` and the server's `3000`."
+    output: |
+      State Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+      ESTAB 0      0          127.0.0.1:53584    127.0.0.1:3000
+      ESTAB 0      0          127.0.0.1:3000     127.0.0.1:53584
+  - command: ls -l /proc/<PID>/fd
+    explain: "A process's open file descriptors. Sockets appear next to ordinary files, as `socket:[inode]`. Here fd 3 is the listening socket and fd 4 is one accepted connection."
+    output: |
+      lr-x------ 1 jd jd 64 Nov  5 06:01 0 -> /dev/null
+      l-wx------ 1 jd jd 64 Nov  5 06:01 1 -> /dev/null
+      l-wx------ 1 jd jd 64 Nov  5 06:01 2 -> /dev/null
+      lrwx------ 1 jd jd 64 Nov  5 06:01 3 -> socket:[823]
+      lrwx------ 1 jd jd 64 Nov  5 06:01 4 -> socket:[826]
+  - command: cat /proc/sys/net/ipv4/ip_local_port_range
+    explain: "The range the kernel picks a client's own port from when it connects somewhere. That's where the `53584` above came from."
+    output: |
+      32768	60999
+  - command: grep -w 22/tcp /etc/services
+    explain: "Port names like `ssh` or `http` are only a lookup table. Nothing reserves 22 for SSH except that SSH servers listen there by convention."
+    output: |
+      ssh		22/tcp				# SSH Remote Login Protocol
+misconceptions:
+  - myth: "A crash can leave a port stuck, and only a reboot frees it."
+    reality: "When a process exits, however it exits, the kernel closes its sockets and the port is free again. If the port is still taken, some process still holds the socket. Often it's a child that inherited it: `npm run dev` starts `node`, and stopping `npm` can leave `node` running."
+  - myth: "A server needs a separate port for each client."
+    reality: "Every client connects to the same listening port. The kernel tells connections apart by all four values: both addresses and both ports. Each client brings its own random port."
+  - myth: "`127.0.0.1` and `0.0.0.0` mean the same thing."
+    reality: "A server listening on `127.0.0.1` can be reached only from this machine. `0.0.0.0` means every address the machine has, so other devices on your network can connect too, unless a firewall stops them."
+  - myth: "You need `kill -9` to free a port."
+    reality: "The port is freed when the process exits. A plain `kill` (SIGTERM) lets it exit cleanly, and that's enough for almost every server."
+commands: [lsof, ss, kill]
+scenarios: [port-in-use]
+references:
+  - label: "socket(7): the Linux socket interface"
+    url: https://man7.org/linux/man-pages/man7/socket.7.html
+  - label: "bind(2): EADDRINUSE and EACCES"
+    url: https://man7.org/linux/man-pages/man2/bind.2.html
+  - label: "tcp(7): TCP sockets, TIME_WAIT and SO_REUSEADDR"
+    url: https://man7.org/linux/man-pages/man7/tcp.7.html
+  - label: "ss(8): socket statistics"
+    url: https://man7.org/linux/man-pages/man8/ss.8.html
+  - label: "Linux kernel docs: IP sysctl (ip_local_port_range, ip_unprivileged_port_start)"
+    url: https://docs.kernel.org/networking/ip-sysctl.html
+---
+
+## The mental model
+
+A **socket** is the kernel's handle for one end of network traffic. A program asks the kernel for one and gets back a **file descriptor**, the same kind of small number it gets for an open file. Reading and writing it sends and receives data.
+
+A **port** is a number from 1 to 65535 that the kernel uses to decide which socket incoming traffic belongs to. A server claims a port in three steps: **bind** (put this socket on address `0.0.0.0`, port `3000`), **listen** (accept connections on it) and **accept** (hand me the next connection). Each accepted connection is a new socket. The listening one stays where it is, waiting for the next.
+
+<Layers spec={{
+  title: 'Where port 3000 lives',
+  pathLabel: 'A request to localhost:3000',
+  layers: [
+    { name: 'Your dev server', tone: 'user', highlight: true, detail: 'Holds the listening socket as fd 23, and one more fd for each open connection.', chips: ['node (PID 48213)', 'fd 23: listening', 'fd 24: a client'], edge: 'system calls: `socket` `bind` `listen` `accept`' },
+    { name: 'Kernel: the socket table', tone: 'kernel', highlight: true, detail: 'One entry per socket. A listening entry says which process gets new connections to an address and port; a connection entry is matched on all four values.', chips: ['0.0.0.0:3000 LISTEN → PID 48213', '127.0.0.1:3000 ↔ 127.0.0.1:53584'] },
+    { name: 'Kernel: TCP/IP', tone: 'kernel', highlight: true, detail: 'Reads the destination port of every incoming packet and looks it up in the table.', edge: 'packets' },
+    { name: 'Network interfaces', tone: 'hardware', highlight: true, detail: '`lo` carries traffic from this machine to itself (`127.0.0.1`). Wi-Fi and Ethernet carry the rest.', chips: ['lo', 'wlp2s0', 'eth0'] }
+  ]
+}} />
+
+**"Address already in use"** (`EADDRINUSE`) is what `bind` answers when another socket already holds that address and port. Nothing is wrong with the port. The kernel refuses because the first owner is still there. Find that process and stop it, and the port is free. The [port in use scenario](/s/port-in-use) walks through it.
+
+Three facts explain most of the rest:
+
+- **A connection is four values.** Local address, local port, remote address, remote port. Every client of your server shares port 3000 on your side. The client's side gets its own random port, from the range in `ip_local_port_range`.
+- **The address matters.** `127.0.0.1` (loopback) is reachable only from this machine. `0.0.0.0` (`*` or `[::]` in some tools) means every address the machine has.
+- **Ports below 1024 need privileges.** Binding to 80 or 443 as a normal user fails with Permission denied. That's why dev servers use 3000, 5173 or 8080.
+
+## Under the hood
+
+**Sockets really are file descriptors.** `ls -l /proc/<PID>/fd` lists them next to the process's open files, as `socket:[823]`. The number is an inode in the kernel's socket filesystem. That's how `lsof`, "list open files", can answer questions about ports: it walks every process's fd list and matches the socket inodes against the kernel's socket table. `ss` asks the kernel's socket table directly.
+
+**Children inherit sockets.** When a process starts another, the child gets a copy of its file descriptors, sockets included, unless they're marked close-on-exec. If the parent dies, the child still holds the socket and the port stays taken. `ss -ltnp` then shows the child's name, not the server you started. That's the usual reason why killing the server didn't free the port.
+
+**TIME_WAIT.** When a TCP connection closes, the side that closed first keeps a small record of it for 60 seconds on Linux. That way, a late packet from the old connection can't be mistaken for part of a new one. While that record exists, a plain `bind` to the same port can still fail with `EADDRINUSE`, even though nothing is listening. Servers avoid this by setting the `SO_REUSEADDR` option before binding, and most do. If a server you wrote yourself won't restart for a minute after stopping, that's the cause. `ss -tan` shows those records in state `TIME-WAIT`.
+
+**Sharing a port on purpose.** `SO_REUSEPORT` lets several sockets bind the same address and port, and the kernel spreads new connections across them. It's opt-in: every socket has to ask for it, so it never explains an accidental conflict.
+
+**Port 1024 is a setting.** "Privileged" means below `/proc/sys/net/ipv4/ip_unprivileged_port_start`, 1024 by default. A program can also get the `CAP_NET_BIND_SERVICE` capability instead of running as root.
+
+**Not every socket has a port.** Unix domain sockets use the same calls but bind to a path, like `/run/docker.sock` or `/run/systemd/journal/socket`, and never leave the machine. `ss -x` lists them. They're one reason Linux can say "everything is a file".
+
+**UDP.** UDP has no connections and no listen step, but a bound UDP port is still owned by one socket, so it can conflict the same way. `ss -lun` lists UDP sockets.

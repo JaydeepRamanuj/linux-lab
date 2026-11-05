@@ -18,3 +18,4 @@ gotchas:
   - "`Change` is when the file's details (permissions, owner) last changed, not its contents. That's `Modify`."
 related: [ls, chmod, chown]
 scenarios: [chmod-numbers]
+concepts: [permissions-model]
