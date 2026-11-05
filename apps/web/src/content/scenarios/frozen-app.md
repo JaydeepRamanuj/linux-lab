@@ -109,6 +109,7 @@ avoid:
   - "If the whole desktop is frozen, switch to a text console with Ctrl+Alt+F3, log in, and use `pgrep`/`kill` from there. Ctrl+Alt+F1 or F2 brings you back."
   - "A process in state `D` can't be killed, even with `-9`, until the disk or network call it's waiting for returns. Unplugging a hung network drive often frees it."
 related: [cpu-ram-hog, port-in-use, stopped-job]
+concepts: [signals, processes-basics]
 anatomy:
   "-9": "SIGKILL: the kernel ends the process immediately. It can't be caught or ignored."
   "2893": "The process ID (PID) of the main process, from `pgrep`."

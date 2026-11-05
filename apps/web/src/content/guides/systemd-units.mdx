@@ -1,0 +1,140 @@
+---
+track: services
+order: 1
+title: "systemd Units, Targets and Dependencies"
+summary: systemd is PID 1, and everything it manages is a unit described by a small text file. Enabling a unit only adds a link from a target; ordering and dependency are separate settings, and each service's processes live in a cgroup of their own.
+level: essentials
+readingMinutes: 8
+prerequisites: [processes-basics]
+observe:
+  - command: systemctl cat cron.service
+    explain: "The unit file systemd is using, with its path in the first line. `[Unit]` says what it is and what it runs after. `[Service]` says how to run it: `ExecStart` is the command, `Restart=on-failure` restarts it if it crashes. `[Install]` is only read by `enable`."
+    output: |
+      # /usr/lib/systemd/system/cron.service
+      [Unit]
+      Description=Regular background program processing daemon
+      Documentation=man:cron(8)
+      After=remote-fs.target nss-user-lookup.target
+
+      [Service]
+      EnvironmentFile=-/etc/default/cron
+      ExecStart=/usr/sbin/cron -f -P $EXTRA_OPTS
+      IgnoreSIGPIPE=false
+      KillMode=process
+      Restart=on-failure
+      SyslogFacility=cron
+
+      [Install]
+      WantedBy=multi-user.target
+  - command: ls -l /etc/systemd/system/multi-user.target.wants
+    explain: "This is what `systemctl enable` made. `WantedBy=multi-user.target` in `[Install]` became a symlink in this folder, and that link is the whole of \"enabled\". `disable` removes it."
+    output: |
+      lrwxrwxrwx 1 root root 38 Feb 10  2026 apport.service -> /usr/lib/systemd/system/apport.service
+      lrwxrwxrwx 1 root root 45 Feb 10  2026 console-setup.service -> /usr/lib/systemd/system/console-setup.service
+      lrwxrwxrwx 1 root root 36 Feb 10  2026 cron.service -> /usr/lib/systemd/system/cron.service
+      lrwxrwxrwx 1 root root 37 Feb 10  2026 dmesg.service -> /usr/lib/systemd/system/dmesg.service
+  - command: systemctl is-enabled cron apt-daily.service apt-daily.timer sudo.service
+    explain: "`enabled` means a link exists. `static` means the unit has no `[Install]` section and is only ever started by something else: `apt-daily.service` is started by its timer. `masked` means it's linked to `/dev/null` and can't be started at all."
+    output: |
+      enabled
+      static
+      enabled
+      masked
+  - command: systemctl get-default
+    explain: "The target systemd boots into. A target is a unit that does nothing itself; it groups others. `graphical.target` pulls in `multi-user.target`, which pulls in the services enabled for it."
+    output: |
+      graphical.target
+  - command: cat /sys/fs/cgroup/system.slice/cron.service/cgroup.procs
+    explain: "Every service runs in its own control group (cgroup), and this file lists the PIDs in it. systemd tracks a service by its cgroup, not by a PID, so it always knows which processes belong to it, however many times they fork."
+    output: |
+      157
+  - command: systemd-delta
+    explain: "Unit files that are overridden or extended by drop-in files. Drop-ins are `.conf` files in a `<unit>.d/` folder, and they're how you change one setting without editing the packaged file."
+    output: |
+      [EXTENDED]   /usr/lib/systemd/system/systemd-logind.service → /usr/lib/systemd/system/systemd-logind.service.d/dbus.conf
+      [EXTENDED]   /usr/lib/systemd/system/user@.service → /usr/lib/systemd/system/user@.service.d/timeout.conf
+
+      9 overridden configuration files found.
+misconceptions:
+  - myth: "`After=` makes a unit start the other one."
+    reality: "`After=` only orders units that are both being started anyway. To pull a unit in, you need `Wants=` or `Requires=`. Most units need both: \"start the network, and start me after it\"."
+  - myth: "Enabling a service starts it."
+    reality: "`enable` only sets it up for the next boot, by creating a link. `start` runs it now. `systemctl enable --now` does both, and `disable --now` undoes both."
+  - myth: "Edit the file in `/usr/lib/systemd/system` to change a service."
+    reality: "That file belongs to the package and the next update overwrites it. `sudo systemctl edit nginx` creates a drop-in in `/etc/systemd/system/nginx.service.d/` that survives updates. A whole file in `/etc/systemd/system` overrides the packaged one completely."
+  - myth: "Runlevels 3 and 5 are how you pick text or graphical mode."
+    reality: "systemd has targets instead. `runlevel3.target` still exists, but only as a link to `multi-user.target`, and `runlevel5.target` links to `graphical.target`."
+commands: [systemctl, journalctl]
+scenarios: []
+references:
+  - label: "systemd.unit(5): unit files, [Install], dependencies and ordering"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html
+  - label: "systemd.service(5): Type=, ExecStart=, Restart="
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html
+  - label: "systemd.special(7): default.target, multi-user.target and friends"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html
+  - label: "systemd.kill(5): KillMode="
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html
+  - label: "systemctl(1): enable, mask, edit, daemon-reload"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemctl.html
+  - label: "systemd.preset(5): which units are enabled on install"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.preset.html
+---
+
+## The mental model
+
+On Ubuntu, Debian, Fedora and Arch, PID 1 is **systemd**. It starts everything else at boot and then keeps running as a supervisor: it restarts services that crash, stops them at shutdown and records what they print.
+
+Everything systemd manages is a **unit**, and every unit is a small text file. The suffix says what kind:
+
+| Type | Example | What it is |
+|---|---|---|
+| `.service` | `cron.service` | A program to run and supervise |
+| `.timer` | `apt-daily.timer` | Starts a service on a schedule: see [cron vs systemd timers](/g/scheduled-tasks) |
+| `.socket` | `syslog.socket` | A socket systemd opens itself, starting the service on the first connection |
+| `.target` | `multi-user.target` | A group of units, a named stage of boot |
+| `.mount`, `.device`, `.path`, `.slice`, `.scope` | `home.mount` | Filesystems, devices, watched paths and groups of processes |
+
+Units point at each other in two separate ways, and mixing them up is the most common mistake in unit files:
+
+- **Dependency**: *also start that one*. `Wants=` is a soft request: if the other fails, carry on. `Requires=` is strict: if it fails, this unit fails too.
+- **Ordering**: *if both are starting, this one goes first*. `After=` and `Before=` only set the order. On their own, they don't start anything.
+
+**Targets** tie boot together. At boot, systemd starts `default.target`, which on a desktop is `graphical.target`. That wants `multi-user.target`, which wants every service enabled for it. Enabling a service means adding it to a target's list:
+
+<Flow spec={{
+  title: 'What sudo systemctl enable --now cron does',
+  stages: [
+    { title: 'Read [Install]', tag: 'systemctl', detail: 'The unit says `WantedBy=multi-user.target`. Nothing else in the file matters for this step.', code: 'WantedBy=multi-user.target' },
+    { title: 'Create the link', tag: 'systemctl', detail: 'A symlink is added in `/etc/systemd/system/multi-user.target.wants/`. That link is what "enabled" means.', code: 'multi-user.target.wants/cron.service → /usr/lib/systemd/system/cron.service' },
+    { title: 'Reload', tag: 'systemd', detail: 'systemd re-reads its units, so `multi-user.target` now wants `cron.service`.' },
+    { title: 'Start now (--now)', tag: 'systemd', detail: 'systemd creates a cgroup for the service, runs `ExecStart` in it, and starts recording its output in the journal.' },
+    { title: 'At every boot', tag: 'systemd', detail: 'Starting `multi-user.target` pulls in everything linked in its `.wants/` folder, `cron.service` included, in the order their `After=` and `Before=` lines allow.' }
+  ]
+}} />
+
+`systemctl status` shows all of this for one unit: where its file is, whether it's enabled, whether it's running, its cgroup and its latest log lines. The [system service scenario](/s/system-service) uses it to find why a service failed.
+
+## Under the hood
+
+**Where unit files live.** systemd looks in several folders, and a file earlier in the list wins over a file with the same name later:
+
+1. `/etc/systemd/system/`: yours, the administrator's. `systemctl enable` links and `systemctl edit` drop-ins go here.
+2. `/run/systemd/system/`: generated at runtime, gone after a reboot.
+3. `/usr/lib/systemd/system/`: installed by packages. Don't edit these. On Ubuntu, `/lib` is a link to `/usr/lib`, so `/lib/systemd/system` is the same folder.
+
+`systemctl cat <unit>` prints the file actually in use, followed by any drop-ins, each with its path. `systemd-analyze unit-paths` lists every folder searched.
+
+**Drop-ins.** A file like `/etc/systemd/system/nginx.service.d/override.conf` is merged into the unit, so it only needs the lines you change. `sudo systemctl edit nginx` creates it for you. One catch: list settings such as `ExecStart=` add to the existing value, so to replace the command you first clear it with an empty `ExecStart=` line. After editing unit files by hand, run `sudo systemctl daemon-reload`, or systemd keeps using the old version; `systemctl edit` does that itself.
+
+**Unit file states.** `enabled` has a link from some target. `disabled` has an `[Install]` section but no link. `static` has no `[Install]` section, so it can't be enabled, and is started by something else, like `apt-daily-upgrade.service` by its timer. `masked` is linked to `/dev/null`, so nothing can start it, not even as a dependency; Ubuntu masks `sudo.service` and `hwclock.service` this way. `alias` is another name for a unit.
+
+**Service types.** `Type=` says how systemd knows a service has finished starting. `simple` (cron) counts it as started as soon as the process is running. `exec` waits until the program has actually been executed. `notify` waits for the program to report "ready" over a socket. `forking` is for old-style daemons that fork into the background, and waits for the parent to exit. `oneshot` is for jobs that run and finish, such as `apt-daily-upgrade.service`: the unit is "activating" while it runs and "inactive (dead)" afterwards, with its exit status shown in `status`.
+
+**cgroups.** Each service gets a control group under `/sys/fs/cgroup/system.slice/`. Every process it starts, and every process those start, stays in that cgroup; a process can't leave it by forking or double-forking. That's how `systemctl stop` finds them all, how `status` shows a tree of them, and how limits like `MemoryMax=` apply to the whole service. By default, stopping sends TERM to every process in the cgroup, then KILL after `TimeoutStopSec` (90 seconds): see [signals](/g/signals). `KillMode=process` changes that to the main process only. cron sets it so that jobs it started keep running when cron restarts.
+
+**Socket activation.** A `.socket` unit makes systemd open the socket itself, early in boot. The service starts when the first connection or message arrives, and inherits the open socket as a file descriptor. `rsyslog.service` shows `TriggeredBy: syslog.socket`. That's why services can start in any order without losing messages: the socket exists before the program that reads it.
+
+**Installing a package often enables it.** On Debian and Ubuntu, a package's install scripts call `deb-systemd-helper` to enable the units it ships and `deb-systemd-invoke` to start them, which is why `apt install nginx` leaves nginx running. `systemctl status` shows `preset: enabled` for the distribution's default. Fedora decides through preset files instead, and leaves most new services disabled until you enable them.
+
+**User units.** A second systemd instance runs for each logged-in user, `user@1000.service` for UID 1000. It reads units from `~/.config/systemd/user/` and the system's `/usr/lib/systemd/user/`, and you manage it with `systemctl --user`, without `sudo`. PipeWire audio and many desktop helpers run there. User units stop when you log out, unless lingering is turned on for that user.

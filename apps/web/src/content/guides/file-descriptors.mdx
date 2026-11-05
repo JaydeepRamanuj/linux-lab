@@ -1,0 +1,112 @@
+---
+track: processes
+order: 3
+title: File Descriptors and Open Files
+summary: A file descriptor is a process's numbered handle on something it has open. It points at the file itself, not its name, which explains deleted files that still fill the disk, logs that go quiet after rotation, and locks that vanish when a process dies.
+level: deeper
+readingMinutes: 8
+prerequisites: [processes-basics, standard-streams]
+observe:
+  - command: ls -l /proc/$$/fd
+    explain: "Your shell's file descriptors. 0, 1 and 2 are the terminal. 255 is bash's private copy of it, which bash marks close-on-exec so programs it starts never see it."
+    output: |
+      lrwx------ 1 jd jd 64 Nov  5 07:39 0 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 07:39 1 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 07:39 2 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 07:39 255 -> /dev/pts/0
+  - command: grep flags /proc/$$/fdinfo/1 /proc/$$/fdinfo/255
+    explain: "`fdinfo` has the details of each descriptor: the read/write position (`pos`) and the open flags, in octal. `02` is read and write. The extra `02000000` on fd 255 is `O_CLOEXEC`, close-on-exec."
+    output: |
+      /proc/8407/fdinfo/1:flags:	02
+      /proc/8407/fdinfo/255:flags:	02000002
+  - command: ls -l /proc/self/fd
+    explain: "`self` is whichever process reads it, here `ls`. It inherited 0, 1 and 2 from the shell, but not 255. Fd 3 is the folder `ls` opened to list."
+    output: |
+      lrwx------ 1 jd jd 64 Nov  5 07:39 0 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 07:39 1 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 07:39 2 -> /dev/pts/0
+      lr-x------ 1 jd jd 64 Nov  5 07:39 3 -> /proc/8419/fd
+  - command: lsof +L1
+    explain: "Open files with a link count below 1: deleted, but still held open by a process. The space they use comes back only when that process closes them. Add `sudo` to see other users' and services' files."
+    output: |
+      COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NLINK NODE NAME
+      python3 8614   jd    3r   REG   8,48 52428800     0 2665 /tmp/big.log (deleted)
+  - command: lslocks
+    explain: "File locks held right now, with the process holding each. `POSIX` locks come from `fcntl()`, the kind apt and dpkg use; `FLOCK` ones from `flock()`. A lock belongs to an open file, not to the file on disk."
+    output: |
+      COMMAND           PID  TYPE SIZE MODE  M START END PATH
+      cron              157 FLOCK      WRITE 0     0   0 /run/crond.pid
+      python3          8641 POSIX      WRITE 0     0   0 /tmp/demo.lock
+  - command: systemctl show cron -p LimitNOFILESoft -p LimitNOFILE
+    explain: "How many descriptors a process may have open. The soft limit, 1024, is what applies; a program may raise it itself, up to the hard limit. Past the soft limit, `open()` fails with \"Too many open files\"."
+    output: |
+      LimitNOFILE=1048576
+      LimitNOFILESoft=1024
+  - command: cat /proc/sys/fs/file-nr
+    explain: "Open files on the whole machine: allocated, unused (always 0 on current kernels), and the maximum. The maximum is effectively unlimited here; the per-process limit above is the one you'll hit."
+    output: |
+      1056	0	9223372036854775807
+misconceptions:
+  - myth: "Deleting a file frees its space straight away."
+    reality: "Deleting removes the name. The data stays until the last process with the file open closes it. A big log deleted while the app still writes to it keeps growing, invisible to `du` but counted by `df`. Restart the app, or find it with `lsof +L1`."
+  - myth: "A lock file is the lock."
+    reality: "For apt and dpkg, the file is only something to lock on. The lock is held on an open file descriptor and disappears the moment the process exits, even after `kill -9`. The files in `/var/lib/dpkg/` stay there permanently, empty, and deleting them removes nothing that matters except the protection."
+  - myth: "`tail -f` watches a file name."
+    reality: "Lowercase `-f` holds a descriptor to the file it opened. When a log is rotated, that file is renamed to `app.log.1`, and `tail -f` keeps reading it, going quiet. `tail -F` watches the name and reopens the new file."
+  - myth: "\"Too many open files\" means the disk is full or the files are too big."
+    reality: "It means this process has used up its descriptor limit, 1024 by default. Common causes are a program that leaks descriptors by never closing sockets or files, or one that really does watch many files, like a dev server's file watcher."
+commands: [lsof, ls, tail]
+scenarios: []
+references:
+  - label: "open(2): file descriptors, open file descriptions and O_CLOEXEC"
+    url: https://man7.org/linux/man-pages/man2/open.2.html
+  - label: "proc_pid_fd(5) and proc_pid_fdinfo(5)"
+    url: https://man7.org/linux/man-pages/man5/proc_pid_fdinfo.5.html
+  - label: "unlink(2): a file is removed when no process has it open"
+    url: https://man7.org/linux/man-pages/man2/unlink.2.html
+  - label: "fcntl(2): record locks (F_SETLK, F_GETLK)"
+    url: https://man7.org/linux/man-pages/man2/fcntl.2.html
+  - label: "getrlimit(2): RLIMIT_NOFILE"
+    url: https://man7.org/linux/man-pages/man2/getrlimit.2.html
+  - label: "lsof(8): list open files"
+    url: https://man7.org/linux/man-pages/man8/lsof.8.html
+---
+
+## The mental model
+
+When a process opens something, the kernel hands back a small number, a **file descriptor**. From then on the process says "read from 3" or "write to 1", never the name again. [stdin, stdout, stderr and pipes](/g/standard-streams) introduced the first three; a busy program can have thousands.
+
+Behind each number are three layers:
+
+<Layers spec={{
+  title: 'What fd 3 points at',
+  pathLabel: 'read(3, …)',
+  layers: [
+    { name: 'The descriptor table', tone: 'user', highlight: true, detail: 'One per process. Each slot is a number pointing at an open file. `ls -l /proc/<PID>/fd` shows it.', chips: ['0 → terminal', '1 → terminal', '3 → app.log'], edge: 'pointer' },
+    { name: 'The open file', tone: 'kernel', highlight: true, detail: 'Made by each `open()`. Holds the current position and the mode (read, write, append). Several descriptors can share one, across processes too.', chips: ['pos 4096', 'O_WRONLY|O_APPEND'], edge: 'pointer' },
+    { name: 'The inode', tone: 'kernel', highlight: true, detail: 'The file itself: its data, size, owner and permissions. A name in a folder is only one way to reach it, and an open file is another.', chips: ['inode 2665', 'links: 1'] },
+    { name: 'The disk', tone: 'hardware', detail: 'Blocks are freed only when the inode has no names and no open files left.' }
+  ]
+}} />
+
+The important part: **a descriptor points at the file, not at its name.** Once a file is open, renaming it, moving it or deleting it doesn't affect the process holding it. That one rule explains three everyday puzzles:
+
+- **The disk is full, but `du` can't find it.** A deleted file that a process still has open keeps its space. `du` adds up names, so it misses it. `df` asks the filesystem, so it counts it. `lsof +L1` lists the culprits; restarting the program frees the space. The [disk full scenario](/s/disk-full) mentions this as a last check.
+- **`tail -f` went quiet.** The log was rotated, renamed to `app.log.1`, and `tail -f` is still holding the old file. The [watch a log scenario](/s/watch-log) uses `tail -F`, which follows the name instead.
+- **"Could not get lock".** apt locks an open file, and the kernel releases the lock when that file is closed, including when the process dies. That's why waiting works in the [apt lock scenario](/s/apt-lock), and why deleting the lock file doesn't.
+
+## Under the hood
+
+**Children inherit descriptors.** `fork()` copies the whole table, so a child starts with every descriptor its parent had open, pointing at the same open files. That's how redirection reaches the program, and also how a child ends up holding a parent's socket after the parent dies. A descriptor marked **close-on-exec** (`O_CLOEXEC`) is closed automatically when the child runs a new program. Bash marks its spare fd 255 that way, and well-written programs open almost everything that way. `/proc/<PID>/fdinfo/<fd>` shows it as `02000000` in the flags.
+
+**Shared open files share a position.** If two descriptors point at the same open file, they share its position. `( echo one; sh -c 'echo two'; echo three ) > out.txt` writes three lines in order, because all three commands write through the one open file the shell made for `>`. Two separate `open()` calls on the same file have separate positions, and one overwrites the other: `echo one > f; sh -c 'echo 2 > f'` leaves only `2`.
+
+**Deleted but open, in detail.** Every inode counts its names (links) and its open files. `rm` removes a name and lowers the link count. When both counts reach zero, the kernel frees the data. While a process has it open, `ls -l /proc/<PID>/fd` shows the target with `(deleted)` after it, and you can still read it through that path. Deleting a 50 MB file held open by `python3` didn't change `df`; killing the process gave the 50 MB back.
+
+**How apt's lock works.** apt and dpkg open `/var/lib/dpkg/lock-frontend` and `/var/lib/dpkg/lock` and take an `fcntl()` write lock on each. A second process asking for the same lock is refused (`Resource temporarily unavailable`). It can ask the kernel who holds it, which is how apt prints "It is held by process 2841". The lock is tied to the holding process's open file, so it disappears on exit however that happens. Deleting the file doesn't release a lock someone holds: the holder keeps it on the old, nameless inode, and the next apt creates a new file and locks that, so two of them can write the package database at once. apt's own message warns: "removing the lock file is not a solution".
+
+**`flock` versus `fcntl` locks.** Both are advisory: they only stop programs that also ask for the lock, and `cat` or an editor can still write the file. `flock()` locks belong to the open file and are shared with children that inherit it. `fcntl()` (POSIX) locks belong to the process, and are released if the process closes any descriptor for that file. `lslocks` shows both types and who holds them. The `flock` command uses them in shell scripts: `flock /tmp/job.lock ./job.sh` stops two copies of a cron job running at once.
+
+**Limits.** Each process has a soft and a hard limit on descriptors (`RLIMIT_NOFILE`). The soft limit applies and defaults to 1024. A process may raise its own soft limit up to the hard one, which is much higher; many servers and Node do this at start-up. With a limit of 16, a test opened 12 files before failing with `EMFILE`, "Too many open files", because 0, 1, 2 and a few internal descriptors were already in use. For a systemd service, `LimitNOFILE=` in the unit sets both. `ulimit -n` prints the limit of your current shell.
+
+**`lsof` and `/proc`.** `lsof` reads `/proc/<PID>/fd` for every process and adds the type, size and name. Besides real descriptors, it lists the program file (`txt`), the current folder (`cwd`) and memory-mapped libraries (`mem`), which aren't descriptors at all but also keep files in use. Without `sudo` it can only read your own processes. Sockets show up there as `socket:[inode]`, which is how [ports and sockets](/g/ports-sockets) traces a port back to a process.

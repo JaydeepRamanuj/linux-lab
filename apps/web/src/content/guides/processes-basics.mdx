@@ -1,0 +1,121 @@
+---
+track: processes
+order: 1
+title: "Processes, PIDs and the Process Tree"
+summary: A process is a running program with a number, a parent, an owner and a state. Each one was started by another, so they form one tree with systemd, PID 1, at the root.
+level: essentials
+readingMinutes: 7
+prerequisites: [pressing-enter]
+observe:
+  - command: ps -o pid,ppid,stat,cmd
+    explain: "The processes in this terminal. `PID` is each one's number and `PPID` its parent's: `sleep` and `ps` both have your shell, 8821, as their parent. In `STAT`, `S` is sleeping (waiting for something), `R` running, and the extra letters mean `s` session leader and `+` in the foreground."
+    output: |2
+          PID    PPID STAT CMD
+         8821    8819 Ss   bash
+         8822    8821 S    sleep 100
+         8824    8821 R+   ps -o pid,ppid,stat,cmd
+  - command: pstree -sp $$
+    explain: "`$$` is your shell's PID. `-s` draws the parents above it all the way up to PID 1, and `-p` adds the PIDs. This is WSL, where Windows' own `init` and a session relay sit between systemd and the shell. On a desktop the chain is shorter: systemd → `systemd --user` → the terminal app → bash."
+    output: |
+      systemd(1)───init-systemd(Ub(2)───SessionLeader(8791)───Relay(8795)(8792)───bash(8795)───script(8819)───bash(8821)─┬─pstree(8826)
+                                                                                                                         └─sleep(8822)
+  - command: ps -p 1 -o pid,ppid,comm,cmd
+    explain: "PID 1 is the first process the kernel starts and the root of the tree. On Ubuntu, Fedora and Arch it's systemd. Its parent is 0, which isn't a process: it means \"started by the kernel\"."
+    output: |2
+          PID    PPID COMMAND         CMD
+            1       0 systemd         /usr/lib/systemd/systemd --system --deserialize=103
+  - command: grep -E '^(Name|State|PPid|Threads|VmRSS)' /proc/$$/status
+    explain: "Everything `ps` shows comes from files under `/proc/<PID>/`. `status` is the readable summary: the name, the state, the parent, how many threads and how much memory is in RAM right now."
+    output: |
+      Name:	bash
+      State:	S (sleeping)
+      PPid:	8819
+      VmRSS:	    3968 kB
+      Threads:	1
+  - command: readlink /proc/$$/exe /proc/$$/cwd
+    explain: "Two more entries in the same folder: `exe` is the program file the process is running, `cwd` is its current folder. Both are links you can read without root for your own processes."
+    output: |
+      /usr/bin/bash
+      /home/jd/projects
+  - command: ps -eo stat= | cut -c1 | sort | uniq -c
+    explain: "Every process on the machine, counted by state. Almost all of them are `S`: a normal system spends most of its time waiting for input, a timer or the network. Only a few are `R` at any moment."
+    output: |2
+            2 R
+           33 S
+  - command: cat /proc/sys/kernel/pid_max
+    explain: "The highest PID the kernel hands out before it wraps round and reuses free numbers from the bottom. A PID only identifies a process while it's alive."
+    output: |
+      4194304
+misconceptions:
+  - myth: "A program and a process are the same thing."
+    reality: "A program is a file on disk. A process is one running copy of it, with its own memory, open files and PID. Ten terminals running bash are ten processes and one program, `/usr/bin/bash`."
+  - myth: "Killing a parent kills its children."
+    reality: "Not by itself. When a parent dies, its children keep running and get a new parent: PID 1, or the nearest process marked as a \"subreaper\", such as your `systemd --user` session. Things that do take the children with them, such as closing a terminal or stopping a systemd service, do it on purpose."
+  - myth: "A zombie process is stuck and needs `kill -9`."
+    reality: "A zombie has already exited. It's only an entry in the process table, waiting for its parent to read its exit status. Signals do nothing to it, because there's nothing left running. It goes away when the parent collects it, or when the parent exits and PID 1 collects it instead."
+  - myth: "High `VSZ` or `VIRT` means a process is using a lot of memory."
+    reality: "That number includes memory the process has reserved but never touched, and shared libraries. `RSS` (`RES` in top) is what it actually holds in RAM."
+commands: [ps, pgrep, top, htop, kill]
+scenarios: []
+references:
+  - label: "proc(5): the /proc filesystem, including /proc/pid/status"
+    url: https://man7.org/linux/man-pages/man5/proc.5.html
+  - label: "fork(2): create a child process"
+    url: https://man7.org/linux/man-pages/man2/fork.2.html
+  - label: "execve(2): run a program in the current process"
+    url: https://man7.org/linux/man-pages/man2/execve.2.html
+  - label: "wait(2): wait for a child to change state"
+    url: https://man7.org/linux/man-pages/man2/wait.2.html
+  - label: "ps(1): process state codes"
+    url: https://man7.org/linux/man-pages/man1/ps.1.html
+  - label: "prctl(2): PR_SET_CHILD_SUBREAPER"
+    url: https://man7.org/linux/man-pages/man2/prctl.2.html
+  - label: "kill(2): which signals PID 1 receives"
+    url: https://man7.org/linux/man-pages/man2/kill.2.html
+---
+
+## The mental model
+
+A **process** is a program that's running. The kernel gives each one a number, its **PID**, and keeps a record of it: which program it runs, which user it runs as, what memory it has, which files it has open, and what it's doing right now.
+
+New processes come from old ones. A process calls `fork()` to make a copy of itself, and the copy calls `exec()` to replace itself with a different program. That's how your shell runs `ls`, as [What happens when you press Enter](/g/pressing-enter) shows. The copy is the **child**, the original is its **parent**, and the child's record keeps the parent's PID as its **PPID**.
+
+Follow the parents up from any process and you always reach **PID 1**, the one process the kernel starts itself. So every process on the machine is part of one tree:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'One branch of the tree on an Ubuntu desktop',
+  caption: 'Each process was started by the one to its left. Your terminal app and everything in it hang under your own systemd --user manager.',
+  zones: [
+    { title: 'PID 1', items: [{ text: 'systemd', tone: 'focus', note: 'started by the kernel' }] },
+    { title: 'Started by PID 1', items: [{ text: 'systemd --user', tone: 'base', note: 'your session manager' }, { text: 'cron, sshd, NetworkManager', tone: 'base', note: 'system services' }] },
+    { title: 'Your session', items: [{ text: 'gnome-terminal-server', tone: 'base' }, { text: 'bash', tone: 'base', note: 'one per tab' }] },
+    { title: 'Your commands', items: [{ text: 'npm run dev', tone: 'base' }, { text: 'node', tone: 'caution', note: "npm's child, not bash's" }] }
+  ]
+}} />
+
+Every process is in one of a few **states**, shown in the `STAT` column of `ps`:
+
+- **`R` running**, or ready to run as soon as a CPU core is free.
+- **`S` sleeping**: waiting for something, such as a keypress, a network packet or a timer. This is the normal state. An idle server is `S`.
+- **`D` uninterruptible sleep**: waiting inside the kernel for a disk or network filesystem, and not even signals can wake it. Short spells are normal. A process stuck in `D` for minutes usually means a hung drive or network mount.
+- **`T` stopped**: paused, by Ctrl+Z or a debugger. It does nothing until it's continued.
+- **`Z` zombie**: finished, but its parent hasn't collected its exit status yet.
+
+Tools like `ps`, `top` and `pgrep` don't have any special access. They read the kernel's records, which appear as files under `/proc`. The [CPU and RAM scenario](/s/cpu-ram-hog) uses them to find what's slowing the machine down.
+
+## Under the hood
+
+**fork, then exec.** `fork()` creates a child that's an almost exact copy of the parent: the same memory (shared until either side writes to it), the same open files, the same environment and current folder. The only differences are the PID and the PPID. `exec()` then throws away the child's memory and loads a new program, but it keeps the PID, the open files and the environment. `bash -c 'echo $$; exec sh -c "echo \$\$"'` prints the same number twice: `exec` changed the program, not the process. That split is what lets a shell set up redirections in the child before the new program starts. The environment it passes on is explained in [How programs inherit their environment](/g/environment-variables).
+
+**Orphans get a new parent.** If a parent dies first, the kernel hands its children to PID 1, or to the closest ancestor that has asked to be a **subreaper**. On an Ubuntu desktop that's usually your `systemd --user` manager. Under WSL it's a per-session `init` process. The orphan keeps running and doesn't notice. This is why stopping `npm run dev` can leave its `node` child behind holding a port: see [Ports and sockets](/g/ports-sockets).
+
+**Zombies.** When a process exits, the kernel frees its memory and closes its files straight away, but it keeps the PID and the exit status until the parent calls `wait()`. Until then `ps` shows it as `Z` and `<defunct>`. Zombies use no CPU and no memory, only a slot in the table. They're a problem only when a buggy parent never collects them and they pile up in the thousands. Killing the parent fixes it: the zombies are adopted by PID 1, which collects them at once. [How exit status works](/g/exit-status) follows the status from `exit()` to `$?`.
+
+**Threads.** A process can run several threads, which share its memory and files but are scheduled separately. Linux gives each thread an ID from the same number space as PIDs, and lists them under `/proc/<PID>/task/`. `ps` shows processes by default; `ps -L` or `top -H` shows threads. When `top` shows one process above 100% CPU, several of its threads are busy on different cores.
+
+**The kernel's own threads.** On a normal install, PID 2 is `kthreadd`, the parent of the kernel's internal worker threads. They appear in `ps` in square brackets, like `[kworker/0:1]`, and they belong to the kernel, not to any program. (WSL is different: there, PID 2 is part of WSL's own init.)
+
+**PIDs are reused.** The kernel counts up to `pid_max` and then wraps round, skipping numbers still in use. A PID you wrote down an hour ago may now belong to something else. That's one reason to look it up with `pgrep` right before you use it, rather than reusing an old one.
+
+**PID 1 is special.** The kernel won't deliver signals to PID 1 that it hasn't set up a handler for, so `kill -9 1` does nothing. If PID 1 ever exits, the kernel panics, because nothing would be left to adopt orphans. On Ubuntu, Fedora, Debian and Arch, PID 1 is systemd, which also starts and supervises the system's services: [systemd units, targets and dependencies](/g/systemd-units) covers that side.

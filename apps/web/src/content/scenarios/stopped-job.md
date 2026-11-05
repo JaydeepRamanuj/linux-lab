@@ -94,6 +94,7 @@ avoid:
   - "`jobs` only knows this terminal's jobs. From another terminal, find it with `pgrep -a` or `ps aux | grep` and look for `T` (stopped) in the STAT column."
   - "A stopped job in another terminal can be resumed or ended by PID: `kill -CONT PID` resumes it, `kill PID` ends it."
 related: [keep-running, port-in-use, frozen-app]
+concepts: [jobs-sessions, signals]
 anatomy:
   "fg": "Resume the current job in the foreground: running again, and reading your keyboard."
 ---

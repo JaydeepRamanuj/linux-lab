@@ -1,0 +1,157 @@
+---
+track: services
+order: 3
+title: "Scheduled Tasks: cron vs systemd Timers"
+summary: cron reads a table of times and commands and runs each one in a bare environment. A systemd timer starts a service unit on a schedule, so it gets logging, catch-up after downtime and everything else a service has.
+level: deeper
+readingMinutes: 8
+prerequisites: [systemd-units, environment-variables]
+observe:
+  - command: systemctl list-timers --no-pager
+    explain: "Every active timer: when it fires next (`NEXT`, `LEFT`), when it last fired (`LAST`, `PASSED`) and which service it starts. On Ubuntu these do the housekeeping: package lists, security updates, log rotation, cleaning `/tmp`."
+    output: |
+      NEXT                          LEFT LAST                              PASSED UNIT                         ACTIVATES
+      Fri 2026-11-06 00:00:00 UTC    16h Thu 2026-11-05 06:01:07 UTC            - logrotate.timer              logrotate.service
+      Fri 2026-11-06 04:05:40 UTC    20h Thu 2026-11-05 07:31:11 UTC    10min ago apt-daily.timer              apt-daily.service
+      Fri 2026-11-06 06:30:06 UTC    22h Thu 2026-11-05 07:26:56 UTC    14min ago apt-daily-upgrade.timer      apt-daily-upgrade.service
+      Fri 2026-11-06 07:40:23 UTC    23h Thu 2026-11-05 07:40:21 UTC 1min 15s ago systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+  - command: systemctl cat apt-daily-upgrade.timer
+    explain: "The timer behind automatic security updates. `OnCalendar` says 06:00 every day, `RandomizedDelaySec` adds up to an hour so that millions of machines don't all hit the servers at once, and `Persistent=true` runs a missed one at the next boot."
+    output: |
+      # /usr/lib/systemd/system/apt-daily-upgrade.timer
+      [Unit]
+      Description=Daily apt upgrade and clean activities
+      After=apt-daily.timer
+
+      [Timer]
+      OnCalendar=*-*-* 6:00
+      RandomizedDelaySec=60m
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+  - command: systemd-analyze calendar 'Mon *-*-* 09:00'
+    explain: "Check a schedule before you use it. systemd shows the full form it understood and when it will next fire. `daily`, `weekly` and `*:0/15` (every 15 minutes) work too."
+    output: |2
+        Original form: Mon *-*-* 09:00
+      Normalized form: Mon *-*-* 09:00:00
+          Next elapse: Mon 2026-11-09 09:00:00 UTC
+             From now: 4 days left
+  - command: grep -v '^#' /etc/crontab
+    explain: "The system crontab. Five time fields, then a user (only system crontabs have one), then the command. The daily, weekly and monthly lines run every script in a folder with `run-parts`, unless anacron is installed to do it instead."
+    output: |
+      SHELL=/bin/sh
+      17 *	* * *	root	cd / && run-parts --report /etc/cron.hourly
+      25 6	* * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }
+      47 6	* * 7	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }
+      52 6	1 * *	root	test -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }
+  - command: ls /etc/cron.daily
+    explain: "Scripts that run once a day. Several of them, `logrotate` among them, check whether systemd is running and exit straight away if it is, because a timer does the same job."
+    output: |
+      apport
+      apt-compat
+      dpkg
+      logrotate
+      man-db
+  - command: crontab -l
+    explain: "Your own crontab, if you have one. It lives in `/var/spool/cron/crontabs/`, which you can't read directly; `crontab -e` is the way to edit it. `-l` only prints it."
+    output: |
+      no crontab for jd
+misconceptions:
+  - myth: "A cron job runs the same as when I type the command."
+    reality: "It runs under `/bin/sh`, from your home folder, with no `.bashrc`, no `.profile`, no terminal and almost no variables: `HOME`, `LOGNAME`, `SHELL`, `PATH` and, on Ubuntu, what `/etc/environment` sets. Aliases, nvm, pyenv and anything else set up in startup files aren't there. Use full paths, or set `PATH` at the top of the crontab."
+  - myth: "If the laptop was off at 3 a.m., cron runs the job when it wakes up."
+    reality: "Plain cron skips missed runs. anacron, if installed, catches up on daily, weekly and monthly jobs. A systemd timer with `Persistent=true` catches up on any schedule at the next boot."
+  - myth: "A cron job's output appears somewhere."
+    reality: "cron mails it to you, and most desktops have no mail program, so it's thrown away. The journal says only `No MTA installed, discarding output`. Redirect it yourself: `>> ~/backup.log 2>&1`."
+  - myth: "`%` in a crontab command is an ordinary character."
+    reality: "cron turns `%` into a new line and feeds everything after the first one to the command as input. `date +%F` breaks in a crontab; write `date +\\%F`."
+commands: [systemctl, journalctl]
+scenarios: []
+references:
+  - label: "crontab(5): the table format, environment and %"
+    url: https://man7.org/linux/man-pages/man5/crontab.5.html
+  - label: "cron(8): the daemon"
+    url: https://man7.org/linux/man-pages/man8/cron.8.html
+  - label: "systemd.timer(5): OnCalendar, Persistent, RandomizedDelaySec"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html
+  - label: "systemd.time(7): calendar event syntax"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.time.html
+  - label: "anacron(8): running missed periodic jobs"
+    url: https://man7.org/linux/man-pages/man8/anacron.8.html
+  - label: "Debian wiki: UnattendedUpgrades"
+    url: https://wiki.debian.org/UnattendedUpgrades
+---
+
+## The mental model
+
+There are two ways to run something on a schedule, and Ubuntu uses both.
+
+**cron** is a daemon that wakes up every minute, reads its tables, and runs every line whose time matches. A line is five time fields and a command:
+
+```
+# min  hour  day  month  weekday   command
+  30   2     *    *      *         /home/jd/bin/backup.sh >> /home/jd/backup.log 2>&1
+```
+
+That's 02:30 every day. `*` means any value, `*/15` every 15, `1-5` Monday to Friday. Your own table is edited with `crontab -e`; system tables are `/etc/crontab` and the files in `/etc/cron.d/`.
+
+A **systemd timer** is a unit, `backup.timer`, that starts a service unit of the same name, `backup.service`, when its schedule comes round. The service does the work; the timer only says when.
+
+<Flow spec={{
+  title: 'How Ubuntu installs security updates on its own',
+  stages: [
+    { title: 'The timer fires', tag: 'timer', detail: '`apt-daily-upgrade.timer` is due at 06:00 plus a random delay of up to an hour. If the machine was off then, `Persistent=true` makes it fire soon after the next boot instead.', code: 'OnCalendar=*-*-* 6:00' },
+    { title: 'The service starts', tag: 'systemd', detail: 'systemd starts `apt-daily-upgrade.service`, a `oneshot` service, in a cgroup of its own. Its output goes to the journal.', code: 'ExecStart=/usr/lib/apt/apt.systemd.daily install' },
+    { title: 'unattended-upgrade runs', tag: 'apt', detail: 'The script runs `unattended-upgrade`, which installs pending security updates. While it works it holds the dpkg lock.' },
+    { title: 'Your apt waits', tag: 'you', detail: '"Could not get lock … held by process 2841 (unattended-upgr)". The lock is released when the service finishes, usually within minutes.' },
+    { title: 'The service ends', tag: 'systemd', detail: 'The service goes back to `inactive (dead)`. `systemctl list-timers` shows when it last ran and when it runs next.' }
+  ]
+}} />
+
+That's the story behind the [apt lock scenario](/s/apt-lock): "right after boot" is when a missed timer catches up. On this test machine, `apt-daily-upgrade.service` started about two minutes after boot and ran for 44 seconds.
+
+Which to choose for your own jobs:
+
+| | cron | systemd timer |
+|---|---|---|
+| Setup | One line | Two unit files |
+| Output | Mailed, or lost | In the journal: `journalctl -u backup` |
+| Missed while off | Skipped | Run at next boot with `Persistent=true` |
+| Overlap | A slow job can start twice | Never: the service is already running |
+| Limits, sandboxing, dependencies | No | Everything a service can do |
+
+cron is fine for a quick personal job. A timer is better for anything you'll need to debug.
+
+## Under the hood
+
+**cron's environment, measured.** A test job running `env` on Ubuntu 24.04 got `HOME=/home/jd`, `LOGNAME=jd`, `SHELL=/bin/sh`, `PWD=/home/jd`, `LANG=C.UTF-8`, and `PATH` from `/etc/environment`, which on Ubuntu includes `/snap/bin`. That `PATH` comes from `pam_env`, which `/etc/pam.d/cron` runs for every job; cron itself is started with `-P`, which tells it not to set one of its own. There's no `DISPLAY` or `DBUS_SESSION_BUS_ADDRESS`, so a job can't open windows or send desktop notifications without help. Why your interactive shell has so much more is in [How programs inherit their environment](/g/environment-variables).
+
+**The `%` rule, measured.** The line `echo first%second; cat > /tmp/pct.txt` ran only `echo first`: the journal logged `CMD (echo first)`, and the rest became the command's standard input. The second command never ran.
+
+**Where cron's tables live.** `crontab -e` edits a copy and installs it to `/var/spool/cron/crontabs/<user>`, checking the syntax first. Don't edit that folder by hand. `/etc/crontab` and `/etc/cron.d/*` are edited directly and have an extra user field. `@reboot`, `@daily` and `@hourly` can replace the five fields. cron logs each run to the journal as `CRON[pid]: (jd) CMD (…)`, so `journalctl -u cron` shows whether a job started, even when its output was lost.
+
+**anacron.** On a machine that's often off, cron's `/etc/cron.daily` line at 06:25 is easy to miss. anacron records when each daily, weekly and monthly folder last ran, and runs it if it's overdue. It's a separate package, and not every install has it; the test machine didn't. That's what the `test -x /usr/sbin/anacron ||` in `/etc/crontab` is for: cron runs the folders itself only when anacron isn't there to do it.
+
+**Timer schedules.** `OnCalendar=` takes calendar events: `daily` is `*-*-* 00:00:00`, `Mon..Fri 09:00` is weekday mornings, `*:0/15` every quarter hour. `systemd-analyze calendar` checks one. Timers can also count from events instead of the clock: `OnBootSec=15min` and `OnUnitActiveSec=1d` mean "15 minutes after boot, then a day after each run", which is how `systemd-tmpfiles-clean.timer` works. `AccuracySec=` (default one minute) lets systemd group nearby wake-ups to save power, and `RandomizedDelaySec=` spreads load.
+
+**A timer for your own job.** Two files in `~/.config/systemd/user/`, then `systemctl --user enable --now backup.timer`:
+
+```ini
+# backup.service
+[Service]
+Type=oneshot
+ExecStart=/home/jd/bin/backup.sh
+
+# backup.timer
+[Timer]
+OnCalendar=*-*-* 02:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+`systemctl --user start backup.service` runs it once by hand, which is the easiest way to test it. User timers only run while you're logged in, unless lingering is turned on with `loginctl enable-linger`. For a one-off, `systemd-run --user --on-active=10min ./job.sh` creates a temporary timer without writing any files.
+
+**Other distributions.** Fedora uses `cronie`, which is compatible. Arch installs no cron daemon at all and expects timers. Both use systemd timers for their own housekeeping, as Ubuntu does.

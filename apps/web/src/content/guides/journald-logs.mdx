@@ -1,0 +1,122 @@
+---
+track: services
+order: 2
+title: "Where Logs Live: journald and /var/log"
+summary: systemd's journal collects what services print, what programs send to syslog, and the kernel's messages, with fields you can filter on. On Ubuntu, rsyslog also copies most of it into text files in /var/log, next to logs apps write themselves.
+level: essentials
+readingMinutes: 7
+prerequisites: [systemd-units]
+observe:
+  - command: journalctl -u cron -n 4 --no-pager
+    explain: "The last four journal entries for one service. Each line is a time, the host, the program and its PID, and the message. `-u` matches the unit, so you get lines from the program and from systemd about it: here systemd starting it, then a warning about its unit file. Add `-f` to follow live."
+    output: |
+      Nov 05 07:24:43 laptop systemd[1]: Started cron.service - Regular background program processing daemon.
+      Nov 05 07:24:43 laptop (cron)[157]: cron.service: Referenced but unset environment variable evaluates to an empty string: EXTRA_OPTS
+      Nov 05 07:24:44 laptop cron[157]: (CRON) INFO (pidfile fd = 3)
+      Nov 05 07:24:44 laptop cron[157]: (CRON) INFO (Running @reboot jobs)
+  - command: journalctl -u cron -n 1 -o verbose --no-pager
+    explain: "The same entry with every field. The journal stores fields, not text lines. Those starting with `_` are added by journald itself and can't be faked by the program: the PID, the user, the unit. Any field works as a filter: `journalctl _PID=157`, `journalctl PRIORITY=3`."
+    output: |
+      Thu 2026-11-05 07:24:44.003530 UTC [s=39f2ffd0…;i=ce67;b=2ccfccf0…]
+          PRIORITY=6
+          _UID=0
+          _PID=157
+          _COMM=(cron)
+          _SYSTEMD_UNIT=cron.service
+          _TRANSPORT=syslog
+          SYSLOG_IDENTIFIER=cron
+          MESSAGE=(CRON) INFO (Running @reboot jobs)
+  - command: journalctl -b -p err --no-pager
+    explain: "Everything at priority `err` or worse since this boot (`-b`), from every service and the kernel. A good first look when something is wrong and you don't know what. `-b -1` is the boot before this one."
+    output: |
+      Nov 05 07:24:46 laptop login[294]: PAM unable to dlopen(pam_lastlog.so): /usr/lib/security/pam_lastlog.so: cannot open shared object file: No such file or directory
+      Nov 05 07:24:46 laptop login[294]: PAM adding faulty module: pam_lastlog.so
+  - command: journalctl --list-boots --no-pager
+    explain: "The journal keeps entries across reboots on Ubuntu. Each boot has an ID and an offset: 0 is this boot, -1 the previous one. That's how you read the log of a boot that froze."
+    output: |
+      -2 5930df25e14a44eaa98280dd6e2fe46e Thu 2026-11-05 06:58:27 UTC Thu 2026-11-05 06:58:54 UTC
+      -1 675b84a8833540df8de66da29e62f129 Thu 2026-11-05 07:02:55 UTC Thu 2026-11-05 07:05:17 UTC
+       0 2ccfccf0cd12458cb9f7bce281a94a53 Thu 2026-11-05 07:24:43 UTC Thu 2026-11-05 07:41:38 UTC
+  - command: journalctl --disk-usage
+    explain: "How much space the journal takes. journald caps it itself, at 10% of the filesystem and never more than 4 GB, deleting the oldest files first."
+    output: |
+      Archived and active journals take up 613.8M in the file system.
+  - command: ls -l /var/log
+    explain: "Text logs. `syslog`, `auth.log` and `kern.log` are written by rsyslog, owned by `syslog` and readable by the `adm` group. `dpkg.log` and the `apt/` folder are written by the package tools themselves. `.1` and `.gz` files are older copies kept by logrotate. `journal/` holds the journal's binary files."
+    output: |
+      drwxr-xr-x  2 root      root              4096 Nov  5 07:27 apt
+      -rw-r-----  1 syslog    adm              13162 Nov  5 07:27 auth.log
+      -rw-r-----  1 syslog    adm               4642 Nov  4 05:50 auth.log.1
+      -rw-r-----  1 syslog    adm                737 Oct 26 05:30 auth.log.2.gz
+      -rw-r--r--  1 root      root             24105 Nov  5 07:27 dpkg.log
+      drwxr-sr-x+ 3 root      systemd-journal   4096 Mar  6  2026 journal
+      -rw-r-----  1 syslog    adm             321891 Nov  5 07:35 kern.log
+      -rw-r-----  1 syslog    adm             694467 Nov  5 07:47 syslog
+  - command: id
+    explain: "Reading other users' and the system's logs needs a group. On Ubuntu the first user is in `adm`, which can read the files in `/var/log` and the whole journal. Without it, `journalctl` shows only your own user's entries."
+    output: |
+      uid=1000(jd) gid=1000(jd) groups=1000(jd),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users)
+misconceptions:
+  - myth: "`journalctl` and `/var/log/syslog` are two different logs."
+    reality: "On Ubuntu they're mostly the same messages. journald receives them first and forwards a copy to rsyslog, which writes `syslog`, `auth.log` and `kern.log`. The journal has more detail, such as fields and services' plain output. Fedora and Arch don't install rsyslog, so the journal is all there is."
+  - myth: "Services write their logs into /var/log."
+    reality: "Most systemd services print to stdout and stderr, and journald captures that. Only programs that open their own log files, like nginx (`/var/log/nginx/`) or apt, put text files there. If a service has no file in `/var/log`, run `journalctl -u name`."
+  - myth: "The journal will fill the disk if you don't clean it."
+    reality: "journald enforces a size cap and deletes its oldest files. Text logs in `/var/log` are kept in check by logrotate, which runs daily. What does fill disks is a program writing its own huge log outside both, or a deleted log file that a program still holds open."
+  - myth: "`journalctl` needs sudo."
+    reality: "On Ubuntu, members of `adm` can read the whole journal, and every user can read their own entries. `sudo` is needed only if you're in neither `adm` nor `systemd-journal` (on Fedora and Arch, `wheel` works too)."
+commands: [journalctl, tail, less, systemctl]
+scenarios: []
+references:
+  - label: "journalctl(1): filters, -u, -b, -p, -f and who can read what"
+    url: https://www.freedesktop.org/software/systemd/man/latest/journalctl.html
+  - label: "systemd-journald.service(8): where entries come from"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd-journald.service.html
+  - label: "journald.conf(5): Storage=, SystemMaxUse=, ForwardToSyslog="
+    url: https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html
+  - label: "systemd.journal-fields(7): the fields in each entry"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
+  - label: "logrotate(8): rotating, compressing and removing log files"
+    url: https://man7.org/linux/man-pages/man8/logrotate.8.html
+---
+
+## The mental model
+
+Most of what you'd call "the logs" on a modern Linux system goes through one program, **systemd-journald**. It collects messages from four places and stores them together in the **journal**:
+
+<Layers spec={{
+  title: 'How a message reaches you',
+  pathLabel: 'A crash message from nginx',
+  layers: [
+    { name: 'Sources', tone: 'user', highlight: true, detail: 'A service printing to stdout or stderr. A program calling syslog(), through `/dev/log`. Programs using the journal API. The kernel, through `/dev/kmsg`.', chips: ['nginx stderr', 'cron via syslog', 'kernel: OOM'], edge: 'sockets in `/run/systemd/journal/`' },
+    { name: 'systemd-journald', tone: 'kernel', highlight: true, detail: 'Adds trusted fields (PID, user, unit, boot) and stores each entry with its priority and time.' },
+    { name: 'Journal files', tone: 'kernel', highlight: true, detail: '`/var/log/journal/<machine-id>/`, binary and indexed. Read them with `journalctl`.', chips: ['journalctl -u nginx', 'journalctl -k', 'journalctl -b -1'], edge: 'forwarded on Ubuntu' },
+    { name: 'rsyslog and text files', tone: 'hardware', detail: 'On Ubuntu, rsyslog gets a copy and writes classic text files.', chips: ['/var/log/syslog', '/var/log/auth.log', '/var/log/kern.log'] }
+  ]
+}} />
+
+Alongside the journal, `/var/log` also has logs written by programs **directly**, which never pass through journald: `dpkg.log` and `apt/history.log` from the package tools, `nginx/access.log`, and anything else that opens its own file. These are plain text, so `tail -f` works on them, as in the [watch a log scenario](/s/watch-log).
+
+So "where's the log?" usually has one of three answers:
+
+- **A systemd service**: `journalctl -u name`. Add `-f` to follow, `-n 50` for the last 50 lines, `--since "10 min ago"` to narrow it. The [system service scenario](/s/system-service) starts there.
+- **The kernel** (drivers, USB, the out-of-memory killer): `journalctl -k`, or `dmesg`.
+- **An app with its own file**: look in `/var/log/<app>/`, or the app's config for a `log` setting.
+
+Every entry has a **priority**, the syslog levels from 0 to 7: `emerg`, `alert`, `crit`, `err`, `warning`, `notice`, `info`, `debug`. `-p err` shows `err` and everything more serious.
+
+## Under the hood
+
+**Persistent or not.** journald's `Storage=auto` setting keeps the journal on disk only if `/var/log/journal/` exists, and in memory under `/run/log/journal/` otherwise, lost at every reboot. Ubuntu creates the folder, so the journal survives reboots and `journalctl -b -1` works. If `--list-boots` only ever shows one boot, that folder is missing.
+
+**Size limits.** On disk, the journal may use at most 10% of the filesystem, capped at 4 GB, and it leaves at least 15% free. When it reaches the limit, journald deletes its oldest archived files. To use less, set `SystemMaxUse=` in a drop-in such as `/etc/systemd/journald.conf.d/size.conf`, or trim once with `sudo journalctl --vacuum-size=200M`.
+
+**Fields, not lines.** Each entry is a set of fields. `MESSAGE` is the text and `PRIORITY` the level. The ones journald adds itself start with `_`: `_PID`, `_UID`, `_COMM`, `_SYSTEMD_UNIT`, `_BOOT_ID`, `_TRANSPORT`. A program can't set those, so they can be trusted. `-o verbose` shows them all, `-o json` gives them to scripts, and `journalctl -F _SYSTEMD_UNIT` lists every value a field has taken. `_TRANSPORT` says how the entry arrived: `stdout` for a service's output, `syslog`, `journal` for the native API, `kernel`.
+
+**Why Ubuntu has both.** Ubuntu installs rsyslog, and its systemd package ships a journald drop-in, `/usr/lib/systemd/journald.conf.d/syslog.conf`, that sets `ForwardToSyslog=yes` (upstream's default is `no`). journald passes each message to rsyslog through a socket, and rsyslog sorts them into files by facility, following `/etc/rsyslog.d/50-default.conf`: authentication into `auth.log`, kernel into `kern.log`, and everything except authentication into `syslog`. These are what `grep` and old scripts expect. Fedora, Arch and most container images skip rsyslog, so there's no `/var/log/syslog` there.
+
+**Who can read what.** The journal files belong to the `systemd-journal` group, and an ACL (the `+` in `ls -l`) gives the `adm` group read access too. Fedora and Arch add `wheel` the same way. Members of those groups can read every entry. Other users can read only entries from their own processes. The text files in `/var/log` use plain permissions: `syslog:adm` with mode `640`.
+
+**logrotate.** Text logs would grow for ever, so a daily `logrotate.timer` renames them: `syslog` becomes `syslog.1`, the old `.1` is compressed to `.2.gz`, and the oldest is deleted. Each file's rules live in `/etc/logrotate.d/`; for rsyslog's files it's weekly, keeping four. After rotating, logrotate tells the writer to reopen its file. A program that isn't told keeps writing to the renamed file through its open descriptor, the same thing that makes `tail -f` go quiet: see [file descriptors](/g/file-descriptors).
+
+**Your own messages.** `logger "backup done"` sends a line to the journal through syslog, which is handy in cron jobs and scripts. `systemd-cat` runs a command with its output going into the journal. Your per-user services' output goes to your own part of the journal: `journalctl --user -u name`.

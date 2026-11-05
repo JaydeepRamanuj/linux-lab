@@ -15,8 +15,11 @@ const READONLY = new Set([
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
-  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return'
+  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return', 'pstree', 'lslocks', 'systemd-cgls', 'systemd-cgtop', 'systemd-delta'
 ]);
+
+// Subcommands of `systemd-analyze` that only report. Others (`set-log-level` and friends) change the running manager.
+const SYSTEMD_ANALYZE_READ = /^(time|blame|critical-chain|calendar|timespan|timestamp|verify|cat-config|unit-files|unit-paths|dump|plot|dot|security|condition|syscall-filter|exit-status|capability|filesystems|inspect-elf|malloc)$/;
 
 // Programs that change files in the project or user space, recoverably.
 const MODIFIES = new Set([
@@ -61,6 +64,16 @@ export function baseSeverity(c: NormalizedCommand): Basis {
     return { severity: 'modifies', reason: 'Closes tmux sessions or windows and ends the programs running in them.' };
   }
   if (p === 'env' && c.operands.length === 0) return { severity: 'readonly', reason: 'Prints environment variables.' };
+  if (p === 'crontab' && c.short.has('l') && !c.short.has('e') && !c.short.has('r')) return { severity: 'readonly', reason: 'Prints your scheduled (cron) jobs.' };
+  if (p === 'stty' && c.operands.length === 0 && c.argv.every((w) => /^(-a|-g|--all|--save)$/.test(w.value))) {
+    return { severity: 'readonly', reason: 'Prints the terminal settings.' };
+  }
+  if (p === 'trap' && (c.argv.length === 0 || /^-[lp]$/.test(c.argv[0]!.value))) return { severity: 'readonly', reason: 'Lists signals or the traps this shell has set.' };
+  if (p === 'ulimit' && c.operands.length === 0) return { severity: 'readonly', reason: 'Prints a resource limit of this shell.' };
+  if (p === 'loginctl' && /^(list-.*|show-.*|.*-status)?$/.test(c.operands[0]?.value ?? '')) return { severity: 'readonly', reason: 'Only shows login sessions.' };
+  if (p === 'systemd-analyze' && (c.operands.length === 0 || SYSTEMD_ANALYZE_READ.test(c.operands[0]!.value))) {
+    return { severity: 'readonly', reason: 'Only reports on systemd and its units.' };
+  }
 
   if (SHELLS.has(p) && p !== 'busybox') {
     const shell = shellBasis(c);

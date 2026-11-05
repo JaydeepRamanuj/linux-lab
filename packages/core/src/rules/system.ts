@@ -8,6 +8,8 @@ const kill: Rule = {
     if (p === 'killall5') return hit('destructive', '`killall5` signals every process on the system.');
     if (p === 'kill') {
       const values = c.argv.map((w) => w.value);
+      // `kill -l [n]` and `kill -L` only print signal names and numbers.
+      if (/^(-l|-L|--list|--table)$/.test(values[0] ?? '')) return hit('readonly', 'Only lists signal names and numbers; sends nothing.');
       // Skip the signal spec: -9, -KILL, -SIGTERM, -s KILL, -n 9.
       let i = 0;
       if (values[0] === '-s' || values[0] === '-n') i = 2;
@@ -52,7 +54,7 @@ const services: Rule = {
     } else {
       return null;
     }
-    if (!action || /^(status|show|cat|list-.*|is-.*|help|--version)$/.test(action)) return hit('readonly', 'Only shows service status.');
+    if (!action || /^(status|show|show-environment|cat|list-.*|is-.*|get-default|help|--version)$/.test(action)) return hit('readonly', 'Only shows service status.');
     if (/^(stop|disable|mask|kill)$/.test(action) && units.some((u) => CORE_SERVICES.test(u))) {
       return hit('elevated', `Stopping ${units.join(', ')} can cut off your network, SSH access or login screen.`);
     }

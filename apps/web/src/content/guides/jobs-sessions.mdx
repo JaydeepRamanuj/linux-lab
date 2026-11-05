@@ -1,0 +1,115 @@
+---
+track: processes
+order: 5
+title: Jobs, Sessions and Why Closing the Terminal Kills Things
+summary: A terminal owns a session, the session holds process groups, and one group at a time is in the foreground. Ctrl+C, Ctrl+Z and closing the window all signal groups, which is why nohup, disown, setsid and tmux each work.
+level: deeper
+readingMinutes: 8
+prerequisites: [signals]
+observe:
+  - command: ps -o pid,ppid,pgid,sid,tpgid,tty,stat,cmd
+    explain: "After starting `sleep 100 | cat &`. `PGID` is the process group: `sleep` and `cat` share 8408, so they're one job. `SID` is the session, the same for everything in this terminal: the shell's PID. `TPGID` is the group the terminal treats as foreground, here `ps` itself. `+` in `STAT` marks the foreground group and `s` the session leader."
+    output: |2
+          PID    PPID    PGID     SID   TPGID TT       STAT CMD
+         8407    8405    8407    8407    8411 pts/0    Ss   bash
+         8408    8407    8408    8407    8411 pts/0    S    sleep 100
+         8409    8407    8408    8407    8411 pts/0    S    cat
+         8411    8407    8411    8407    8411 pts/0    R+   ps -o pid,ppid,pgid,sid,tpgid,tty,stat,cmd
+  - command: jobs -l
+    explain: "The shell's view of the same thing. Job 1 is the pipeline, both PIDs listed. Job 3 is a `cat &` that tried to read the keyboard from the background, so the terminal stopped it with SIGTTIN: \"Stopped (tty input)\"."
+    output: |
+      [1]   8408 Running                 sleep 100
+            8409                       | cat &
+      [2]-  8429 Running                 sleep 60 &
+      [3]+  8440 Stopped (tty input)     cat
+  - command: tty
+    explain: "The terminal this session is attached to, its controlling terminal. Closing the window makes this device hang up, and the kernel sends SIGHUP to the session's leader, your shell."
+    output: |
+      /dev/pts/0
+  - command: shopt huponexit
+    explain: "Whether bash sends SIGHUP to its jobs when you type `exit`. It's off by default, so typing `exit` and closing the window are not the same: see Under the hood."
+    output: |
+      huponexit      	off
+  - command: grep KillUserProcesses /etc/systemd/logind.conf
+    explain: "Whether systemd kills everything a user left behind when they log out, SSH sessions included. Ubuntu leaves it at the default, `no` (the line is commented out), so processes that survive the SIGHUP keep running after logout."
+    output: |
+      #KillUserProcesses=no
+  - command: tmux ls
+    explain: "tmux runs a server process outside your terminal's session. Each tmux session lives in that server, so closing your window only detaches you."
+    output: |
+      train: 1 windows (created Wed Nov  4 07:56:15 2026)
+misconceptions:
+  - myth: "`&` makes a program run in the background so it survives the terminal closing."
+    reality: "`&` only means \"don't wait for it\". The job is still in this terminal's session and still gets SIGHUP when the window closes. In a test, a plain `sleep 300 &` died on hang-up, while the same command under `nohup`, after `disown`, or under `setsid` survived."
+  - myth: "`nohup` and `disown` do the same thing."
+    reality: "`nohup` makes the program ignore SIGHUP and moves its output away from the terminal. `disown` removes the job from bash's list, so bash doesn't forward SIGHUP to it, but the program could still get one from elsewhere and still writes to a terminal that's about to vanish. `disown -h` keeps it in the list but skips the HUP."
+  - myth: "Ctrl+C stops only the last command of a pipeline."
+    reality: "It goes to the whole foreground process group, and a pipeline is one group. In `sleep 100 | sleep 101`, both get SIGINT and both report 130."
+  - myth: "Background jobs can't read input."
+    reality: "They can try, and the terminal stops them with SIGTTIN until you bring them to the foreground with `fg`. That's the \"Stopped (tty input)\" in `jobs`. Writing is allowed by default, which is why background output mixes with your typing."
+commands: [jobs, nohup, tmux, kill, ps]
+scenarios: []
+references:
+  - label: "credentials(7): process groups and sessions"
+    url: https://man7.org/linux/man-pages/man7/credentials.7.html
+  - label: "Bash Reference Manual: Job Control Basics"
+    url: https://www.gnu.org/software/bash/manual/html_node/Job-Control-Basics.html
+  - label: "Bash Reference Manual: Signals (SIGHUP and huponexit)"
+    url: https://www.gnu.org/software/bash/manual/html_node/Signals.html
+  - label: "setsid(2): create a session"
+    url: https://man7.org/linux/man-pages/man2/setsid.2.html
+  - label: "termios(3): the controlling terminal and hang-up"
+    url: https://man7.org/linux/man-pages/man3/termios.3.html
+  - label: "_exit(2): SIGHUP and orphaned process groups"
+    url: https://man7.org/linux/man-pages/man2/_exit.2.html
+  - label: "logind.conf(5): KillUserProcesses"
+    url: https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
+---
+
+## The mental model
+
+Every process belongs to a **process group**, and every group belongs to a **session**. Opening a terminal tab starts a new session, with your shell as its **leader**, and attaches it to the terminal. The terminal is then that session's **controlling terminal**.
+
+Each command line you run becomes a **job**: a process group of its own. `make` is a group of one; `ps aux | grep node | head` is a group of three. At any moment, exactly one group is in the **foreground**: the one the terminal sends your keystrokes and signals to. All other groups are in the background.
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'One terminal tab',
+  caption: 'Ctrl+C, Ctrl+Z and Ctrl+\\ go to the foreground group only. Closing the window affects the whole session.',
+  zones: [
+    { title: 'Session 8407', items: [{ text: 'bash  (leader)', tone: 'focus', note: 'pts/0 is its terminal' }] },
+    { title: 'Foreground group', items: [{ text: 'npm run dev', tone: 'good', note: 'gets your keys and Ctrl+C' }] },
+    { title: 'Background groups', items: [{ text: '[1] sleep 100 | cat &', tone: 'base', note: 'running' }, { text: '[2] vim notes.md', tone: 'caution', note: 'stopped by Ctrl+Z' }] }
+  ]
+}} />
+
+Three things happen to groups:
+
+- **Ctrl+C** sends SIGINT to the foreground group. **Ctrl+Z** sends SIGTSTP, which pauses it, and the shell takes the foreground back. `fg` and `bg` hand a stopped group the foreground or let it run in the background, sending SIGCONT. The [Ctrl+Z scenario](/s/stopped-job) walks through it.
+- **A background group that reads the terminal** gets SIGTTIN and stops until you `fg` it.
+- **Closing the window** makes the terminal hang up. The kernel sends SIGHUP to the session leader, your shell. Bash then sends SIGHUP to every job it knows about, running or stopped, and exits. Most programs die on SIGHUP.
+
+So surviving a closed terminal means getting out of that chain. That's what the [keep running scenario](/s/keep-running) does:
+
+| Method | How it escapes |
+|---|---|
+| `nohup cmd &` | The program ignores SIGHUP. Output goes to a file, since the terminal will be gone. |
+| `disown` | Bash forgets the job, so it never forwards SIGHUP to it. |
+| `setsid cmd` | Starts the program in a new session with no terminal at all. |
+| `tmux`, `screen` | The program runs in a session owned by the tmux server, which isn't attached to your window. |
+
+## Under the hood
+
+**What a real hang-up did.** In a test session, five background jobs were started and then the terminal was closed hard. `sleep 300 &` died, and so did a stopped job. `nohup sleep 301`, `sleep 302 & disown` and `setsid sleep 303` survived, and were adopted by a new parent once the shell was gone.
+
+**Typing `exit` is different.** With `huponexit` off, the default, an interactive bash that exits normally doesn't send SIGHUP to its jobs. A running `sleep 305 &` was still alive after `exit`. The terminal window then closes, but the kernel only signals the foreground group at that point, and the background job isn't in it. If it later writes to the vanished terminal, the write fails, and many programs exit then. Bash does warn first if any jobs are **stopped**: `There are stopped jobs.`
+
+**Stopped jobs and hang-ups.** A stopped process can't act on SIGHUP until it runs again, so bash sends SIGCONT after SIGHUP to its stopped jobs. The kernel has a matching rule for groups it can't reach any other way: when a group is left with no parent in the session (an **orphaned** process group) and some of it is stopped, every member gets SIGHUP then SIGCONT. Either way, stopped jobs don't outlive a closed terminal.
+
+**Process groups are how the terminal finds its targets.** The terminal driver knows one number: the foreground group (`TPGID` in `ps`). Pressing Ctrl+C makes it send SIGINT to that group, which is why every process of a pipeline gets it. The shell moves the foreground with `tcsetpgrp()` when you run `fg`, and takes it back when the job stops or finishes. Shells running scripts don't do job control, so everything a script starts stays in the script's group.
+
+**Why background jobs keep printing.** Writing to the terminal from the background is allowed unless the terminal's `tostop` setting is on (`stty tostop`), in which case the writer gets SIGTTOU and stops too. Reading is never allowed from the background, which is what keeps your typing from going to the wrong program.
+
+**Sessions outside terminals.** Services started by systemd have no controlling terminal, so no hang-up can reach them; that's one reason a [systemd service](/g/systemd-units) is the right home for anything that should always run. `setsid` creates a session the same way. Daemons used to `fork` twice and call `setsid` for this reason; under systemd they don't need to.
+
+**Logging out of SSH.** sshd is the terminal here: when the connection drops, it closes the pseudo-terminal and the same SIGHUP chain runs. Whatever survives belongs to your login session's scope in systemd. With `KillUserProcesses=no`, the Ubuntu default, it keeps running after you log out. With `yes`, a setting some admins choose, logind stops everything in the session on logout, `nohup` jobs included, and tmux survives only if it was started outside the session, with `systemd-run --scope --user tmux`.

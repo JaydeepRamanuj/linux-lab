@@ -187,7 +187,27 @@ table('processes and services', [
   ['nohup ./train.sh > train.log 2>&1 &', 'modifies'],
   ['journalctl -u nginx -n 20 --no-pager', 'readonly'],
   ['sudo systemctl restart nginx', 'elevated'],
-  ['sudo reboot', 'elevated']
+  ['sudo reboot', 'elevated'],
+  ['kill -l', 'readonly'],
+  ['kill -l 143', 'readonly'],
+  ['kill -s KILL 48213', 'modifies'],
+  ['pstree -sp $$', 'readonly'],
+  ['stty -a', 'readonly'],
+  ['stty -echo', 'modifies'],
+  ['trap -p', 'readonly'],
+  ["trap 'rm -f /tmp/x' EXIT", 'modifies'],
+  ['ulimit -n', 'readonly'],
+  ['ulimit -n 4096', 'modifies'],
+  ['crontab -l', 'readonly'],
+  ['crontab -e', 'elevated'],
+  ['systemctl get-default', 'readonly'],
+  ['sudo systemctl set-default multi-user.target', 'elevated'],
+  ["systemd-analyze calendar 'Mon *-*-* 09:00'", 'readonly'],
+  ['systemd-analyze blame', 'readonly'],
+  ['systemd-analyze set-log-level debug', 'modifies'],
+  ['loginctl show-user jd', 'readonly'],
+  ['loginctl terminate-user jd', 'modifies'],
+  ['lslocks', 'readonly']
 ]);
 
 table('packages', [

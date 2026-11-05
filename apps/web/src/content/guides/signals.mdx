@@ -1,0 +1,123 @@
+---
+track: processes
+order: 2
+title: "Signals: TERM, KILL, Ctrl+C and Ctrl+Z"
+summary: A signal is a numbered message the kernel delivers to a process. Most can be caught or ignored by the program; KILL and STOP can't, which is why they always work and why they're the last resort.
+level: essentials
+readingMinutes: 7
+prerequisites: [processes-basics]
+observe:
+  - command: kill -l
+    explain: "Every signal and its number. The ones you'll meet: 1 HUP, 2 INT (Ctrl+C), 9 KILL, 15 TERM (the default for `kill`), 18 CONT, 19 STOP, 20 TSTP (Ctrl+Z). Numbers are the same on every common Linux machine, but scripts are clearer with names: `kill -TERM`, not `kill -15`."
+    output: |2
+       1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
+       6) SIGABRT	 7) SIGBUS	 8) SIGFPE	 9) SIGKILL	10) SIGUSR1
+      11) SIGSEGV	12) SIGUSR2	13) SIGPIPE	14) SIGALRM	15) SIGTERM
+      16) SIGSTKFLT	17) SIGCHLD	18) SIGCONT	19) SIGSTOP	20) SIGTSTP
+      21) SIGTTIN	22) SIGTTOU	23) SIGURG	24) SIGXCPU	25) SIGXFSZ
+      26) SIGVTALRM	27) SIGPROF	28) SIGWINCH	29) SIGIO	30) SIGPWR
+      31) SIGSYS	34) SIGRTMIN	35) SIGRTMIN+1	…	64) SIGRTMAX
+  - command: kill -l 143
+    explain: "Give `kill -l` an exit code above 128 and it names the signal that caused it: 143 is 128 + 15, TERM. Handy when a script or CI job reports \"exited with 137\" (KILL) or 130 (INT)."
+    output: |
+      TERM
+  - command: stty -a | grep -o 'intr = [^;]*'
+    explain: "Ctrl+C isn't a signal by itself. It's a character, and the terminal turns it into SIGINT because this setting says so. The same `stty -a` output lists `quit = ^\\` (SIGQUIT) and `susp = ^Z` (SIGTSTP)."
+    output: |
+      intr = ^C
+  - command: grep -E '^Sig(Ign|Cgt)' /proc/<PID>/status
+    explain: "Which signals a process ignores and which it catches with its own handler, as bit masks: the lowest bit is signal 1. This is a `nohup sleep` started from a script. `7` is binary 111: HUP (1), INT (2) and QUIT (3) are ignored. `nohup` added HUP; the script's shell added the other two for its background job."
+    output: |
+      SigIgn:	0000000000000007
+      SigCgt:	0000000000000000
+  - command: grep SigIgn /proc/$$/status
+    explain: "Your interactive shell ignores a few signals on purpose. `384004` decodes to QUIT (3), TERM (15), TSTP (20), TTIN (21) and TTOU (22). That's why a plain `kill` aimed at your own shell does nothing, and Ctrl+Z at the prompt doesn't pause bash."
+    output: |
+      SigIgn:	0000000000384004
+  - command: systemctl show cron -p KillSignal -p TimeoutStopUSec -p FinalKillSignal
+    explain: "How systemd stops a service: it sends `KillSignal` (15, TERM), waits up to `TimeoutStopUSec`, then sends `FinalKillSignal` (9, KILL) to whatever is left. That 90-second wait is the \"A stop job is running\" countdown at shutdown."
+    output: |
+      TimeoutStopUSec=1min 30s
+      KillSignal=15
+      FinalKillSignal=9
+misconceptions:
+  - myth: "`kill` means kill."
+    reality: "`kill` sends a signal, TERM unless you name another. TERM is a request: a well-behaved program saves, cleans up and exits. `kill -STOP`, `kill -CONT` and `kill -HUP` don't end anything, and many daemons treat HUP as \"reload your config\"."
+  - myth: "`kill -9` is the proper way to stop a process."
+    reality: "It's the last resort. KILL gives the program no chance to finish writing files, remove lock files or tell its children to stop. Send TERM, wait a few seconds, and use `-9` only if it's still there."
+  - myth: "Ctrl+C kills the program."
+    reality: "Ctrl+C sends INT, which a program can catch. Python turns it into `KeyboardInterrupt`, editors and REPLs use it to cancel the current line, and a program can ignore it completely. If Ctrl+C does nothing, Ctrl+\\ (QUIT) is the next step, and `kill` from another terminal after that."
+  - myth: "A process that ignores `kill -9` has found a way to block it."
+    reality: "Nothing can block KILL. If the process is still listed, it's either a zombie (already dead, waiting for its parent) or in state `D`, stuck inside a kernel call to a disk or network drive. The signal waits and takes effect the moment that call returns."
+commands: [kill, pkill, pgrep, ps, systemctl]
+scenarios: []
+references:
+  - label: "signal(7): overview of signals, default actions and numbers"
+    url: https://man7.org/linux/man-pages/man7/signal.7.html
+  - label: "kill(1): send a signal to a process"
+    url: https://man7.org/linux/man-pages/man1/kill.1.html
+  - label: "sigaction(2): installing a signal handler"
+    url: https://man7.org/linux/man-pages/man2/sigaction.2.html
+  - label: "termios(3): ISIG, INTR, QUIT and SUSP characters"
+    url: https://man7.org/linux/man-pages/man3/termios.3.html
+  - label: "systemd.kill(5): how systemd stops services"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html
+  - label: "systemd(1): the signals PID 1 understands"
+    url: https://www.freedesktop.org/software/systemd/man/latest/systemd.html
+  - label: "Bash Reference Manual: Signals"
+    url: https://www.gnu.org/software/bash/manual/html_node/Signals.html
+---
+
+## The mental model
+
+A **signal** is a small numbered message sent to a process. The kernel delivers it, and the process can be told about it at almost any moment, in the middle of whatever it's doing. Signals come from three places:
+
+- **Other processes**, through `kill`, `pkill` or systemd stopping a service.
+- **The terminal**, when you press Ctrl+C, Ctrl+Z or Ctrl+\\, or close the window.
+- **The kernel itself**, when a process does something it can't allow (SEGV for a bad memory access), when a pipe's reader goes away (PIPE), or when a child exits (CHLD).
+
+For each signal, a process has one of three settings: do the **default** action, **ignore** it, or **catch** it with its own handler function. What happens on arrival:
+
+<Flow spec={{
+  title: 'What happens when a signal arrives',
+  stages: [
+    { title: 'Something sends it', tag: 'sender', detail: '`kill 2893` sends TERM to PID 2893. You need to own the process, or be root. The kernel checks that and marks the signal as pending on the target.', code: 'kill -TERM 2893' },
+    { title: 'KILL or STOP?', tag: 'kernel', detail: 'These two never reach the program. The kernel ends it (KILL) or pauses it (STOP) directly, which is why no program can catch, ignore or delay them.' },
+    { title: 'Ignored?', tag: 'kernel', detail: 'If the process set this signal to ignore, the kernel drops it and nothing happens. `nohup` works this way: it sets HUP to ignore, then starts your program.' },
+    { title: 'Caught?', tag: 'program', detail: 'If the program installed a handler, the kernel interrupts it and runs that function. A web server finishes its open requests, an editor saves a recovery file, and then they usually exit. Or they carry on, if the author chose that.' },
+    { title: 'Otherwise, the default', tag: 'kernel', detail: 'Each signal has a default: end the process (TERM, INT, HUP, KILL), end it with a core dump (QUIT, SEGV), pause it (TSTP, STOP), resume it (CONT), or do nothing (CHLD, WINCH).' }
+  ]
+}} />
+
+The signals worth knowing by name:
+
+| Signal | Sent by | Default |
+|---|---|---|
+| TERM (15) | `kill`, `pkill`, systemd stopping a service | end |
+| INT (2) | Ctrl+C | end |
+| QUIT (3) | Ctrl+\\ | end, with a core dump |
+| KILL (9) | `kill -9`, the out-of-memory killer, systemd after a timeout | end, can't be caught |
+| HUP (1) | the terminal closing | end |
+| TSTP (20) | Ctrl+Z | pause |
+| STOP (19) | `kill -STOP`, debuggers | pause, can't be caught |
+| CONT (18) | `fg`, `bg`, `kill -CONT` | resume |
+
+That's the whole reason the [frozen app scenario](/s/frozen-app) tries TERM first and KILL second. TERM asks the program, so a frozen program never gets round to answering. KILL never asks.
+
+## Under the hood
+
+**Exit codes record the signal.** A process ended by a signal didn't choose an exit code, so its parent learns "killed by signal N" instead, and the shell reports 128 + N: 130 after Ctrl+C, 137 after `kill -9`, 143 after a plain `kill`, 129 after a hang-up. `kill -l 137` turns it back into a name. [How exit status works](/g/exit-status) has the rest.
+
+**Ctrl+C goes to a whole group.** The terminal doesn't know about PIDs. When you press Ctrl+C, the terminal driver sends INT to every process in the terminal's **foreground process group**. In `sleep 100 | sleep 101`, both processes get it and both die, so `PIPESTATUS` reads `130 130`. Job control, process groups, and why background jobs don't get your Ctrl+C are in [Jobs, sessions and closing the terminal](/g/jobs-sessions).
+
+**Stopped processes and pending signals.** A process paused with Ctrl+Z or STOP runs no code, so it can't run a handler either. If it has no handler, a TERM still ends it on the spot, because the default action needs nothing from the program. If it does have a handler, the TERM waits, pending, until the process is continued. On a stopped Python program with a TERM handler, `/bin/kill PID` did nothing visible, and bash's `kill %1` worked at once: bash's built-in `kill` sends CONT along with the signal when the target is a stopped job.
+
+**Signals arrive between instructions, not inside the kernel.** A process in state `D`, waiting inside a kernel call, can't handle anything until that call returns. KILL is marked pending and acts as soon as it does. That's why a process reading from a hung NFS share or a dying USB drive can't be killed until the device answers or times out.
+
+**Handlers are inherited, then reset.** A child made by `fork()` gets a copy of its parent's signal settings. `exec()` resets caught signals to the default, because the handler functions belonged to the old program, but keeps **ignored** signals ignored. That's the trick `nohup` relies on: it sets HUP to ignore and then `exec`s your command, which starts with HUP already ignored. Shells use the same rule to make background jobs in scripts ignore INT and QUIT.
+
+**`kill 0`, `kill -1` and `kill -0`.** The target can be more than one process. `kill 0` signals every process in your own process group, this terminal's shell included. `kill -1` signals every process you're allowed to, which for a normal user means your whole desktop session. `kill -0 PID` sends nothing at all: it only checks whether the process exists and you may signal it, and sets the exit code to say so.
+
+**PID 1 is protected.** The kernel delivers to PID 1 only the signals it has installed handlers for. systemd uses that: it treats some signals as commands, such as SIGTERM to re-execute itself and SIGRTMIN+4 to power off. Everything else sent to PID 1, KILL included, is dropped.
+
+**Real-time signals.** 34 to 64 (`SIGRTMIN` to `SIGRTMAX`) have no fixed meaning. Programs agree on them privately, and unlike the classic signals, several of the same one can queue up instead of merging into one.

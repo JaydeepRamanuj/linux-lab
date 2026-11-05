@@ -216,6 +216,8 @@ Ship each track with, or just after, its matching scenario phase, so new scenari
 
 **G1 is done and waiting for your review.** It adds the six other Shell guides: `environment-variables`, `path`, `standard-streams`, `quoting-expansion`, `shell-startup-files` and `exit-status`. 11 scenarios now link to them. See `docs/handoff/2026-11-05-guides-phase-g1.md`.
 
+**G2 is done and waiting for your review.** It adds `processes-basics`, `signals`, `file-descriptors` and `jobs-sessions` to the Processes track, and the whole Services and logs track: `systemd-units`, `journald-logs` and `scheduled-tasks`. 9 scenarios link to them, and the rule engine now rates a few more inspection commands as read-only (`kill -l`, `crontab -l`, `systemd-analyze calendar` and others). See `docs/handoff/2026-11-05-guides-phase-g2.md`.
+
 | Guide phase | Tracks | Ships with scenarios-plan phase |
 |---|---|---|
 | G1 | Shell (rest) | Phase 1: Everyday Rescue, Decode Agent Commands |

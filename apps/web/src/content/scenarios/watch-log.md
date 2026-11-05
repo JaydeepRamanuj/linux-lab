@@ -107,6 +107,7 @@ avoid:
   - "`grep -c ERROR logs/app.log` counts matching lines so far, which is handy for checking whether a fix made errors stop."
   - "To watch several logs at once: `tail -f logs/app.log logs/worker.log` labels each block with its file name."
 related: [keep-running, system-service, find-files, sed-awk]
+concepts: [file-descriptors, journald-logs]
 anatomy:
   "-f": "Follow: after printing the end, keep the file open and print each new line as it's written."
   "logs/app.log": "The file to watch. Several files work too."
