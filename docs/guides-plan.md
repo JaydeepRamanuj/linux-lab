@@ -218,6 +218,8 @@ Ship each track with, or just after, its matching scenario phase, so new scenari
 
 **G2 is done and waiting for your review.** It adds `processes-basics`, `signals`, `file-descriptors` and `jobs-sessions` to the Processes track, and the whole Services and logs track: `systemd-units`, `journald-logs` and `scheduled-tasks`. 9 scenarios link to them, and the rule engine now rates a few more inspection commands as read-only (`kill -l`, `crontab -l`, `systemd-analyze calendar` and others). See `docs/handoff/2026-11-05-guides-phase-g2.md`.
 
+**G3 is done and waiting for your review.** It adds the whole Filesystem track (`everything-is-a-file`, `filesystem-layout`, `inodes-links`, `mounts-devices`, `proc-sys`) and the rest of Permissions (`users-groups`, `how-sudo-works`, `setuid-capabilities`). 13 scenarios and 8 command pages link to them, and the rule engine now rates `namei`, `getcap`, read-only `sysctl`, `capsh --print`/`--decode` and `sudo -l` as read-only. Two sample outputs in `mounts-devices` (`lsblk`, `fstab`) are composed for a laptop because WSL has no partitions. See `docs/handoff/2026-11-05-guides-phase-g3.md`.
+
 | Guide phase | Tracks | Ships with scenarios-plan phase |
 |---|---|---|
 | G1 | Shell (rest) | Phase 1: Everyday Rescue, Decode Agent Commands |

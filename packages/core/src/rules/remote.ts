@@ -104,7 +104,12 @@ const sudo: Rule = {
   id: 'sudo',
   check(c) {
     if (!c.sudo) return null;
-    if (!c.program) return hit('elevated', 'Opens a root shell: everything you type next runs as root.', { effects: { needsSudo: true } });
+    if (!c.program) {
+      // `sudo -l` and `sudo -V` only report what sudo allows (or how it was built); nothing runs as root.
+      const opts = c.cmd.name && /^(sudo|doas)$/.test(c.cmd.name.value.split('/').pop() ?? '') ? c.cmd.args.map((w) => w.value) : [];
+      if (opts.some((v) => /^(-l+|--list|-V|--version)$/.test(v))) return hit('readonly', 'Lists what sudo lets you run, without running anything as root.');
+      return hit('elevated', 'Opens a root shell: everything you type next runs as root.', { effects: { needsSudo: true } });
+    }
     if (c.program === 'su') {
       return hit('elevated', 'Switches to the root user.', { effects: { needsSudo: true } });
     }

@@ -104,7 +104,7 @@ avoid:
   - "`free -h` with swap almost full and `available` near zero means you're out of memory. Linux will soon pick a process to kill (the OOM killer). `journalctl -k | grep -i oom` shows past kills."
   - "GNOME's System Monitor and KDE's System Monitor show the same numbers with a GUI."
 related: [frozen-app, port-in-use, keep-running, disk-full]
-concepts: [processes-basics, signals]
+concepts: [processes-basics, signals, proc-sys]
 anatomy:
   "--sort=-%cpu": "Sort by CPU use, highest first (the `-` reverses the order)."
   "-4": "Only the first four lines: the header and the top three."

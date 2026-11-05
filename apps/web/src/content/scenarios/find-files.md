@@ -112,6 +112,7 @@ avoid:
   - "To find files by name the fast way, `rg --files | rg -i invoice` lists every file in a project and filters the names."
   - "The file manager's search (Ctrl+F in GNOME Files) finds names too, and it's fine for one-off searches in your home folder."
 related: [disk-full, command-chaining, safe-mv-cp, find-exec-xargs]
+concepts: [filesystem-layout]
 anatomy:
   "~": "Where to start: your home folder and everything below it."
   "-iname": "Match the file name, ignoring upper and lower case."

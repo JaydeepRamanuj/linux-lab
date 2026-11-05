@@ -1,0 +1,125 @@
+---
+track: filesystem
+order: 4
+title: Mounts, Block Devices and /etc/fstab
+summary: "A disk shows up as a block device in /dev, a partition on it holds a filesystem, and mounting attaches that filesystem to a folder in the one tree. /etc/fstab lists what to mount at boot."
+level: deeper
+readingMinutes: 8
+prerequisites: [everything-is-a-file, filesystem-layout]
+observe:
+  - command: lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS
+    explain: "Disks, their partitions, the filesystem on each and where it's mounted. A typical laptop: an NVMe disk with a small EFI partition and one big ext4 partition for everything else. The `loop` devices are snaps, each one a compressed image mounted read-only."
+    output: |
+      NAME          SIZE TYPE FSTYPE   MOUNTPOINTS
+      loop0          74M loop squashfs /snap/core22/1663
+      loop1       271.1M loop squashfs /snap/firefox/5187
+      nvme0n1     476.9G disk
+      ├─nvme0n1p1     1G part vfat     /boot/efi
+      └─nvme0n1p2 475.9G part ext4     /
+  - command: grep -v '^#' /etc/fstab
+    explain: "What to mount at boot, one line each: the device, the folder, the filesystem type, options, and two numbers for old backup tools and the boot-time check. The Ubuntu installer names devices by UUID, which never changes when you add a disk. `/swap.img` is a swap file."
+    output: |
+      /dev/disk/by-uuid/5d1c2a8e-37b4-4c1e-9d7e-2b9f0c6a41d3 / ext4 defaults 0 1
+      /dev/disk/by-uuid/7A1B-3C2D /boot/efi vfat defaults 0 1
+      /swap.img	none	swap	sw	0	0
+  - command: findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS /
+    explain: "The mount that holds `/`, with its options. `relatime` limits access-time updates; `errors=remount-ro` makes ext4 switch to read-only on disk errors instead of making them worse."
+    output: |
+      TARGET SOURCE   FSTYPE OPTIONS
+      /      /dev/sdd ext4   rw,relatime,discard,errors=remount-ro,data=ordered
+  - command: ls -l /dev/disk/by-uuid
+    explain: "udev keeps stable names as symlinks to whatever the kernel called the device this boot. This is how a `UUID=` in fstab finds its partition."
+    output: |
+      lrwxrwxrwx 1 root root 9 Nov  5 07:24 022daf39-858c-4966-aeb7-31427aafec2f -> ../../sdd
+      lrwxrwxrwx 1 root root 9 Nov  5 07:24 114338cc-3db7-46eb-995d-1c66ad5363b9 -> ../../sdc
+  - command: systemctl list-units --type=mount --no-pager
+    explain: "systemd turns every mount, from fstab or elsewhere, into a `.mount` unit named after its path: `-.mount` is `/`, `boot-efi.mount` would be `/boot/efi`. Trimmed."
+    output: |
+      UNIT                          LOAD   ACTIVE SUB     DESCRIPTION
+      -.mount                       loaded active mounted Root Mount
+      dev-hugepages.mount           loaded active mounted Huge Pages File System
+      dev-mqueue.mount              loaded active mounted POSIX Message Queue File System
+      proc-sys-fs-binfmt_misc.mount loaded active mounted Arbitrary Executable File Formats File System
+      run-user-1000.mount           loaded active mounted /run/user/1000
+  - command: findmnt --verify
+    explain: "Checks `/etc/fstab` for mistakes (unknown devices, bad options, missing folders) without mounting anything. Run it after every edit, before you reboot."
+    output: |
+      Success, no errors or warnings detected
+misconceptions:
+  - myth: "`/dev/sda1` always means the same partition."
+    reality: "The kernel numbers disks in the order it finds them. Plug in a USB disk before booting and `sdb` may become `sdc`. That's why fstab uses `UUID=` or `/dev/disk/by-uuid/…`, which follow the filesystem, not the order."
+  - myth: "Mounting copies the drive's files into the folder."
+    reality: "Nothing is copied. The folder becomes a window onto the other filesystem until you unmount it. Files that were already in that folder are hidden, not deleted, and come back after `umount`."
+  - myth: "Pulling out a USB stick without ejecting is fine if nothing is copying."
+    reality: "Linux keeps written data in memory and writes it to the device later. A copy can look finished while data is still on its way. Ejecting (or `umount`) writes everything out first, and only then is it safe."
+  - myth: "`df` and `du` should show the same number."
+    reality: "`df` asks each filesystem how full it is, `du` adds up the files it can see. They differ when a deleted file is still open, when a mount hides files underneath it, and because ext4 keeps 5% of the space for root by default."
+commands: [df, du, lsof]
+references:
+  - label: "fstab(5): the fields of /etc/fstab"
+    url: https://man7.org/linux/man-pages/man5/fstab.5.html
+  - label: "mount(8): mount options such as noexec, nosuid and nodev"
+    url: https://man7.org/linux/man-pages/man8/mount.8.html
+  - label: "findmnt(8): list and verify mounts"
+    url: https://man7.org/linux/man-pages/man8/findmnt.8.html
+  - label: "lsblk(8): list block devices"
+    url: https://man7.org/linux/man-pages/man8/lsblk.8.html
+  - label: "systemd.mount(5): mount units"
+    url: https://man7.org/linux/man-pages/man5/systemd.mount.5.html
+  - label: "systemd-fstab-generator(8): fstab to units"
+    url: https://man7.org/linux/man-pages/man8/systemd-fstab-generator.8.html
+---
+
+## The mental model
+
+A disk reaches Linux as a **block device** in `/dev`: `nvme0n1` for an NVMe drive, `sda` for SATA and USB drives. It's divided into **partitions** (`nvme0n1p1`, `sda1`), and each partition holds a **filesystem**, the format that turns raw blocks into folders and files: ext4, vfat, btrfs, NTFS.
+
+A filesystem isn't usable until it's **mounted**: attached to a folder, the **mount point**, in the one tree that starts at `/`. From then on, every path under that folder belongs to that filesystem. When a program opens a path, the kernel finds the deepest mount point the path is under and hands the request to that filesystem:
+
+<Layers spec={{
+  title: 'Opening /boot/efi/EFI/ubuntu/grub.cfg',
+  pathLabel: 'open()',
+  layers: [
+    { name: 'The path', tone: 'user', highlight: true, detail: 'A program asks for a name. It doesn\'t know or care which disk the file is on.', chips: ['/boot/efi/EFI/ubuntu/grub.cfg'], edge: 'which mount?' },
+    { name: 'The mount table', tone: 'kernel', highlight: true, detail: 'The longest matching mount point wins. `/` matches, but `/boot/efi` matches more of the path, so its filesystem handles it. `findmnt` prints this table.', chips: ['/  → nvme0n1p2', '/boot/efi → nvme0n1p1'], edge: 'filesystem driver' },
+    { name: 'The filesystem', tone: 'kernel', highlight: true, detail: 'vfat looks up `EFI/ubuntu/grub.cfg` in its own folders, relative to its own root.', chips: ['vfat'], edge: 'blocks' },
+    { name: 'The block device', tone: 'kernel', highlight: true, detail: 'Reads the blocks from the partition, through the page cache.', chips: ['/dev/nvme0n1p1'] },
+    { name: 'The disk', tone: 'hardware', detail: 'The NVMe drive itself.' }
+  ]
+}} />
+
+Most mounts happen without you. At boot, `/etc/fstab` says what to mount; when you plug in a USB stick, the desktop mounts it under `/media/<you>/`. And many mounts aren't disks at all: `/proc`, `/sys`, `/run` and `/dev` are filesystems the kernel makes up, and snaps are compressed image files mounted through **loop devices**, which make a file look like a disk.
+
+### How fstab becomes mounts
+
+<Flow spec={{
+  title: 'From /etc/fstab to a mounted /boot/efi',
+  stages: [
+    { title: 'You or the installer write fstab', tag: '/etc/fstab', detail: 'One line per mount: what, where, which filesystem, which options. The installer wrote the lines for `/` and `/boot/efi`.' },
+    { title: 'A generator reads it at boot', tag: 'systemd-fstab-generator', detail: 'Early in boot, before units load, the generator turns each line into a unit file in `/run/systemd/generator/`, such as `boot-efi.mount`.' },
+    { title: 'local-fs.target pulls them in', tag: 'systemd', detail: 'Mount units for local disks are wanted by `local-fs.target`, which the rest of boot waits for. systemd orders them so `/boot` mounts before `/boot/efi`.' },
+    { title: 'The device appears', tag: 'udev', detail: 'Each mount waits for its device. udev creates `/dev/disk/by-uuid/…` when the kernel finds the partition.' },
+    { title: 'mount() attaches it', tag: 'kernel', detail: 'The filesystem driver checks the format, and the folder now shows the partition\'s contents. `findmnt` and `/proc/self/mounts` list it.' },
+    { title: 'If it fails', tag: 'emergency mode', detail: 'A missing disk without `nofail`, or a typo, stops boot in emergency mode with a root prompt. Fix the line, or comment it out, and reboot.' }
+  ]
+}} />
+
+## Under the hood
+
+**The fstab fields.** `UUID=… /data ext4 defaults,nofail 0 2` reads: this filesystem, at `/data`, as ext4, with the default options plus `nofail` (don't stop booting if the disk is missing), not backed up by `dump` (0), checked after the root filesystem (2; root itself is 1, 0 skips the check). Find a partition's UUID with `lsblk -f`. Test a new line with `sudo findmnt --verify` and `sudo mount -a`, which mounts everything in fstab that isn't mounted yet, so a mistake shows up now rather than at the next boot.
+
+**Options that change behaviour.** `ro` mounts read-only. `noexec` refuses to run programs from that filesystem, whatever the `x` bits say, and the error is the same Permission denied. `nosuid` ignores [setuid bits](/g/setuid-capabilities) there. `nodev` ignores device files. `/run` and `/dev/shm` are mounted `nosuid,nodev`. `noatime` and `relatime` reduce writes for access times.
+
+**Page cache and unmounting.** Reads and writes go through the page cache in RAM, so a write returns long before it reaches the disk. `umount` (and Eject in the file manager) writes everything out and then detaches. If it says `target is busy`, some process has a file or its working folder on that filesystem; `lsof /media/jd/USB` names it. [File descriptors](/g/file-descriptors) explains what holding a file means.
+
+**Device names.** The kernel names devices in the order it discovers them: `sda`, `sdb`, … for SATA, SCSI and USB; `nvme0n1` for the first NVMe namespace, with partitions `nvme0n1p1`, `p2`. udev adds stable names under `/dev/disk/`: `by-uuid` (the filesystem's ID, set when it's formatted), `by-label`, `by-partuuid` (the partition's ID in the partition table) and `by-id` (the drive's model and serial).
+
+**Filesystems the kernel makes up.** `proc` on `/proc`, `sysfs` on `/sys` and `devtmpfs` on `/dev` exist only in memory. `tmpfs` is a RAM-backed filesystem for `/run`, `/dev/shm` and, on Fedora and Arch, `/tmp`; it can swap out but never touches a disk otherwise. `cat /proc/filesystems` lists every type the running kernel supports; `nodev` marks the ones that don't need a block device.
+
+**Loop devices, squashfs and FUSE.** A loop device presents a file as a block device, so an image file can be mounted like a disk. Every snap is a squashfs image mounted read-only through one, which is why `lsblk` and `df` on Ubuntu list a row of `loop` devices; they're always 100% full and that's normal. FUSE lets an ordinary program provide a filesystem: an AppImage mounts its own image under `/tmp/.mount_…` with FUSE when it starts, which is why the [AppImage scenario](/s/appimage-install) needs `libfuse2`.
+
+**Where the space goes.** `df` reports per mounted filesystem, so a full `/` and an empty `/home` are possible on a machine with two partitions. ext4 reserves 5% of the blocks for root by default, so `Avail` reaches 0 before `Used` reaches `Size`; root's processes and logging keep working, and you can still log in. The [disk full scenario](/s/disk-full) starts with `df -h` for this reason.
+
+**`/etc/mtab`.** It's a symlink to `/proc/self/mounts`, the kernel's own list. `mount` with no arguments and `findmnt` read it. Mounts can also be per process: containers and snaps get their own mount namespace and see a different tree.
+
+**Under WSL**, the root filesystem is a virtual disk (`/dev/sdX` with no partitions), fstab is empty, and Windows drives appear under `/mnt/c` through a `9p` filesystem.

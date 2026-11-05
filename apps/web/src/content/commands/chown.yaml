@@ -18,4 +18,4 @@ gotchas:
   - "Point `chown -R` at exactly the paths that are wrong, not at a parent folder or your whole home."
 related: [chmod, sudo, ls, find, stat]
 scenarios: [root-owned-files]
-concepts: [permissions-model]
+concepts: [permissions-model, users-groups]

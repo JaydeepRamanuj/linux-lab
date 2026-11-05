@@ -105,7 +105,7 @@ avoid:
   - "A leading fourth digit (`chmod 2775`, `1777`) sets special bits such as setgid and sticky. `/tmp` is 1777: everyone can write, but only the owner can delete."
   - "`ls -l` and `stat` show the same thing. `stat -c %a file` is the quickest way to get the number."
 related: [permission-denied-script, root-owned-files, safe-mv-cp]
-concepts: [permissions-model]
+concepts: [permissions-model, setuid-capabilities]
 anatomy:
   "755": "Owner 7 (rwx), group 5 (r-x), others 5 (r-x). Each digit adds up read 4, write 2, execute 1."
   "deploy.sh": "The file to change. Its contents aren't touched, only its permission bits."

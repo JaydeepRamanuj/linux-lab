@@ -207,7 +207,30 @@ table('processes and services', [
   ['systemd-analyze set-log-level debug', 'modifies'],
   ['loginctl show-user jd', 'readonly'],
   ['loginctl terminate-user jd', 'modifies'],
-  ['lslocks', 'readonly']
+  ['lslocks', 'readonly'],
+  // Filesystem and permissions inspection (guides G3).
+  ['namei -l /usr/bin/python3', 'readonly'],
+  ['getcap /usr/bin/ping', 'readonly'],
+  ['getcap -r /usr/bin 2>/dev/null', 'readonly'],
+  ['setcap cap_net_raw+ep ./tool', 'modifies'],
+  ['sysctl vm.swappiness', 'readonly'],
+  ['sysctl -a', 'readonly'],
+  ['sysctl -n kernel.pid_max', 'readonly'],
+  ['sysctl -w vm.swappiness=10', 'modifies'],
+  ['sysctl vm.swappiness=10', 'modifies'],
+  ['sysctl -p', 'modifies'],
+  ['sysctl --system', 'modifies'],
+  ['capsh --print', 'readonly'],
+  ['capsh --decode=000001ffffffffff', 'readonly'],
+  ['capsh -- -c id', 'modifies'],
+  ['capsh', 'modifies'],
+  ['sudo -l', 'readonly'],
+  ['sudo -ll', 'readonly'],
+  ['sudo -l -U jd', 'readonly'],
+  ['sudo -V', 'readonly'],
+  ['sudo -i', 'elevated'],
+  ['sudo', 'elevated'],
+  ['sudo -l rm -rf /tmp/x', 'elevated']
 ]);
 
 table('packages', [

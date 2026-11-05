@@ -27,4 +27,4 @@ gotchas:
   - "`umask` (a shell builtin, documented here) is subtracted from 666 for new files and 777 for new folders."
 related: [chown, ls, stat]
 scenarios: [permission-denied-script, appimage-install, chmod-numbers]
-concepts: [permissions-model]
+concepts: [permissions-model, setuid-capabilities]

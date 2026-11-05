@@ -1,0 +1,133 @@
+---
+track: filesystem
+order: 5
+title: "/proc and /sys: The Kernel as a Filesystem"
+summary: "/proc and /sys hold no files on any disk. Each read asks the kernel a question and each write changes a setting. ps, top, free and lsblk are mostly readers of these two folders."
+level: deeper
+readingMinutes: 7
+prerequisites: [everything-is-a-file, processes-basics]
+observe:
+  - command: findmnt -t proc,sysfs -o TARGET,SOURCE,FSTYPE
+    explain: "Both are mounted filesystems, of types `proc` and `sysfs`, with no disk behind them."
+    output: |
+      TARGET SOURCE FSTYPE
+      /sys   sysfs  sysfs
+      /proc  proc   proc
+  - command: grep -E '^(Name|State|PPid|Uid|VmRSS|Threads)' /proc/$$/status
+    explain: "Your shell, described by the kernel. `$$` is the shell's PID. The four `Uid` numbers are the real, effective, saved and filesystem user IDs; `VmRSS` is the memory it uses right now. `ps` builds its columns from files like this."
+    output: |
+      Name:	bash
+      State:	S (sleeping)
+      PPid:	9581
+      Uid:	1000	1000	1000	1000
+      VmRSS:	    3328 kB
+      Threads:	1
+  - command: ls -l /proc/self
+    explain: "`self` is a symlink that points at the PID of whichever process reads it, here `ls` itself."
+    output: |
+      lrwxrwxrwx 1 root root 0 Nov  5 07:24 /proc/self -> 9595
+  - command: stat -c '%s %n' /proc/meminfo; wc -c /proc/meminfo
+    explain: "The size says 0, yet reading it gives 1475 bytes. The text is written by the kernel at the moment you read it, so there is nothing to measure in advance."
+    output: |
+      0 /proc/meminfo
+      1475 /proc/meminfo
+  - command: head -3 /proc/meminfo
+    explain: "The memory counters that `free` formats. `MemAvailable` is what `free` shows as available."
+    output: |
+      MemTotal:       16056548 kB
+      MemFree:        15011452 kB
+      MemAvailable:   15432752 kB
+  - command: sysctl vm.swappiness kernel.pid_max
+    explain: "`sysctl` reads the tunables under `/proc/sys`: `vm.swappiness` is the file `/proc/sys/vm/swappiness`. Reading is open to everyone; changing one needs root."
+    output: |
+      vm.swappiness = 60
+      kernel.pid_max = 4194304
+  - command: grep . /sys/class/net/*/operstate
+    explain: "`/sys` keeps one value per file. `grep .` prints every file with its name, a quick way to read many at once. Your interfaces will be named something like `enp3s0` and `wlp2s0`."
+    output: |
+      /sys/class/net/eth0/operstate:up
+      /sys/class/net/lo/operstate:unknown
+misconceptions:
+  - myth: "`/proc` takes up disk space."
+    reality: "It takes none. Every file is made up on the spot when something reads it, and the whole tree disappears at shutdown. `du` and `df` don't count it."
+  - myth: "A change in `/proc/sys` is permanent."
+    reality: "It lasts until the next reboot. To keep a setting, put it in a file in `/etc/sysctl.d/`, which `systemd-sysctl` applies at every boot."
+  - myth: "`ls -l` shows `/proc/meminfo` is empty."
+    reality: "Most `/proc` and `/sys` files report size 0 because the kernel doesn't know the length until it writes the text. `cat` reads them fine. Tools that trust the size, or `tail -f`, don't work well on them."
+  - myth: "`/proc` and `/sys` are two names for the same thing."
+    reality: "`/proc` started as a folder per process and collected kernel information and settings over the years. `/sys` came later as an orderly tree of devices, drivers and modules, one value per file. New kernel interfaces go into `/sys`."
+commands: [cat, ps, top, free, lsof]
+references:
+  - label: "proc(5): the proc filesystem"
+    url: https://man7.org/linux/man-pages/man5/proc.5.html
+  - label: "proc_pid_status(5): the fields of /proc/<pid>/status"
+    url: https://man7.org/linux/man-pages/man5/proc_pid_status.5.html
+  - label: "sysfs(5): the sysfs filesystem"
+    url: https://man7.org/linux/man-pages/man5/sysfs.5.html
+  - label: "sysctl(8): read and change kernel parameters"
+    url: https://man7.org/linux/man-pages/man8/sysctl.8.html
+  - label: "sysctl.d(5): settings applied at boot"
+    url: https://man7.org/linux/man-pages/man5/sysctl.d.5.html
+  - label: "inotify(7): max_user_watches"
+    url: https://man7.org/linux/man-pages/man7/inotify.7.html
+---
+
+## The mental model
+
+Most files are stored data. The files in `/proc` and `/sys` are **questions and answers**: opening `/proc/meminfo` and reading it runs a small piece of kernel code that writes out the current memory counters. Read it again a second later and you get new numbers. Writing to a file under `/proc/sys` or `/sys` changes a setting inside the running kernel.
+
+<Layers spec={{
+  title: 'What happens when free runs',
+  pathLabel: 'read()',
+  layers: [
+    { name: 'free', tone: 'user', highlight: true, detail: 'Opens `/proc/meminfo` and reads it like any text file, then formats the numbers into its table.', chips: ['open("/proc/meminfo")'], edge: 'read()' },
+    { name: 'The proc filesystem', tone: 'kernel', highlight: true, detail: 'Has no stored file. On each read it calls the code that prints the memory counters, and returns that text.', chips: ['proc'], edge: 'reads counters' },
+    { name: 'Kernel memory', tone: 'kernel', highlight: true, detail: 'The live numbers: free pages, cache, swap. Nothing about this touches a disk.', chips: ['MemAvailable'] }
+  ]
+}} />
+
+Many everyday tools are readers of these two folders:
+
+| Tool | Reads |
+|---|---|
+| `ps`, `top`, `pgrep` | `/proc/<PID>/stat`, `status`, `cmdline` for every process |
+| `free` | `/proc/meminfo` |
+| `uptime` | `/proc/uptime` and `/proc/loadavg` |
+| `lsof` | `/proc/<PID>/fd` for every process |
+| `mount`, `findmnt` | `/proc/self/mounts` |
+| `lsblk` | `/sys/block` and `/sys/class/block` |
+| `sysctl` | `/proc/sys/…` |
+
+So when a tool's output puzzles you, the raw file is usually one `cat` away.
+
+### What's where
+
+| Path | What it tells you |
+|---|---|
+| `/proc/<PID>/` | One folder per process: `status`, `cmdline`, `environ`, `cwd`, `exe`, `fd/`, `limits` |
+| `/proc/self/` | The process that's reading |
+| `/proc/meminfo`, `/proc/cpuinfo`, `/proc/loadavg` | Memory, CPUs, load |
+| `/proc/sys/` | Kernel tunables, the ones `sysctl` shows |
+| `/sys/class/net/<if>/` | Network interfaces: address, MTU, state, byte counters |
+| `/sys/block/<disk>/` | Disks: size, whether it spins (`queue/rotational`) |
+| `/sys/class/power_supply/BAT0/` | Laptop battery: `capacity`, `status` |
+| `/sys/class/backlight/` | Screen brightness |
+| `/sys/module/` | Loaded kernel modules and their parameters |
+
+## Under the hood
+
+**A folder per process.** Every running process has `/proc/<PID>/`, which disappears when it exits. [Processes, PIDs and the tree](/g/processes-basics) uses `status` and the tree; [file descriptors](/g/file-descriptors) uses `fd/` and `fdinfo/`; [inherited environments](/g/environment-variables) uses `environ`. `cwd`, `exe` and `root` are symlinks to the working folder, the program file and the root folder. Permissions protect the private parts: `environ` and `fd/` of another user's process are closed to you, while `status` and `cmdline` are open, which is why `ps aux` can list everyone's commands.
+
+**`sysctl` is `/proc/sys` with dots.** `sysctl vm.swappiness` reads `/proc/sys/vm/swappiness`. The files belong to root and are mode `644`, so anyone reads and only root writes: as a normal user, `echo 1 > /proc/sys/vm/swappiness` fails with Permission denied. `sudo sysctl -w vm.swappiness=10` changes it until the next reboot.
+
+**Making settings stick.** At boot, `systemd-sysctl.service` applies every `*.conf` file from `/usr/lib/sysctl.d/` (the distribution's defaults) and `/etc/sysctl.d/` (yours, which win for the same file name). Ubuntu's own files set things like `kernel.pid_max` and the protected links of [inodes and links](/g/inodes-links). Add a file such as `/etc/sysctl.d/90-local.conf` with `vm.swappiness = 10`, and `sudo sysctl --system` applies it now.
+
+**A tunable you may meet: file watchers.** Dev servers and editors watch files with inotify, and each watched file costs one watch from `fs.inotify.max_user_watches`. Run out and you get `ENOSPC: System limit for number of file watchers reached`, which has nothing to do with disk space. The kernel picks the default from the amount of RAM; it was 524288 on the test machine. Raise it with a `sysctl.d` file as above.
+
+**`/sys` is the device model.** It lays out every device the kernel knows as a tree under `/sys/devices`, the way they're connected: bus, controller, device. `/sys/class` and `/sys/block` are shortcuts into that tree, made of symlinks: `/sys/class/net/eth0` points somewhere deep in `/sys/devices`. The rule is one value per file, as plain text, which makes `/sys` easy to read from scripts. When a device appears, the kernel announces it, and udev reacts by creating the `/dev` nodes and `/dev/disk/by-uuid` links described in [mounts and block devices](/g/mounts-devices).
+
+**Sizes, `tail -f` and seeking.** Because content is generated on read, `ls -l` reports 0 for most files, and some files change between two reads. Programs should read them in one go. `tail -f` never sees them grow; use `watch cat /proc/loadavg` to see a value change.
+
+**Writing to `/sys`.** Some files there are writable by root, and writing changes hardware or driver state right away: `echo 50 | sudo tee /sys/class/backlight/*/brightness` sets the screen brightness. Like `/proc/sys`, these changes don't survive a reboot. Note the `tee`: `sudo echo 50 > …` fails, because the redirect is done by your own shell, as [how sudo works](/g/how-sudo-works) explains.
+
+**Under WSL** you'll find no battery or backlight, and the disks and network card are virtual (`eth0`, `sda`…`sdd`), but `/proc` and `/sys` work the same.

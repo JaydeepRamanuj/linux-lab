@@ -1,0 +1,120 @@
+---
+track: permissions
+order: 3
+title: What sudo Actually Does
+summary: "sudo is an ordinary program with the setuid bit, so it starts as root. It checks /etc/sudoers, asks for your own password, logs the command, cleans the environment and runs that one command as root. Your shell's redirects and pipes stay yours."
+level: essentials
+readingMinutes: 8
+prerequisites: [users-groups, environment-variables]
+observe:
+  - command: ls -l /usr/bin/sudo
+    explain: "The `s` where the owner's `x` would be is the setuid bit. Whoever runs this file, it runs with root's user ID. That's the only reason sudo can do anything."
+    output: |
+      -rwsr-xr-x 1 root root 282032 Oct  6 13:51 /usr/bin/sudo
+  - command: sudo -l
+    explain: "What sudo will let you do, after it checks your password. `(ALL : ALL) ALL` means any command, as any user and any group. The `Defaults` line shows the environment rules described below."
+    output: |
+      [sudo] password for jd:
+      Matching Defaults entries for jd on laptop:
+          env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin, use_pty
+
+      User jd may run the following commands on laptop:
+          (ALL : ALL) ALL
+  - command: getent group sudo
+    explain: "Where that permission comes from. Ubuntu's `/etc/sudoers` lets every member of the `sudo` group run anything; the first user made at install is added to it."
+    output: |
+      sudo:x:27:jd
+  - command: ls -l /etc/sudoers /etc/sudoers.d
+    explain: "The policy files. Only root can read them, and they're read-only even for root: they're meant to be edited with `visudo`, which checks the syntax before saving."
+    output: |
+      -r--r----- 1 root root 1800 Jan 29  2024 /etc/sudoers
+
+      /etc/sudoers.d:
+      total 4
+      -r--r----- 1 root root 1068 Jan 29  2024 README
+  - command: cat /etc/pam.d/sudo
+    explain: "How sudo checks your password: through PAM, with the same `common-auth` rules as a login. The `pam_env` lines also add `/etc/environment` and the locale to the command's environment."
+    output: |
+      #%PAM-1.0
+
+      # Set up user limits from /etc/security/limits.conf.
+      session    required   pam_limits.so
+
+      session    required   pam_env.so readenv=1 user_readenv=0
+      session    required   pam_env.so readenv=1 envfile=/etc/default/locale user_readenv=0
+
+      @include common-auth
+      @include common-account
+      @include common-session-noninteractive
+  - command: journalctl _COMM=sudo -n 3 --no-pager
+    explain: "Every sudo command is logged: who ran it, from which terminal and folder, as whom, and the exact command. Reading it needs the `adm` group. This entry is root running `id` as jd."
+    output: |
+      Nov 05 09:03:26 laptop sudo[9759]:     root : TTY=pts/2 ; PWD=/tmp ; USER=jd ; COMMAND=/usr/bin/id
+      Nov 05 09:03:26 laptop sudo[9759]: pam_unix(sudo:session): session opened for user jd(uid=1000) by (uid=0)
+      Nov 05 09:03:26 laptop sudo[9759]: pam_unix(sudo:session): session closed for user jd
+misconceptions:
+  - myth: "sudo asks for root's password."
+    reality: "It asks for yours, to prove that it's you at the keyboard. On Ubuntu root has no password at all. `su` is the one that asks for the target account's password, which is why `su` alone fails on Ubuntu."
+  - myth: "`sudo` makes the whole line run as root."
+    reality: "Only the command right after it. Your shell handles redirects, pipes and `&&` before sudo starts, as you. `sudo echo x > /etc/app.conf` fails with Permission denied from your shell; `echo x | sudo tee /etc/app.conf` works."
+  - myth: "Being in the sudo group means my programs run as root."
+    reality: "Membership only means sudo will agree when you ask. Everything else you run is still you, with your UID. That's what keeps a stray script from changing the system without a password prompt."
+  - myth: "sudo keeps my environment and PATH."
+    reality: "`env_reset` starts the command with a small, clean environment, and `PATH` is replaced by `secure_path`. Your exports and `~/.local/bin` aren't there, so `sudo mytool` can say `command not found` while `mytool` works."
+commands: [sudo, tee, env, chown]
+references:
+  - label: "sudo(8)"
+    url: https://www.sudo.ws/docs/man/sudo.man/
+  - label: "sudoers(5): the policy file, env_reset, secure_path and timestamps"
+    url: https://www.sudo.ws/docs/man/sudoers.man/
+  - label: "visudo(8): edit sudoers safely"
+    url: https://www.sudo.ws/docs/man/visudo.man/
+  - label: "credentials(7): real and effective user IDs"
+    url: https://man7.org/linux/man-pages/man7/credentials.7.html
+---
+
+## The mental model
+
+The kernel has no "sudo" feature. sudo is a program like `ls`, owned by root and marked **setuid**: when anyone runs it, the process gets root's user ID ([setuid and capabilities](/g/setuid-capabilities) covers the bit). Once it's running as root, sudo decides for itself whether to help you, then starts your command as root and waits for it.
+
+<Flow spec={{
+  title: 'sudo apt update, step by step',
+  stages: [
+    { title: 'Your shell prepares the line', tag: 'your shell, as you', detail: 'Expansions, redirects and pipes are handled here, before sudo exists. `sudo` is found through your `PATH` like any command, and receives `apt` and `update` as arguments.' },
+    { title: 'The kernel starts sudo as root', tag: 'setuid bit', detail: '`/usr/bin/sudo` is owned by root with the setuid bit, so the new process has effective user ID 0. Its real user ID is still yours, so sudo knows who asked.' },
+    { title: 'sudo checks the policy', tag: '/etc/sudoers', detail: '`%sudo ALL=(ALL:ALL) ALL`: members of the group `sudo`, on any host, may run any command as any user. Not allowed: `jd is not in the sudoers file.`, and the attempt is logged.' },
+    { title: 'It asks for your password', tag: 'PAM', detail: 'Your own password, checked against `/etc/shadow`. A success is remembered for 15 minutes in this terminal, so the next sudo doesn\'t ask.' },
+    { title: 'It builds a clean environment', tag: 'env_reset, secure_path', detail: 'Most of your variables are dropped. `PATH` becomes `secure_path`, `HOME` and `USER` are root\'s, and `SUDO_USER`, `SUDO_UID` and `SUDO_COMMAND` record who asked.' },
+    { title: 'It logs and runs the command', tag: 'journal, /var/log/auth.log', detail: 'The command line is logged, then sudo starts `apt update` as root in a new pseudo-terminal (`use_pty`) and passes its output through. When it exits, sudo exits with the same status.' }
+  ]
+}} />
+
+The first stage causes most surprises. Everything your shell does happens as you:
+
+| You type | What happens |
+|---|---|
+| `sudo echo x > /etc/app.conf` | Your shell opens `/etc/app.conf` first and fails: Permission denied. sudo never ran. Use `echo x \| sudo tee /etc/app.conf`. |
+| `sudo cd /root` | `sudo: cd: command not found`. `cd` is part of the shell; there's no program to run. |
+| `sudo mytool` | `command not found` if `mytool` is in `~/.local/bin`, which isn't in `secure_path`. Use the full path. |
+| `sudo npm install` | Works, but every file it creates belongs to root. See the [root-owned files scenario](/s/root-owned-files). |
+| `curl … \| sudo bash` | Only `bash` runs as root, and it runs whatever `curl` downloads. The [curl pipe bash scenario](/s/curl-pipe-bash) shows how to read it first. |
+
+## Under the hood
+
+**Real and effective IDs.** A process has a real user ID (who started it) and an effective user ID (whose rights it has). The setuid bit changes only the effective one. sudo reads the real one to find out who you are, checks the policy, and only then sets both to the target user before running the command. `sudo -u bob cmd` works the same, with bob's IDs.
+
+**The sudoers grammar.** A rule reads `who where = (as_user:as_group) what`. `%sudo` means the group. Ubuntu's file has three rules: `root ALL=(ALL:ALL) ALL`, `%admin ALL=(ALL) ALL` for old installs, and `%sudo ALL=(ALL:ALL) ALL`, then `@includedir /etc/sudoers.d` for extra files. Rules can limit commands (`jd ALL=(root) /usr/bin/systemctl restart nginx`) or drop the password prompt (`NOPASSWD:`). Always edit with `sudo visudo` or `sudo visudo -f /etc/sudoers.d/name`: it checks the syntax before saving, and a broken sudoers file means no sudo at all until you fix it from a recovery boot.
+
+**The password timestamp.** After a successful password, sudo writes a record under `/run/sudo/ts/`, tied to your terminal. For the next 15 minutes, sudo in that terminal doesn't ask; another terminal tab asks again. `sudo -k` forgets it straight away. `/run` is a tmpfs, so a reboot forgets all of them.
+
+**The environment in detail.** With `env_reset`, the command gets a fresh environment: `HOME`, `USER`, `LOGNAME` and `SHELL` for the target user, `PATH` from `secure_path`, `TERM` and `DISPLAY` carried over, and the `SUDO_*` variables. Variables named in `env_keep` survive. `sudo -E` asks to keep the rest, and the policy may refuse. Running `env` as another user through sudo on the test machine showed exactly that list, with `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin`. [How programs inherit their environment](/g/environment-variables) explains why the variables matter.
+
+**`sudo -i`, `sudo -s` and `su`.** `sudo -i` starts root's login shell, in `/root`, with root's startup files. `sudo -s` starts a root shell but keeps your folder. Both are convenient and dangerous: every command you type afterwards runs as root, without a prompt. `su` switches user by asking for the target's password, and root has none on Ubuntu; `sudo su` works but is `sudo -i` the long way.
+
+**The first-run hint.** sudo creates `~/.sudo_as_admin_successful` the first time you use it. Ubuntu's `/etc/bash.bashrc` checks for that file and stops printing its `To run a command as administrator (user "root"), use "sudo <command>".` hint in every new terminal.
+
+**Logging.** Each use is logged through syslog to the journal and to `/var/log/auth.log`, with failures as `a password is required` or `incorrect password attempt`. On a shared machine, that's the record of who changed what.
+
+**Graphical prompts aren't sudo.** The password box that appears when the Software app installs something, or when `systemctl` asks for authentication, comes from polkit, a separate system with its own rules. It also checks membership of `sudo` on Ubuntu, which is why the same password works.
+
+**Elsewhere.** Fedora puts the first user in `wheel` and its sudoers has `%wheel ALL=(ALL) ALL`. Arch ships the `%wheel` line commented out, so you uncomment it with `visudo` after adding yourself to `wheel`.

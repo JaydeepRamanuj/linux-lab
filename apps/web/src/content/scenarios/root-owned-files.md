@@ -110,7 +110,7 @@ avoid:
   - "`npm install -g` failing with EACCES isn't a reason for `sudo` either. Install Node with `nvm` (or `fnm`), so global packages live in your home folder."
   - "If you'd rather start clean, `sudo rm -rf node_modules package-lock.json` then a normal `npm install` works too. Check the path twice before running `rm -rf` with `sudo`."
 related: [permission-denied-script, chmod-numbers, disk-full]
-concepts: [permissions-model]
+concepts: [permissions-model, users-groups, how-sudo-works]
 anatomy:
   "-R": "Recursive: the folder and everything inside it."
   "$USER:$USER": "New owner:group. `$USER` is your username, so this means \"me, and my group\"."

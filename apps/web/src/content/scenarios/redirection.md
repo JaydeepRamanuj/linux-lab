@@ -129,7 +129,7 @@ avoid:
   - "After `cmd | tee log`, `echo $?` reports `tee`'s exit code, not the command's. It's usually 0 even when the tests failed."
   - "`< file` is the other direction: it feeds a file into a program's input, like `sort < names.txt`."
 related: [command-chaining, heredocs, expansion-quoting, exit-codes, watch-log]
-concepts: [standard-streams]
+concepts: [standard-streams, everything-is-a-file]
 anatomy:
   ">": "Send stdout (stream 1) into a file instead of the terminal."
   "2>&1": "Send stderr (stream 2) to wherever stdout points now: the same file."

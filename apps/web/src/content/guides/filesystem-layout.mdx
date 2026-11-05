@@ -1,0 +1,128 @@
+---
+track: filesystem
+order: 2
+title: "The Directory Layout: /etc, /usr, /var and Friends"
+summary: "Every Linux system shares one folder tree, and each top-level folder has a job: installed software in /usr, settings in /etc, changing data in /var, your own things in /home. Knowing which is which tells you where to look and what is safe to touch."
+level: essentials
+readingMinutes: 7
+prerequisites: [everything-is-a-file]
+observe:
+  - command: ls /
+    explain: "The top of the tree. The `*.usr-is-merged` folders are empty markers left by Ubuntu's switch to a merged `/usr` (below). `lost+found` belongs to the filesystem checker. Your terminal may lay the names out in more columns."
+    output: |
+      bin                lib64       sbin
+      bin.usr-is-merged  lost+found  sbin.usr-is-merged
+      boot               media       snap
+      dev                mnt         srv
+      etc                opt         sys
+      home               proc        tmp
+      lib                root        usr
+      lib.usr-is-merged  run         var
+  - command: ls -ld /bin /lib /lib64 /sbin
+    explain: "On current Ubuntu, Debian, Fedora and Arch these four are symlinks into `/usr`. `/bin/ls` and `/usr/bin/ls` are the same file."
+    output: |
+      lrwxrwxrwx 1 root root 7 Apr 22  2024 /bin -> usr/bin
+      lrwxrwxrwx 1 root root 7 Apr 22  2024 /lib -> usr/lib
+      lrwxrwxrwx 1 root root 9 Apr 22  2024 /lib64 -> usr/lib64
+      lrwxrwxrwx 1 root root 8 Apr 22  2024 /sbin -> usr/sbin
+  - command: dpkg -S /usr/bin/ls /bin/ls
+    explain: "Which package installed a file. dpkg records the `/usr` path, so asking about `/bin/ls` finds nothing even though the file is there. Files that no package owns, like `/etc/passwd`, were made during installation or by you."
+    output: |
+      coreutils: /usr/bin/ls
+      dpkg-query: no path found matching pattern /bin/ls
+  - command: du -sh /usr /var /etc 2>/dev/null
+    explain: "How big each part is. `/usr` is almost all installed software, `/var` is mostly logs, caches and package data, and `/etc` is small text files. Numbers from a minimal install; a desktop's `/usr` is several times larger."
+    output: |
+      3.8G	/usr
+      990M	/var
+      4.2M	/etc
+  - command: df -h --output=target,fstype /tmp /run /dev/shm
+    explain: "Which of these live on the disk and which in memory. On Ubuntu, `/tmp` is a folder on the root filesystem; `/run` and `/dev/shm` are `tmpfs`, kept in RAM and empty after every boot."
+    output: |
+      Mounted on Type
+      /          ext4
+      /run       tmpfs
+      /dev/shm   tmpfs
+  - command: grep '^[^#]' /usr/lib/tmpfiles.d/tmp.conf
+    explain: "The rule that cleans `/tmp`: `D` empties it at every boot, and `30d` removes files nobody has touched for 30 days. Ubuntu leaves the matching `/var/tmp` line commented out, so `/var/tmp` is never cleaned."
+    output: |
+      D /tmp 1777 root root 30d
+misconceptions:
+  - myth: "`/usr` is where users' files go."
+    reality: "On early Unix it held home folders, which is where the name comes from. Today it holds installed programs, libraries and shared data, and the package manager owns it. Your files go in `/home/you`."
+  - myth: "Software I install by hand belongs in `/usr/bin`."
+    reality: "`/usr/bin` belongs to apt. A file you put there can be overwritten by a package, or overwrite one. Use `/usr/local/bin` for system-wide tools, `~/.local/bin` for your own, and `/opt` or `~/opt` for programs that come as a whole folder."
+  - myth: "`/tmp` is a good place to keep something for a while."
+    reality: "On Ubuntu it's emptied at every boot, and files older than 30 days are removed even without a reboot. Fedora and Arch keep `/tmp` in RAM. Use it only for things you can lose."
+  - myth: "An app's settings live in `/etc`."
+    reality: "`/etc` holds system-wide settings. Your own settings for an app live in your home folder, usually `~/.config/<app>`, and override the system ones. Changing `/etc` needs `sudo`; changing `~/.config` never does."
+commands: [ls, du, df, dpkg]
+references:
+  - label: "hier(7): description of the filesystem hierarchy"
+    url: https://man7.org/linux/man-pages/man7/hier.7.html
+  - label: "file-hierarchy(7): systemd's filesystem layout"
+    url: https://man7.org/linux/man-pages/man7/file-hierarchy.7.html
+  - label: "Filesystem Hierarchy Standard 3.0"
+    url: https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html
+  - label: "XDG Base Directory Specification"
+    url: https://specifications.freedesktop.org/basedir-spec/latest/
+  - label: "tmpfiles.d(5): the D and q lines that clean /tmp"
+    url: https://man7.org/linux/man-pages/man5/tmpfiles.d.5.html
+  - label: "Debian wiki: the merged /usr"
+    url: https://wiki.debian.org/UsrMerge
+---
+
+## The mental model
+
+Linux has one folder tree, starting at `/`. There are no drive letters: other disks, USB sticks and even the kernel's own data appear as folders somewhere in that tree. The top-level folders aren't random. Each one answers a question: is this **the system's or yours**, and does it **stay the same or change** while the machine runs?
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Who writes where',
+  caption: 'The system parts belong to root and the package manager. Your home folder is the only place you write to without `sudo`. The last group is never on the disk at all.',
+  zones: [
+    { title: 'Installed software', items: [{ text: '/usr', tone: 'base', note: 'programs, libraries, docs' }, { text: '/boot', tone: 'base', note: 'kernel, initramfs' }, { text: '/opt', tone: 'base', note: 'self-contained apps' }] },
+    { title: 'System settings and state', items: [{ text: '/etc', tone: 'caution', note: 'configuration, edited by root' }, { text: '/var', tone: 'caution', note: 'logs, caches, databases' }, { text: '/tmp', tone: 'ghost', note: 'scratch, cleared at boot' }] },
+    { title: 'Yours', items: [{ text: '/home/jd', tone: 'good', note: 'everything you make' }, { text: '~/.config  ~/.local  ~/.cache', tone: 'good', note: 'your apps\' settings and data' }] },
+    { title: 'Made by the kernel', items: [{ text: '/dev', tone: 'focus', note: 'devices' }, { text: '/proc  /sys', tone: 'focus', note: 'processes, kernel, hardware' }, { text: '/run', tone: 'focus', note: 'runtime state, in RAM' }] }
+  ]
+}} />
+
+| Folder | What's in it | Typical question it answers |
+|---|---|---|
+| `/usr/bin`, `/usr/lib` | Programs and libraries from packages | "Where did apt put `rg`?" |
+| `/usr/local` | Software installed by hand for every user | "Where do I put a tool I compiled?" |
+| `/opt` | Self-contained apps in one folder each (Chrome lives in `/opt/google/chrome`) | "Where did that vendor's app install?" |
+| `/etc` | System-wide configuration, as text files | "Where is the SSH server's config?" |
+| `/var/log` | Log files | "Where are the logs?" |
+| `/var/lib` | State that programs keep: package database, Docker images | "Why is `/var` so big?" |
+| `/var/cache` | Downloaded or computed data that can be rebuilt | "What can I clear?" (`sudo apt clean` empties apt's part) |
+| `/home/you` | Your files and your apps' settings | "Where's my stuff?" |
+| `/root` | Root's own home folder | "Why can't I open it?" (only root can) |
+| `/tmp`, `/var/tmp` | Temporary files, for anyone | "Will this survive a reboot?" (`/tmp`: no) |
+| `/media`, `/mnt` | Mounted drives: `/media/you/<label>` for USB sticks, `/mnt` for manual mounts | "Where did my USB stick go?" |
+
+Two rules of thumb cover most decisions. **Outside your home folder, files belong to the system**: change them with `sudo` and only when you know why, and leave `/usr` to the package manager. **Inside your home folder, everything is yours**, including the hidden folders where apps keep their settings and caches, which is often where the space goes in the [disk full scenario](/s/disk-full).
+
+## Under the hood
+
+**The merged `/usr`.** Unix once split programs between `/bin` (needed to boot) and `/usr/bin` (everything else), because `/usr` was often on a second disk that mounted later. Today the early boot happens from an initramfs, so the split no longer helps. Ubuntu, Debian, Fedora and Arch have merged them: `/bin`, `/sbin`, `/lib` and `/lib64` are symlinks into `/usr`. One visible side effect: dpkg knows files by their `/usr` path, so `dpkg -S /bin/ls` finds nothing.
+
+**Vendor defaults in `/usr`, your changes in `/etc`.** Many programs now read their defaults from `/usr/lib` and let a file of the same name in `/etc` override it. systemd units ship in `/usr/lib/systemd/system`, and your overrides go in `/etc/systemd/system`. Kernel settings ship in `/usr/lib/sysctl.d`, and yours go in `/etc/sysctl.d`. The package manager can update `/usr` freely without touching your changes. [systemd units](/g/systemd-units) shows the search order.
+
+**`/var` keeps what changes.** `/var/log` for logs (see [where logs live](/g/journald-logs)), `/var/lib/dpkg` and `/var/lib/apt` for the package database, `/var/cache/apt/archives` for downloaded `.deb` files, `/var/spool` for queued work like mail and cron jobs. `/var/lib` is the one not to clean by hand: it's the programs' memory of what they've done.
+
+**Temporary folders.** `/tmp` is world-writable with the sticky bit (`1777`), so anyone can create files but only the owner can delete them ([setuid, setgid and the sticky bit](/g/setuid-capabilities)). On Ubuntu 24.04 it's an ordinary folder on the root disk. `systemd-tmpfiles` empties it at boot and removes files untouched for 30 days. Fedora and Arch mount a `tmpfs` there instead, so `/tmp` lives in RAM. `/var/tmp` is meant to survive reboots. `/run` is always a `tmpfs`: PID files, sockets and locks that only make sense until the next boot. `/run/user/1000` is your own part of it (`$XDG_RUNTIME_DIR`), readable only by you.
+
+**Your home folder's hidden parts.** The XDG Base Directory spec gives apps four places, each overridable with an environment variable:
+
+- `~/.config` for settings (`$XDG_CONFIG_HOME`)
+- `~/.local/share` for data such as fonts, `.desktop` files and the Trash (`$XDG_DATA_HOME`)
+- `~/.local/state` for history and logs (`$XDG_STATE_HOME`)
+- `~/.cache` for things that can be rebuilt (`$XDG_CACHE_HOME`): safe to delete
+
+`~/.local/bin` is the user's own `/usr/local/bin`. Ubuntu's `~/.profile` adds it to `PATH` when it exists; see [how PATH lookup works](/g/path) and the [add to PATH scenario](/s/add-to-path). Older programs ignore all of this and keep a dotfile or dot-folder directly in `~`, like `~/.bashrc` or `~/.ssh`.
+
+**Where installed software goes.** A `.deb` puts files across the tree: the program in `/usr/bin`, its libraries in `/usr/lib`, default settings in `/etc`, a service unit in `/usr/lib/systemd/system`. `dpkg -L <package>` lists them; `dpkg -S <file>` goes the other way. Snaps live in `/snap` and keep their data in `~/snap`. Programs you unpack yourself, like in the [unpack an archive scenario](/s/extract-archive), go in `/opt` (for everyone, with `sudo`) or `~/opt` (only you).
+
+**Removable media.** When you plug in a USB stick on an Ubuntu desktop, udisks mounts it at `/media/<you>/<label>`. Fedora and Arch use `/run/media/<you>/<label>`. `/mnt` is left for mounts you make by hand. [Mounts and block devices](/g/mounts-devices) explains what mounting is.

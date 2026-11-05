@@ -107,6 +107,7 @@ avoid:
   - "Read the flags as words: `x` extract, `z` gzip, `v` verbose, `f` file. `tar -czf out.tar.gz folder/` makes an archive (`c` create)."
   - "To run a program you unpacked, either call it by path (`~/opt/mytool-2.1.0-linux-x64/bin/mytool`) or link it into `~/.local/bin`."
 related: [symlink-shortcut, add-to-path, appimage-install]
+concepts: [filesystem-layout]
 anatomy:
   "mytool-2.1.0-linux-x64.tar.gz": "The archive: a `.tar` bundle of files, compressed with gzip (`.gz`)."
 ---

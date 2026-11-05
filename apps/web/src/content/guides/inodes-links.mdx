@@ -1,0 +1,139 @@
+---
+track: filesystem
+order: 3
+title: Inodes, Hard Links and Symlinks
+summary: "A file's name and the file itself are two separate things. The file is an inode; a name is an entry in a folder pointing at it. That split explains hard links, symlinks, why mv is instant, and why an editor can break a link."
+level: deeper
+readingMinutes: 7
+prerequisites: [everything-is-a-file]
+observe:
+  - command: stat /etc/hostname
+    explain: "Everything the inode holds: size, blocks, inode number, link count, permissions, owner and four timestamps. Notice what's missing: the name. `Change` is when the inode last changed, not when the file was made; that's `Birth`."
+    output: |2
+        File: /etc/hostname
+        Size: 11        	Blocks: 8          IO Block: 4096   regular file
+      Device: 8,48	Inode: 697         Links: 1
+      Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+      Access: 2026-11-05 07:24:43.142445900 +0000
+      Modify: 2026-11-05 07:24:43.086445900 +0000
+      Change: 2026-11-05 07:24:43.086445900 +0000
+       Birth: 2026-03-06 14:12:08.890887000 +0000
+  - command: ls -li /usr/bin/perl /usr/bin/perl5.38.2
+    explain: "`-i` adds the inode number in front. Two names, one inode (2587), and a link count of 2: a hard link. Neither is the original. Ubuntu 24.04 ships Perl this way; the version number may differ on yours."
+    output: |
+      2587 -rwxr-xr-x 2 root root 4023408 Sep 14 17:50 /usr/bin/perl
+      2587 -rwxr-xr-x 2 root root 4023408 Sep 14 17:50 /usr/bin/perl5.38.2
+  - command: find /usr/bin -samefile /usr/bin/perl
+    explain: "Every name for the same inode. There's no faster way: an inode doesn't know its names, so `find` has to look at every entry."
+    output: |
+      /usr/bin/perl5.38.2
+      /usr/bin/perl
+  - command: namei /usr/bin/editor
+    explain: "Follows a path one part at a time and shows each symlink it passes. `editor` points into `/etc/alternatives`, which points at `/bin/nano`, and `/bin` is itself a link to `usr/bin`. `readlink -f` prints only the end: `/usr/bin/nano`."
+    output: |
+      f: /usr/bin/editor
+       d /
+       d usr
+       d bin
+       l editor -> /etc/alternatives/editor
+         d /
+         d etc
+         d alternatives
+         l editor -> /bin/nano
+           d /
+           l bin -> usr/bin
+             d usr
+             d bin
+           - nano
+  - command: stat -c '%h %n' / /etc /tmp
+    explain: "A folder's link count is 2 plus the number of folders inside it: its own name, its `.`, and the `..` of each subfolder. `/etc` here has 88 subfolders."
+    output: |
+      27 /
+      90 /etc
+      12 /tmp
+  - command: df -i /
+    explain: "Inodes, not bytes. ext4 creates a fixed number when the filesystem is made. If millions of tiny files use them all, you get `No space left on device` while `df -h` still shows free space."
+    output: |
+      Filesystem       Inodes IUsed    IFree IUse% Mounted on
+      /dev/sdd       67108864 51256 67057608    1% /
+misconceptions:
+  - myth: "A hard link is a shortcut to the original file."
+    reality: "A hard link is a second name for the same inode, as real as the first. There is no original: delete either name and the other keeps working. The data goes away only when the last name is gone and no process has it open."
+  - myth: "`ctime` is the creation time."
+    reality: "It's the change time: when the inode last changed, which includes a `chmod`, a `chown` or a rename. The creation time is `Birth` in `stat`, which ext4 and btrfs record and older filesystems don't."
+  - myth: "`mv` copies the file and deletes the old one."
+    reality: "Within one filesystem, `mv` only renames: it writes a new folder entry for the same inode and removes the old one, so a 50 GB file moves instantly. Only across filesystems, such as to a USB stick, does it copy and then delete."
+  - myth: "Removing a symlink can delete what it points to."
+    reality: "`rm link` removes only the link. The danger is a trailing slash: `rm -r link/` follows the link and deletes the contents of the target folder. The [symlink scenario](/s/symlink-shortcut) shows it."
+commands: [ln, ls, stat, readlink, find, mv, cp, rm, du]
+references:
+  - label: "inode(7): what an inode holds"
+    url: https://man7.org/linux/man-pages/man7/inode.7.html
+  - label: "link(2): make a new name for a file"
+    url: https://man7.org/linux/man-pages/man2/link.2.html
+  - label: "symlink(7): symbolic link handling"
+    url: https://man7.org/linux/man-pages/man7/symlink.7.html
+  - label: "rename(2): EXDEV across filesystems"
+    url: https://man7.org/linux/man-pages/man2/rename.2.html
+  - label: "stat(2): the fields, including the timestamps"
+    url: https://man7.org/linux/man-pages/man2/stat.2.html
+  - label: "namei(1): follow a path name"
+    url: https://man7.org/linux/man-pages/man1/namei.1.html
+---
+
+## The mental model
+
+A filesystem keeps two kinds of things. An **inode** is the file itself: its data blocks, size, owner, permissions and timestamps, identified by a number. A **folder** is a small table of **names**, each pointing at an inode number. The name isn't stored in the inode at all.
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'One folder, three names, two inodes',
+  caption: '`notes.txt` and `notes-hard.txt` are two names for inode 13076. `notes-sym.txt` is a separate, tiny inode whose content is the text `notes.txt`.',
+  zones: [
+    { title: 'The folder (names)', items: [{ text: 'notes.txt → 13076', tone: 'base' }, { text: 'notes-hard.txt → 13076', tone: 'good', note: 'hard link' }, { text: 'notes-sym.txt → 13137', tone: 'focus', note: 'symlink' }] },
+    { title: 'Inode 13076', items: [{ text: 'regular file, 6 bytes', tone: 'base' }, { text: 'links: 2', tone: 'good' }, { text: 'data: "hello"', tone: 'base' }] },
+    { title: 'Inode 13137', items: [{ text: 'symbolic link, 9 bytes', tone: 'focus' }, { text: 'links: 1', tone: 'base' }, { text: 'data: "notes.txt"', tone: 'focus', note: 'a path, followed on open' }] }
+  ]
+}} />
+
+That gives two kinds of link:
+
+| | Hard link (`ln`) | Symlink (`ln -s`) |
+|---|---|---|
+| What it is | Another name for the same inode | A separate inode holding a path |
+| If the target's name is deleted | Still works: the data is still there | Breaks: `No such file or directory` |
+| Across filesystems or drives | No (`Invalid cross-device link`) | Yes |
+| To a folder | No | Yes |
+| Permissions | The file's own, shared by every name | Always `rwxrwxrwx`; the target's count |
+| `ls -l` shows | A link count above 1 | `l` and `-> target` |
+
+Symlinks are what you'll make day to day, as in the [symlink scenario](/s/symlink-shortcut). Hard links matter mostly for understanding what commands do to files:
+
+| Command | What happens to the inode |
+|---|---|
+| `rm name` | Removes one name; the link count drops by one |
+| `mv a b` on one filesystem | Same inode under a new name. Instant, whatever the size |
+| `mv a /media/usb/` | New inode on the other filesystem, then the old name is deleted |
+| `cp a b` | A new inode with a copy of the data |
+| `echo x > a` | Same inode, contents replaced |
+| `sed -i …` and many editors' save | A new file renamed over the old name: a new inode |
+
+That last row has a consequence: after `sed -i` edits one name of a hard-linked file, the two names point at different inodes, and the other one still has the old text. The [mv and cp overwrite scenario](/s/safe-mv-cp) is the same mechanism from the other side: `mv` replacing a name drops the old inode's last link.
+
+## Under the hood
+
+**When data is really freed.** Each inode counts its names, and the kernel separately tracks how many open files point at it. The blocks are freed only when both reach zero. That's why a deleted log that a process still has open keeps filling the disk. [File descriptors](/g/file-descriptors) covers that case and how to find it with `lsof +L1`.
+
+**Folders are files of names.** A folder's data is the list of names and inode numbers inside it. Every folder also contains `.` (itself) and `..` (its parent), and both are hard links. That's where folder link counts come from: an empty folder has 2 (its name in the parent and its own `.`), and each subfolder adds one through its `..`. Linux doesn't allow hard links to folders (`hard link not allowed for directory`), because a folder with two parents could make loops that tools walking the tree would never leave.
+
+**Inode numbers are per filesystem.** Inode 2 is the root folder of every ext4 filesystem, so the same number can exist on each disk. A file is identified by its device plus its inode number, which is why hard links can't cross filesystems. Renaming across them fails the same way inside the kernel (`EXDEV`), and `mv` falls back to copy and delete. Moving a file from `/tmp` to `/dev/shm` gave it a new inode number.
+
+**Running out of inodes.** ext4 decides the number of inodes when the filesystem is created and can't add more. One inode per file, however small, so a folder of millions of cache or session files can use them all up. Writes then fail with `No space left on device` although `df -h` shows space free; `df -i` shows `IUse%` at 100%. btrfs and XFS allocate inodes as needed and rarely hit this.
+
+**Symlinks in detail.** A symlink's content is a path, stored as text and not checked when you make it: `ln -s /nope broken` succeeds, and only opening it fails. A relative target is resolved from the folder the link sits in, not from where you ran `ln`. Short targets fit inside the inode itself (a 9-byte link used 0 blocks; a 67-byte one used a block). The kernel ignores a symlink's own permissions and checks the target's, and `chmod link` changes the target. `ls -l` shows one level of a link; `readlink -f` and `namei` follow the whole chain.
+
+**Protected links.** Ubuntu sets `fs.protected_hardlinks = 1` and `fs.protected_symlinks = 1`. The first stops you from hard-linking a file you don't own and can't write: `ln /etc/passwd ~/pw` fails with `Operation not permitted`, even on the same filesystem. The second stops a process from following a symlink in a sticky, world-writable folder like `/tmp` when the link's owner is someone else, which blocks a classic way to trick a root program into writing the wrong file.
+
+**Counting space.** `du` counts each inode once, however many names it has: two 1 MB names for one inode add up to 1 MB. `du --count-links` counts them twice. `ls -l` shows each name's size, so adding up `ls` can overstate. Backup and sync tools that preserve hard links (`rsync -H`, `cp -a`) do the same bookkeeping.
+
+**The four timestamps.** `Access` (atime) is the last read, though the default `relatime` mount option updates it only when the file has changed since, or once a day. `Modify` (mtime) is the last change to the data. `Change` (ctime) is the last change to the inode, data included. `Birth` is when the inode was created. `ls -l` shows mtime; `ls -lu` and `ls -lc` show atime and ctime.

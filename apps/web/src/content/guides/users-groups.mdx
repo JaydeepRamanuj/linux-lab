@@ -1,0 +1,133 @@
+---
+track: permissions
+order: 2
+title: "Users and Groups: /etc/passwd, /etc/group and /etc/shadow"
+summary: "To the kernel, a user is a number and so is a group. Three text files turn those numbers into names, home folders, shells and password hashes, and a process gets its groups once, when you log in."
+level: essentials
+readingMinutes: 7
+prerequisites: [permissions-model]
+observe:
+  - command: getent passwd jd root nobody
+    explain: "Seven fields split by colons: name, password placeholder (`x` means \"see /etc/shadow\"), user ID, primary group ID, a comment, the home folder and the login shell. `getent` asks the same lookup programs use, so it also finds users that aren't in the file. The test user's shell is zsh; Ubuntu's default is `/bin/bash`."
+    output: |
+      jd:x:1000:1000:,,,:/home/jd:/usr/bin/zsh
+      root:x:0:0:root:/root:/bin/bash
+      nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+  - command: getent group sudo adm jd users
+    explain: "Group name, placeholder, group ID and the members. `jd` has no members listed: it's jd's primary group, set in `/etc/passwd`, not here. Membership of `sudo` is what lets jd use sudo; `adm` lets jd read system logs."
+    output: |
+      sudo:x:27:jd
+      adm:x:4:syslog,jd
+      jd:x:1000:
+      users:x:100:jd
+  - command: ls -l /etc/passwd /etc/group /etc/shadow /etc/gshadow
+    explain: "`passwd` and `group` are readable by everyone, because every `ls -l` needs to turn numbers into names. The password hashes live in `shadow`, readable only by root and the `shadow` group."
+    output: |
+      -rw-r--r-- 1 root root    737 Mar  6  2026 /etc/group
+      -rw-r----- 1 root shadow  622 Mar  6  2026 /etc/gshadow
+      -rw-r--r-- 1 root root   1421 Mar  9  2026 /etc/passwd
+      -rw-r----- 1 root shadow  798 Mar  6  2026 /etc/shadow
+  - command: grep -E '^(UID_MIN|UID_MAX|USERGROUPS_ENAB|HOME_MODE)' /etc/login.defs
+    explain: "The rules for new accounts. People get IDs from 1000 to 60000; system accounts below that. `USERGROUPS_ENAB yes` gives each new user a group of their own, and `HOME_MODE` makes new home folders `750`."
+    output: |
+      HOME_MODE	0750
+      UID_MIN			 1000
+      UID_MAX			60000
+      USERGROUPS_ENAB yes
+  - command: "awk -F: '{print $7}' /etc/passwd | sort | uniq -c"
+    explain: "Login shells of every account. Almost all are system accounts with `nologin`: they own files and run services, but nobody can log in as them."
+    output: |2
+            1 /bin/bash
+            1 /bin/false
+            1 /bin/sync
+            1 /usr/bin/zsh
+           24 /usr/sbin/nologin
+  - command: ls -ln /home
+    explain: "`-n` shows the numbers that are really stored in the inode instead of looking up names. A file owned by a deleted user shows like this in a normal `ls -l` too."
+    output: |
+      total 4
+      drwxr-x--- 7 1000 1000 4096 Nov  5 08:08 jd
+  - command: grep -E '^(Uid|Gid|Groups)' /proc/$$/status
+    explain: "The identity your shell actually carries. `Groups` is the list the kernel compares with a file's group. It was fixed when you logged in, which is why a new group needs a new login."
+    output: |
+      Uid:	1000	1000	1000	1000
+      Gid:	1000	1000	1000	1000
+      Groups:	4 24 27 30 46 100 1000 
+misconceptions:
+  - myth: "The kernel checks your username."
+    reality: "It checks numbers only. Rename a user and their files stay theirs, because the UID didn't change. Copy files to another machine and they belong to whoever has the same UID there, often a different person."
+  - myth: "`sudo usermod -G docker jd` adds jd to the docker group."
+    reality: "Without `-a`, `-G` replaces the whole list of extra groups, so jd drops out of `sudo` and the rest. Use `sudo usermod -aG docker jd`, or `sudo adduser jd docker`."
+  - myth: "`root` is special because of its name."
+    reality: "What matters is user ID 0. Any account with UID 0 is root, whatever it's called. That's one reason to change accounts with the proper tools and never by editing `/etc/passwd` by hand."
+  - myth: "Adding someone to the docker group is a small, safe change."
+    reality: "Anyone who can talk to the Docker daemon can start a container that mounts `/` and changes anything. Membership of `docker` is as good as root; treat it like membership of `sudo`."
+commands: [chown, ls, stat]
+references:
+  - label: "passwd(5): the password file"
+    url: https://man7.org/linux/man-pages/man5/passwd.5.html
+  - label: "group(5): the group file"
+    url: https://man7.org/linux/man-pages/man5/group.5.html
+  - label: "shadow(5): the shadowed password file"
+    url: https://man7.org/linux/man-pages/man5/shadow.5.html
+  - label: "credentials(7): user and group IDs of a process"
+    url: https://man7.org/linux/man-pages/man7/credentials.7.html
+  - label: "usermod(8): -a and -G"
+    url: https://man7.org/linux/man-pages/man8/usermod.8.html
+  - label: "login.defs(5): settings for new accounts"
+    url: https://man7.org/linux/man-pages/man5/login.defs.5.html
+  - label: "Docker docs: the docker group grants root-level privileges"
+    url: https://docs.docker.com/engine/security/#docker-daemon-attack-surface
+---
+
+## The mental model
+
+Every process carries a **user ID** (UID), a **primary group ID** (GID) and a list of **supplementary groups**. Every file stores one owner UID and one group GID. The [permission check](/g/permissions-model) compares those numbers. Names never enter into it.
+
+Names come from three text files, looked up whenever a program wants to show or accept a name:
+
+| File | One line per | Holds | Readable by |
+|---|---|---|---|
+| `/etc/passwd` | User | Name, UID, primary GID, home folder, shell | Everyone |
+| `/etc/group` | Group | Name, GID, extra members | Everyone |
+| `/etc/shadow` | User | Password hash, password age and expiry | root and the `shadow` group |
+
+Your identity is set once, at login, and every process you start inherits it:
+
+<Flow spec={{
+  title: 'Logging in, as far as users and groups go',
+  stages: [
+    { title: 'You type a name and password', tag: 'login screen or ssh', detail: 'A program running as root (GDM, `login` or `sshd`) receives them.' },
+    { title: 'The password is checked', tag: 'PAM, /etc/shadow', detail: 'PAM hashes what you typed and compares it with the hash in `/etc/shadow`. The password itself is stored nowhere.' },
+    { title: 'Your account is looked up', tag: '/etc/passwd', detail: 'UID 1000, primary group 1000, home `/home/jd`, shell `/usr/bin/zsh`.' },
+    { title: 'Your groups are collected', tag: '/etc/group', detail: 'Every group whose member list includes `jd`: adm, cdrom, sudo, dip, plugdev, users. This list is fixed for the session.' },
+    { title: 'The process becomes you', tag: 'setgid, setuid', detail: 'The root process sets its groups, then its GID, then its UID, and drops root for good. Then it runs your shell in your home folder.' },
+    { title: 'Everything after inherits it', tag: 'fork, exec', detail: 'Your terminal, your shell and every command they start carry the same IDs. A group added to `/etc/group` now reaches none of them; it arrives at your next login.' }
+  ]
+}} />
+
+That last stage is why `usermod -aG docker jd` seems not to work until you log out and back in: the file changed, but your processes kept the list they were given.
+
+## Under the hood
+
+**Number ranges.** UID 0 is root. On Ubuntu, 1 to 999 are system accounts made by packages (`daemon`, `messagebus`, `systemd-network`), 1000 to 60000 are people (`UID_MIN` and `UID_MAX` in `/etc/login.defs`), and 65534 is `nobody`, an account that owns nothing and is used when a program wants no rights at all. The first person created at install gets 1000. Fedora and Arch use the same ranges.
+
+**Primary and supplementary groups.** The primary group, from `/etc/passwd`, is the group your new files get. The supplementary groups, from `/etc/group`, are extra memberships for the permission check. With `USERGROUPS_ENAB yes`, each user gets a primary group with the same name and number and no other members. That's why Ubuntu's default umask can leave group write on without letting anyone else in.
+
+**Groups with a job.** On Ubuntu:
+
+- `sudo` may use sudo ([how sudo works](/g/how-sudo-works)). Fedora and Arch call it `wheel`.
+- `adm` may read logs in `/var/log` and the full journal.
+- `plugdev` may mount removable devices; `cdrom` may use optical drives.
+- `dialout` may use serial ports such as `/dev/ttyUSB0`, needed for Arduino boards.
+- `docker` may control Docker, which is root-equivalent.
+
+**`/etc/shadow`.** Each line holds the password hash, written as `$id$salt$hash`. Ubuntu 24.04 uses yescrypt (`$y$`), set in `/etc/pam.d/common-password`. The `ENCRYPT_METHOD SHA512` in `login.defs` is only used by a few older tools. A `*` or `!` instead of a hash means no password can log in. root's entry is like that on Ubuntu, so root can't log in directly and is reached through sudo. The other fields count days since 1 January 1970: last change, minimum and maximum age, warning period.
+
+**Lookups go through NSS.** `/etc/nsswitch.conf` says where names come from: `passwd: files systemd` means the files first, then systemd's dynamic users. In a company, LDAP or Active Directory lines can be added, and then `getent passwd` finds users that aren't in `/etc/passwd`. That's why `getent` is the reliable way to look someone up, rather than `grep /etc/passwd`.
+
+**Changing accounts.** Use the tools, never an editor on the files: `sudo adduser name` (Debian's friendly front end) or `useradd`; `sudo usermod -aG group name` to add a group; `sudo passwd name` to set a password; `sudo deluser name`. They lock the files, keep `passwd` and `shadow` in step, and refuse a duplicate name. If you must edit by hand, `sudo vipw` and `sudo vigr` lock the files and check them.
+
+**Using a new group without logging out.** `newgrp docker` starts a new shell whose primary group is `docker`; only that shell and what you start from it get the group. Opening a new login, for example `su - $USER` or a new SSH session, picks up the full new list. A desktop session needs a full log out.
+
+**Numbers on files from elsewhere.** A tar archive, a USB disk formatted as ext4, or a container image stores owner numbers, not names. Extract it as root, or plug the disk into another machine, and the files belong to whoever has those numbers there. `ls -l` shows a bare number when no account matches. The [root-owned files scenario](/s/root-owned-files) is the common case where the number is 0.

@@ -86,6 +86,7 @@ avoid:
   - "`cp -r site backup` copies the folder *to* `backup` the first time, but *into* it (`backup/site`) the second time, once `backup` exists."
   - "For whole folders, `rsync -av --backup src/ dest/` shows what it copies and keeps replaced files as `name~`."
 related: [find-files, persistent-alias, symlink-shortcut]
+concepts: [inodes-links]
 anatomy:
   "-i": "Interactive: ask before replacing a file that already exists."
   "draft.md": "What to move."

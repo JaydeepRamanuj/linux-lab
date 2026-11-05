@@ -15,7 +15,8 @@ const READONLY = new Set([
   'hostnamectl', 'timedatectl', 'journalctl', 'last', 'w', 'who', 'getent', 'nmcli', 'iwconfig', 'ip', 'ifconfig', 'route',
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
-  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return', 'pstree', 'lslocks', 'systemd-cgls', 'systemd-cgtop', 'systemd-delta'
+  'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return', 'pstree', 'lslocks', 'systemd-cgls', 'systemd-cgtop', 'systemd-delta',
+  'namei', 'getcap'
 ]);
 
 // Subcommands of `systemd-analyze` that only report. Others (`set-log-level` and friends) change the running manager.
@@ -73,6 +74,14 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   if (p === 'loginctl' && /^(list-.*|show-.*|.*-status)?$/.test(c.operands[0]?.value ?? '')) return { severity: 'readonly', reason: 'Only shows login sessions.' };
   if (p === 'systemd-analyze' && (c.operands.length === 0 || SYSTEMD_ANALYZE_READ.test(c.operands[0]!.value))) {
     return { severity: 'readonly', reason: 'Only reports on systemd and its units.' };
+  }
+
+  // `sysctl name` and `sysctl -a` print; `-w`, `name=value`, `-p` and `--system` load or set values.
+  if (p === 'sysctl' && !c.argv.some((w) => /=/.test(w.value) || /^-[a-zA-Z]*[wpf]/.test(w.value) || /^--(write|load|system)/.test(w.value))) {
+    return { severity: 'readonly', reason: 'Prints kernel settings.' };
+  }
+  if (p === 'capsh' && c.argv.length > 0 && c.argv.every((w) => /^--(print|decode=\S+|supports=\S+|explain=\S+)$/.test(w.value))) {
+    return { severity: 'readonly', reason: 'Prints or decodes capabilities.' };
   }
 
   if (SHELLS.has(p) && p !== 'busybox') {

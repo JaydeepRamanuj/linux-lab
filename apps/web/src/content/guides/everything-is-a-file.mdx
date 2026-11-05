@@ -1,0 +1,129 @@
+---
+track: filesystem
+order: 1
+title: Everything Is a File
+summary: "Linux gives disks, terminals, pipes, sockets and kernel data the same kind of name in one folder tree, so the same open, read and write calls work on all of them. Seven file types cover everything you'll see in `ls -l`."
+level: essentials
+readingMinutes: 6
+prerequisites: [standard-streams]
+observe:
+  - command: stat -c '%F  %n' /etc/hostname /etc /dev/null /dev/sda /usr/bin/python3 /run/systemd/notify /run/initctl
+    explain: "`%F` prints the file type in words. One command, all seven types: a regular file, a directory, a character device, a block device, a symlink, a socket and a named pipe (FIFO). The disk may be called `nvme0n1` on your machine."
+    output: |
+      regular file  /etc/hostname
+      directory  /etc
+      character special file  /dev/null
+      block special file  /dev/sda
+      symbolic link  /usr/bin/python3
+      socket  /run/systemd/notify
+      fifo  /run/initctl
+  - command: ls -l /dev/null /dev/zero /dev/urandom /dev/sda /dev/tty
+    explain: "The first letter is the type: `c` for a character device, `b` for a block device. Where the size would be, devices show two numbers, the major and minor device number. They tell the kernel which driver handles the file: `1, 3` is the null driver."
+    output: |
+      crw-rw-rw- 1 root root 1, 3 Nov  5 07:24 /dev/null
+      brw-rw---- 1 root disk 8, 0 Nov  5 07:24 /dev/sda
+      crw-rw-rw- 1 root tty  5, 0 Nov  5 07:24 /dev/tty
+      crw-rw-rw- 1 root root 1, 9 Nov  5 07:24 /dev/urandom
+      crw-rw-rw- 1 root root 1, 5 Nov  5 07:24 /dev/zero
+  - command: head -c 16 /dev/urandom | xxd
+    explain: "Reading a device works like reading a file. `/dev/urandom` is the kernel's random number generator: `head` reads 16 bytes from it and `xxd` shows them in hex. Yours will differ every time."
+    output: |
+      00000000: 681d 755f 6525 2f4a 1973 8ce2 c5ca ad7a  h.u_e%/J.s.....z
+  - command: ls -l /dev/stdin /dev/stdout /dev/stderr /dev/fd
+    explain: "Your standard streams have names too. They're symlinks into `/proc/self/fd`, the open file descriptors of whichever process looks. That's why `cat /dev/stdin` reads whatever is piped in."
+    output: |
+      lrwxrwxrwx 1 root root 13 Nov  5 07:24 /dev/fd -> /proc/self/fd
+      lrwxrwxrwx 1 root root 15 Nov  5 07:24 /dev/stderr -> /proc/self/fd/2
+      lrwxrwxrwx 1 root root 15 Nov  5 07:24 /dev/stdin -> /proc/self/fd/0
+      lrwxrwxrwx 1 root root 15 Nov  5 07:24 /dev/stdout -> /proc/self/fd/1
+  - command: find /run -maxdepth 3 -type s 2>/dev/null
+    explain: "Sockets that services listen on, with names in the folder tree. Programs connect to the D-Bus system bus or to snapd by opening these paths. Trimmed; there are more."
+    output: |
+      /run/snapd.socket
+      /run/dbus/system_bus_socket
+      /run/udev/control
+      /run/systemd/private
+      /run/systemd/resolve/io.systemd.Resolve
+  - command: file /dev/null /dev/sda /etc/passwd /tmp /usr/bin/python3
+    explain: "`file` reports the type from the inode, and for regular files it guesses the content from the first bytes. Linux itself never looks at an extension."
+    output: |
+      /dev/null:        character special (1/3)
+      /dev/sda:         block special (8/0)
+      /etc/passwd:      ASCII text
+      /tmp:             sticky, directory
+      /usr/bin/python3: symbolic link to python3.12
+misconceptions:
+  - myth: "Everything is a file, so everything is stored on the disk."
+    reality: "Only regular files, folders and symlinks live on a disk. Devices, sockets, pipes and everything in `/proc` and `/sys` are names that lead to the kernel. They take no disk space, and most of them vanish when the machine turns off."
+  - myth: "`/dev/null` is a file that slowly fills up."
+    reality: "It's a driver with a name. Writes to it are thrown away and report success, and reads from it end at once. Its size is always 0, however much you send to it."
+  - myth: "The `.sh` or `.txt` at the end decides what a file is."
+    reality: "The kernel ignores extensions. The type (file, folder, device and so on) is stored in the inode, and whether a file runs depends on its `x` bit and its first bytes. Desktop apps use extensions to choose an icon or a program to open it with; the kernel doesn't."
+  - myth: "Literally everything has a file name."
+    reality: "Most things do, not all. Network interfaces like `eth0` have no entry in `/dev`, and a TCP connection has no path; a program sees it only as a file descriptor. `/sys/class/net` and `/proc` describe them as files, but you can't open an interface and read packets from it."
+commands: [ls, stat, cat]
+references:
+  - label: "inode(7): file types and the mode field"
+    url: https://man7.org/linux/man-pages/man7/inode.7.html
+  - label: "null(4): /dev/null and /dev/zero"
+    url: https://man7.org/linux/man-pages/man4/null.4.html
+  - label: "random(4): /dev/random and /dev/urandom"
+    url: https://man7.org/linux/man-pages/man4/random.4.html
+  - label: "fifo(7): named pipes"
+    url: https://man7.org/linux/man-pages/man7/fifo.7.html
+  - label: "unix(7): sockets with a path name"
+    url: https://man7.org/linux/man-pages/man7/unix.7.html
+  - label: "file(1): determine file type"
+    url: https://man7.org/linux/man-pages/man1/file.1.html
+---
+
+## The mental model
+
+A program that wants to use something calls `open()` on a name, gets back a [file descriptor](/g/standard-streams), and then calls `read()` and `write()` on it. "Everything is a file" means Linux puts as many kinds of things as it can behind that same small set of calls, under names in the same folder tree.
+
+So `cat` can show a text file, a kernel counter in `/proc` or the bytes of a disk, without knowing which is which. `> /dev/null` throws output away because `/dev/null` accepts writes like any file and keeps nothing. The [redirection scenario](/s/redirection) relies on exactly that.
+
+Underneath, every name leads to one of seven file types. `ls -l` shows the type as the first letter:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'The seven types in ls -l',
+  caption: 'The first column of `ls -l` starts with one of these letters. Only the first group is data on a disk; the rest are ways to reach the kernel or another program.',
+  zones: [
+    { title: 'Data on a disk', items: [{ text: '-  regular file', tone: 'good', note: '/etc/hostname' }, { text: 'd  directory', tone: 'good', note: '/etc' }, { text: 'l  symlink', tone: 'good', note: '/usr/bin/python3' }] },
+    { title: 'Devices (drivers)', items: [{ text: 'c  character device', tone: 'focus', note: '/dev/null, /dev/tty' }, { text: 'b  block device', tone: 'focus', note: '/dev/sda, /dev/nvme0n1' }] },
+    { title: 'Between programs', items: [{ text: 's  socket', tone: 'caution', note: '/run/dbus/system_bus_socket' }, { text: 'p  named pipe (FIFO)', tone: 'caution', note: '/run/initctl' }] }
+  ]
+}} />
+
+| Type | What reading and writing it does | Made by |
+|---|---|---|
+| Regular file | Reads and writes bytes stored on a disk | Any program that writes a file |
+| Directory | Holds names, each pointing at an inode | `mkdir` |
+| Symlink | Holds a path; opening it opens that path instead | `ln -s` |
+| Character device | Talks to a driver, a stream of bytes (terminals, `/dev/null`, random numbers) | The kernel and udev, in `/dev` |
+| Block device | Talks to a driver in fixed-size blocks (disks, partitions, USB sticks) | The kernel and udev, in `/dev` |
+| Socket | A connection point another program listens on | The listening program |
+| Named pipe | A pipe with a name: one program writes, another reads | `mkfifo` |
+
+## Under the hood
+
+**One layer above every filesystem.** The kernel's virtual file system (VFS) receives every `open()`, `read()` and `write()`. It looks at what the name leads to and hands the call on: to ext4 for a file on your disk, to the null driver for `/dev/null`, to the `proc` code for anything under `/proc`. Programs only ever talk to the VFS, which is why the same tools work everywhere.
+
+**Device numbers.** A device file holds no data. It holds two numbers: the **major** number picks the driver, and the **minor** number picks which device that driver means. `/dev/null` is `1, 3` and `/dev/zero` is `1, 5`: the same "memory devices" driver, two different behaviours. `/dev/sda` is `8, 0`, the first SCSI-style disk; `8, 1` would be its first partition. On current systems the kernel creates these nodes itself on a `devtmpfs` mounted at `/dev`, and udev adds permissions and friendly symlinks such as `/dev/disk/by-uuid/…`. [Mounts and block devices](/g/mounts-devices) uses those names.
+
+**Character versus block.** A character device is read as a stream, byte by byte in order: a terminal, a serial port, the random generator. A block device is read in blocks at any position, which is what a filesystem needs, and the kernel caches those blocks in memory. Disks and partitions are block devices.
+
+**Some useful devices:**
+
+- `/dev/null` discards writes and returns end-of-file on read.
+- `/dev/zero` returns zero bytes for as long as you read.
+- `/dev/urandom` returns random bytes from the kernel's generator, the same one programs use to make keys.
+- `/dev/tty` is your terminal, whatever its real name is (`/dev/pts/0` in a terminal window). Programs open it to ask for a password even when stdin is a pipe.
+- `/dev/stdin`, `/dev/stdout` and `/dev/stderr` are symlinks to `/proc/self/fd/0`, `1` and `2`.
+
+**Sockets and pipes with names.** A Unix socket bound to a path shows up in the tree as type `s`. The path is only a meeting point: nothing is written to the disk, and data goes straight between the two programs through the kernel. A network socket (TCP or UDP) has no path at all; [ports and sockets](/g/ports-sockets) shows how to find it from its port instead. A named pipe made with `mkfifo` works like the `|` in a shell, except that the two programs find it by name: whatever one writes, the other reads.
+
+**Where the model stops.** Directories are files, but `cat /etc` says `Is a directory`; programs list them with special calls. Network interfaces have no device file. And plenty of control happens through `ioctl()`, a catch-all call for operations that don't fit read and write, such as setting a terminal's size. The idea is a strong default, not a law.
+
+**`/proc` and `/sys`.** The kernel also describes itself as files: every process gets a folder in `/proc`, and every device and driver a folder in `/sys`. [/proc and /sys](/g/proc-sys) covers them.

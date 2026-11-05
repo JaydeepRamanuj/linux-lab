@@ -1,0 +1,135 @@
+---
+track: permissions
+order: 4
+title: setuid, setgid, the Sticky Bit and Capabilities
+summary: "Three extra mode bits let a program run with its owner's rights, let a folder hand its group to new files, and stop people deleting each other's files in /tmp. Capabilities split root's power into pieces, so ping can send raw packets without being root."
+level: deeper
+readingMinutes: 8
+prerequisites: [permissions-model, how-sudo-works]
+observe:
+  - command: ls -l /usr/bin/passwd /usr/bin/crontab /usr/bin/sudo
+    explain: "An `s` in the owner's `x` place is setuid: `passwd` and `sudo` run as root whoever starts them. An `s` in the group's place is setgid: `crontab` runs with the group `crontab`."
+    output: |
+      -rwxr-sr-x 1 root crontab  39664 Mar 31  2024 /usr/bin/crontab
+      -rwsr-xr-x 1 root root     64152 May 30  2024 /usr/bin/passwd
+      -rwsr-xr-x 1 root root    282032 Oct  6 13:51 /usr/bin/sudo
+  - command: stat -c '%A %a %U:%G %n' /usr/bin/passwd /usr/bin/crontab /tmp /var/mail
+    explain: "The same bits as a fourth, leading octal digit: setuid 4, setgid 2, sticky 1. `/tmp` is `1777`, writable by all with the sticky bit. `/var/mail` is setgid, so new mailboxes belong to the group `mail`."
+    output: |
+      -rwsr-xr-x 4755 root:root /usr/bin/passwd
+      -rwxr-sr-x 2755 root:crontab /usr/bin/crontab
+      drwxrwxrwt 1777 root:root /tmp
+      drwxrwsr-x 2775 root:mail /var/mail
+  - command: find /usr/bin /usr/sbin /usr/lib -perm -4000 -type f 2>/dev/null
+    explain: "Every setuid program on the system. Each one runs as root for any user, so this list is worth knowing; it should only change when packages do. Yours will differ a little."
+    output: |
+      /usr/bin/passwd
+      /usr/bin/chfn
+      /usr/bin/su
+      /usr/bin/umount
+      /usr/bin/newgrp
+      /usr/bin/gpasswd
+      /usr/bin/mount
+      /usr/bin/chsh
+      /usr/bin/sudo
+      /usr/bin/fusermount3
+      /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+      /usr/lib/openssh/ssh-keysign
+      /usr/lib/polkit-1/polkit-agent-helper-1
+  - command: getcap -r /usr/bin /usr/lib 2>/dev/null
+    explain: "Programs with file capabilities instead of setuid. `ping` gets only `cap_net_raw`, the right to send raw network packets; `=ep` means it's switched on when the program starts."
+    output: |
+      /usr/bin/ping cap_net_raw=ep
+      /usr/lib/x86_64-linux-gnu/gstreamer1.0/gstreamer-1.0/gst-ptp-helper cap_net_bind_service,cap_net_admin,cap_sys_nice=ep
+      /usr/lib/snapd/snap-confine cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_setgid,cap_setuid,cap_sys_chroot,cap_sys_ptrace,cap_sys_admin,cap_sys_resource=p
+  - command: grep Cap /proc/$$/status
+    explain: "Your shell's capability sets, as bit masks. Effective (`CapEff`) is all zeros: as a normal user you have none. The bounding set is the most any program you start could ever get."
+    output: |
+      CapInh:	0000000000000000
+      CapPrm:	0000000000000000
+      CapEff:	0000000000000000
+      CapBnd:	000001ffffffffff
+      CapAmb:	0000000000000000
+  - command: capsh --decode=0000000000002000
+    explain: "Turns a mask back into names. Bit 13 is `cap_net_raw`. Decode `000001ffffffffff` to see all 41 capabilities."
+    output: |
+      0x0000000000002000=cap_net_raw
+misconceptions:
+  - myth: "`chmod u+s` on my script makes it run as root."
+    reality: "Two reasons it doesn't. Setuid gives the file owner's rights, so it would have to be owned by root. And Linux ignores setuid on scripts entirely: a setuid script run by another user still ran as that user. Use a sudoers rule for the one command instead."
+  - myth: "The sticky bit keeps a program in memory."
+    reality: "That was its meaning on old Unix systems. Linux ignores it on files. On a folder it means only a file's owner (or the folder's owner, or root) can delete or rename it, which is what protects `/tmp`."
+  - myth: "A program either has root's power or it doesn't."
+    reality: "Root's power is split into about 40 capabilities: bind low ports, send raw packets, override file permissions, load modules, and so on. A program can hold just the one it needs. `ping` holds only `cap_net_raw`."
+  - myth: "A setgid folder changes the permissions of the files in it."
+    reality: "It only changes their group. New files and folders inside get the folder's group instead of the creator's primary group, and new subfolders inherit the setgid bit. The permission bits still come from the creator's umask."
+commands: [chmod, ls, stat, find, sudo]
+references:
+  - label: "inode(7): the set-user-ID, set-group-ID and sticky bits"
+    url: https://man7.org/linux/man-pages/man7/inode.7.html
+  - label: "capabilities(7): overview of Linux capabilities"
+    url: https://man7.org/linux/man-pages/man7/capabilities.7.html
+  - label: "credentials(7): real, effective and saved IDs"
+    url: https://man7.org/linux/man-pages/man7/credentials.7.html
+  - label: "chown(2): setuid and setgid bits cleared on chown"
+    url: https://man7.org/linux/man-pages/man2/chown.2.html
+  - label: "getcap(8) and setcap(8)"
+    url: https://man7.org/linux/man-pages/man8/getcap.8.html
+  - label: "systemd.exec(5): AmbientCapabilities= and CapabilityBoundingSet="
+    url: https://man7.org/linux/man-pages/man5/systemd.exec.5.html
+---
+
+## The mental model
+
+The [nine rwx bits](/g/permissions-model) answer "may this process read, write or run this file?". Three more bits change *how* something runs or who may delete things:
+
+| Bit | Octal | On a program | On a folder | `ls -l` shows |
+|---|---|---|---|---|
+| setuid | 4000 | Runs with the **file owner's** user ID | (ignored) | `s` in the owner's `x` |
+| setgid | 2000 | Runs with the **file's group** | New entries get the folder's group | `s` in the group's `x` |
+| sticky | 1000 | (ignored) | Only an entry's owner may delete or rename it | `t` in others' `x` |
+
+The letter is lowercase when the `x` underneath is also set, and uppercase (`S`, `T`) when it isn't, which usually means a mistake: `-rwSr--r--` is setuid on a file nobody can run.
+
+Setuid is how an ordinary user can change their own password. `/etc/shadow` is writable only by root, yet `passwd` writes to it. The program is owned by root and setuid, so for the length of that one program you act as root, and the program itself makes sure you only change your own entry:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'jd runs passwd',
+  caption: 'The real ID says who asked; the effective ID decides what the kernel allows. A setuid copy of `id` owned by jd, run by `nobody`, printed `uid=65534(nobody) … euid=1000(jd)`.',
+  zones: [
+    { title: 'Your shell', items: [{ text: 'real UID 1000 (jd)', tone: 'base' }, { text: 'effective UID 1000 (jd)', tone: 'base' }] },
+    { title: 'passwd (setuid root)', items: [{ text: 'real UID 1000 (jd)', tone: 'base', note: 'who asked' }, { text: 'effective UID 0 (root)', tone: 'focus', note: 'what the kernel checks' }] },
+    { title: 'Result', items: [{ text: '/etc/shadow opened for writing', tone: 'good' }, { text: 'only jd\'s line changed', tone: 'good', note: 'passwd enforces that' }] }
+  ]
+}} />
+
+That's also all [sudo](/g/how-sudo-works) is: a setuid-root program with a policy file. The cost is that every setuid program is a door into root: a bug in one is a way in. So distributions keep the list short, and newer programs use **capabilities**, which hand out one slice of root's power instead of all of it.
+
+## Under the hood
+
+**The kernel ignores setuid on scripts.** For a script, the kernel starts the interpreter from the `#!` line, and it won't apply the script's setuid bit to that interpreter: the gap between checking the file and the interpreter opening it again would be easy to exploit. A setuid `#!/bin/sh` script owned by jd, run by `nobody`, printed plain `uid=65534(nobody)`. Only compiled programs get it.
+
+**The bit doesn't survive changes.** Changing a setuid file's owner or group clears the bit, and so does writing to it. Both happened on the test machine: a `chown jd:jd` by jd on jd's own setuid file, and an append with `>>`, each left `-rwxr-xr-x`. That stops someone from editing a setuid program into something else and keeping its powers.
+
+**Filesystems can switch it off.** A filesystem mounted `nosuid` ignores setuid and setgid bits. `/run` and `/dev/shm` are mounted that way, and so are USB sticks the desktop mounts for you. [Mounts and block devices](/g/mounts-devices) has the other mount options.
+
+**setgid in practice.** `crontab` is setgid `crontab`, and `/var/spool/cron/crontabs` is `1730 root:crontab`: the group may add files but not list them, and the sticky bit stops anyone deleting someone else's. So `crontab -e` can save your file there without root, and can't touch anyone else's. On folders, setgid is the classic way to share: `chgrp team /srv/shared; chmod 2775 /srv/shared`, and every new file inside belongs to `team`. Ubuntu does this for `/var/mail` (group `mail`) and `/var/local` (group `staff`).
+
+**The sticky bit and `/tmp`.** Without it, anyone who can write to `/tmp` could delete or replace anyone else's files there. With it, `rm` of a root-owned file in `/tmp` failed for jd with `Operation not permitted`, although `/tmp` is `rwxrwxrwx`. Ubuntu adds `fs.protected_symlinks`, `fs.protected_hardlinks` and `fs.protected_regular` on top, which stop tricks with links and files that other users leave in sticky folders ([inodes and links](/g/inodes-links)).
+
+**Capabilities.** Root's power is split into 41 named capabilities on this kernel, such as:
+
+- `cap_net_bind_service`: listen on ports below 1024
+- `cap_net_raw`: raw sockets, as `ping` needs
+- `cap_dac_override`: ignore file permission bits
+- `cap_sys_admin`: a large catch-all for mounting and much else
+- `cap_kill`: signal any process
+
+A root process normally has all of them; a normal user's processes have none. Each process has several sets: **permitted** (what it may use), **effective** (what is switched on), **bounding** (the ceiling for anything it starts), plus **inheritable** and **ambient** (what passes to programs it runs). `/proc/<PID>/status` shows them as masks; `capsh --decode` names them.
+
+**File capabilities.** `setcap cap_net_raw=ep /usr/bin/ping` stores capabilities in an extended attribute of the file, and the program gets them when it starts, much like setuid but narrower. `getcap` shows them. Ubuntu relies on this because its `net.ipv4.ping_group_range` is `1 0`, which turns off the unprivileged ICMP sockets ping could otherwise use. Distributions that set that range wide, such as Fedora, run ping with no capability at all.
+
+**Low ports without root.** A web server on port 80 needs `cap_net_bind_service`. Rather than running it as root, give a systemd service `AmbientCapabilities=CAP_NET_BIND_SERVICE` and `User=` a normal account. `sudo setcap cap_net_bind_service=+ep $(which node)` also works, but then every script any user runs with that `node` can bind low ports. [Ports and sockets](/g/ports-sockets) explains the rule itself.
+
+**Auditing.** `find / -xdev -perm /6000 -type f` lists setuid and setgid files on the root filesystem, and `getcap -r /` lists capabilities. A setuid file in a home folder or in `/tmp` is a red flag. Never set the bit on a shell, an interpreter or an editor: `chmod u+s /usr/bin/python3` would let anyone run anything as root.

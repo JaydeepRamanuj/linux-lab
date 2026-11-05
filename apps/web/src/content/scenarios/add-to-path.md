@@ -113,7 +113,7 @@ avoid:
   - "Prefer installers that put programs in a folder already on `PATH`, like `~/.local/bin`."
   - "Running `source ~/.bashrc` many times adds the folder to `PATH` again each time. It's harmless, and a new terminal starts clean."
 related: [command-not-found, persistent-alias, env-vars, curl-pipe-bash]
-concepts: [pressing-enter, path, shell-startup-files]
+concepts: [pressing-enter, path, shell-startup-files, filesystem-layout]
 anatomy:
   "'export PATH=\"$HOME/go/bin:$PATH\"'": "The line to add. Single quotes write `$HOME` and `$PATH` as text, so they're filled in fresh each time a terminal starts. `:$PATH` keeps every folder that was already there."
   "~/.bashrc": "Bash's startup file: it runs every time you open a terminal."

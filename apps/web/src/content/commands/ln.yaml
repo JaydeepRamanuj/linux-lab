@@ -20,4 +20,5 @@ gotchas:
   - "To remove a link, `rm name` with no trailing slash. `rm -r name/` follows the link and deletes the target's contents."
   - "`readlink -f name` prints where a link finally resolves to."
 related: [ls, rm, mkdir, readlink]
+concepts: [inodes-links]
 scenarios: [symlink-shortcut]
