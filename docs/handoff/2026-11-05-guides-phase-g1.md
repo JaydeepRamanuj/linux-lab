@@ -2,7 +2,7 @@
 
 **Task:** Phase G1 of `docs/guides-plan.md`, the six remaining Shell guides. Read `docs/guides-plan.md` first, then `2026-11-05-guides-phase-g0.md`, then this file.
 
-**Status:** built, not committed. It's on branch `guides/phase-g0`, on top of 381b508, which is already on origin. There's no PR. Everything below passes:
+**Status:** committed as 599c625 on branch `guides/phase-g0`, on top of G0 (381b508), and pushed to origin. There's no PR on purpose: the plan is one large PR into `main` once every guide phase is done, so later phases keep committing to this branch. Jd reviews on the Vercel preview, because they can't install pnpm locally. Everything below passes:
 
 - **Tests:** 364 pass (`vitest` in `packages/core`).
 - **Type check:** `astro check` reports 0 errors, 0 warnings and the same 2 old hints.
@@ -117,5 +117,12 @@ What the checks confirmed:
 
 ## Next
 
-1. Your review of G1 (above), then a commit.
-2. G2: Processes (rest) and Services and logs, alongside scenarios Phase 2.
+1. Fold in any feedback from Jd's review of G1 on the preview.
+2. **G2: Processes (rest) and Services and logs** (plan §6, tracks 4 and 6):
+   - Processes: `processes-basics`, `signals`, `file-descriptors`, `jobs-sessions`. `ports-sockets` is already order 4.
+   - Services: `systemd-units`, `journald-logs`, `scheduled-tasks`.
+   - Link them from the existing scenarios: `cpu-ram-hog`, `frozen-app`, `stopped-job`, `keep-running`, `system-service`, `watch-log`, `apt-lock`.
+   - When `file-descriptors` exists, consider making it the prerequisite of `ports-sockets` in place of `standard-streams`.
+3. Commit each phase to `guides/phase-g0` and push. Don't open a PR.
+
+The Vercel MCP can see the project `linux-lab` (`prj_cnWMs93w7sqRbOGlhtYFyGMSK2IF`, team `team_xBpQs3rXzAFbhv1oP80FBIeH`), but listing its deployments returns 403, so this session couldn't confirm the preview URL.
