@@ -53,9 +53,8 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   if ((p === 'node' || /^python3?$/.test(p)) && (c.operands.length || c.short.has('e') || c.short.has('c'))) {
     return { severity: 'modifies', reason: 'Runs a program, which can do anything you can.' };
   }
-  if (p === 'ip' && c.operands.some((w) => /^(add|del|delete|set|flush|change|replace)$/.test(w.value))) {
-    return { severity: 'elevated', reason: 'Changes network configuration.' };
-  }
+  const net = networkBasis(c);
+  if (net) return net;
   if (p === 'journalctl' && [...c.long].some((f) => f.startsWith('vacuum') || f === 'rotate')) {
     return { severity: 'modifies', reason: 'Deletes old system logs.' };
   }
@@ -119,6 +118,133 @@ export function baseSeverity(c: NormalizedCommand): Basis {
   if (READONLY.has(p)) return { severity: 'readonly', reason: 'Only reads or inspects.' };
   if (MODIFIES.has(p)) return { severity: 'modifies', reason: 'Changes files in your project or home folder.' };
   return { severity: 'modifies', reason: `\`${p}\` isn't in ShellGyan's list yet, so it's assumed to change things.` };
+}
+
+// `ip OBJECT VERB`: iproute2 accepts any prefix of a verb, so `ip r a` is `ip route add` and `ip a s` is `ip addr show`.
+const IP_READ_VERBS = ['show', 'list', 'lst', 'get', 'help', 'monitor', 'save', 'showdump', 'identify', 'pids'];
+const IP_WRITE_VERBS = ['add', 'append', 'prepend', 'change', 'chg', 'replace', 'delete', 'del', 'set', 'flush', 'restore', 'exec', 'attach', 'detach', 'update'];
+const isPrefixOf = (abbr: string, words: string[]) => abbr.length > 0 && words.some((w) => w.startsWith(abbr));
+
+function ipWrites(c: NormalizedCommand): boolean {
+  // `-batch FILE` / `-b FILE` runs every command in the file.
+  if (c.argv.some((w) => /^--?(b|batch)$/.test(w.value))) return true;
+  const [obj, verb] = c.operands.map((w) => w.value);
+  if (!obj || !verb) return false;
+  // For `link`, a lone `s` means `set`: iproute2 checks `set` before `show` there (and `show` first everywhere else).
+  if (/^l(i(nk?)?)?$/.test(obj) && 'set'.startsWith(verb)) return true;
+  if (isPrefixOf(verb, IP_READ_VERBS)) return false;
+  return isPrefixOf(verb, IP_WRITE_VERBS);
+}
+
+// Read-only forms of the firewall front ends. Anything else adds, removes or flushes rules.
+export function firewallReadOnly(c: NormalizedCommand): boolean | null {
+  const p = c.program;
+  const ops = c.operands.map((w) => w.value);
+  const args = c.argv.map((w) => w.value);
+  if (p === 'ufw') {
+    if (args.length === 1 && /^(--version|version|--help|help)$/.test(args[0]!)) return true;
+    return ops[0] === 'status' || ops[0] === 'show' || (ops[0] === 'app' && /^(list|info)$/.test(ops[1] ?? ''));
+  }
+  if (p === 'nft') {
+    if (args.length > 0 && args.every((a) => /^(-v|--version|-h|--help)$/.test(a))) return true;
+    return /^(list|describe)$/.test(ops[0] ?? '') && !c.short.has('f') && !c.short.has('i');
+  }
+  if (p === 'iptables' || p === 'ip6tables') {
+    // Commands that list: -L, -S, --list, --list-rules, -V. Anything that adds, deletes, flushes or zeroes counters writes.
+    const lists = c.short.has('L') || c.short.has('S') || c.short.has('V') || c.long.has('list') || c.long.has('list-rules') || c.long.has('version');
+    const writes = ['A', 'C', 'D', 'I', 'R', 'F', 'Z', 'N', 'X', 'P', 'E'].some((f) => c.short.has(f))
+      || [...c.long].some((f) => /^(append|check|delete|insert|replace|flush|zero|new-chain|delete-chain|policy|rename-chain)$/.test(f));
+    return lists && !writes;
+  }
+  if (p === 'firewall-cmd') {
+    return args.length > 0 && args.every((a) => /^--(state|list-.*|get-.*|query-.*|info-.*|zone=\S+|permanent|version|help)$|^-h$/.test(a));
+  }
+  return null;
+}
+
+/** Network tools: their read and write forms share one program name. */
+function networkBasis(c: NormalizedCommand): Basis | null {
+  const p = c.program!;
+  const ops = c.operands.map((w) => w.value);
+  if (p === 'ip') {
+    if (ops[0] && 'netns'.startsWith(ops[0]) && ops[0].length > 1 && ops[1] && 'exec'.startsWith(ops[1])) {
+      return { severity: 'elevated', reason: 'Runs a command inside another network namespace, as root.' };
+    }
+    if (ipWrites(c)) return { severity: 'elevated', reason: 'Changes network configuration: addresses, routes or interfaces. A wrong change can cut this machine off the network.' };
+    return null;
+  }
+  if (p === 'ss' && (c.short.has('K') || c.long.has('kill'))) {
+    return { severity: 'elevated', reason: '`-K` closes every socket that matches the filter, cutting those connections.' };
+  }
+  if (p === 'nmcli') {
+    // `nmcli`, `nmcli device`, `nmcli connection show`, `nmcli d s`, `nmcli device wifi list`. Verbs may be abbreviated.
+    // `s` resolves to `status` or `show`; `se` is `set` and `m`/`mo` is `modify`, so only longer prefixes count.
+    const [obj, verb, third] = ops;
+    let reads: boolean;
+    if (!obj) reads = true;
+    else if (/^r/.test(obj)) reads = !third; // `nmcli radio wifi` shows; `nmcli radio wifi off` switches it
+    else if (/^n/.test(obj)) reads = !verb || verb === 'connectivity'; // `nmcli networking off` disconnects everything
+    else if (!verb) reads = true; // `nmcli device`, `nmcli connection`, `nmcli general`
+    else if (/^w(i(fi?)?)?$/.test(verb)) reads = !third || isPrefixOf(third, ['list']); // `nmcli device wifi [list]`
+    else {
+      reads = verb === 's' || (verb.length >= 2 && isPrefixOf(verb, ['status', 'show']))
+        || /^(monitor|permissions|connectivity)$/.test(verb) || (!third && /^(hostname|logging)$/.test(verb));
+    }
+    if (reads) return { severity: 'readonly', reason: 'Only shows NetworkManager devices and connections.' };
+    return { severity: 'elevated', reason: 'Changes NetworkManager connections, devices or radios. A wrong change can drop this machine off the network.' };
+  }
+  if (p === 'hostnamectl') {
+    if (ops.length === 0 || ops[0] === 'status' || (ops.length === 1 && /^(hostname|icon-name|chassis|deployment|location)$/.test(ops[0]!))) {
+      return { severity: 'readonly', reason: "Shows the machine's hostname and system details." };
+    }
+    return { severity: 'elevated', reason: "Changes the machine's hostname or system details." };
+  }
+  if (p === 'timedatectl') {
+    if (ops.length === 0 || /^(status|show|list-timezones|timesync-status|show-timesync)$/.test(ops[0]!)) return { severity: 'readonly', reason: 'Shows the clock, time zone and time sync.' };
+    return { severity: 'elevated', reason: 'Changes the system clock, time zone or time sync.' };
+  }
+  if (p === 'ifconfig' || p === 'iwconfig') {
+    if (ops.length <= 1 && c.argv.every((w) => !w.value.startsWith('-') || /^-[asv]$/.test(w.value))) return { severity: 'readonly', reason: 'Shows network interfaces.' };
+    return { severity: 'elevated', reason: 'Changes a network interface (address, state or Wi-Fi settings).' };
+  }
+  if (p === 'route') {
+    if (/^(add|del)$/.test(ops[0] ?? '')) return { severity: 'elevated', reason: 'Changes the routing table.' };
+    return { severity: 'readonly', reason: 'Shows the routing table.' };
+  }
+  if (p === 'resolvectl') {
+    const linkSettings = /^(dns|domain|default-route|llmnr|mdns|dnssec|dnsovertls|nta)$/;
+    if (ops.length === 0 || /^(status|query|service|openpgp|tlsa|statistics|show-cache|show-server-state|monitor|help)$/.test(ops[0]!)
+      || (linkSettings.test(ops[0]!) && ops.length <= 2) || (ops[0] === 'log-level' && ops.length === 1)) {
+      return { severity: 'readonly', reason: 'Asks systemd-resolved a question: lookups, servers or settings. Changes nothing.' };
+    }
+    if (/^(flush-caches|reset-statistics|reset-server-features)$/.test(ops[0]!)) return { severity: 'modifies', reason: "Clears systemd-resolved's cache or counters. Nothing is lost; it refills on the next lookups." };
+    return { severity: 'elevated', reason: 'Changes which DNS servers or settings this machine uses.' };
+  }
+  if (p === 'networkctl') {
+    if (ops.length === 0 || /^(list|status|lldp|label|cat)$/.test(ops[0]!)) return { severity: 'readonly', reason: 'Only shows network links as systemd-networkd sees them.' };
+    return { severity: 'elevated', reason: 'Changes or reconfigures network links managed by systemd-networkd.' };
+  }
+  if (p === 'ssh' && (c.short.has('G') || c.short.has('V') || c.short.has('Q'))) {
+    return { severity: 'readonly', reason: 'Prints configuration or version information and exits; it never connects.' };
+  }
+  if (p === 'ssh-keyscan') {
+    return { severity: 'readonly', reason: "Fetches a server's public host keys. It connects, but sends no username, password or key." };
+  }
+  if (p === 'ssh-keygen') {
+    // -l fingerprint, -F find in known_hosts, -L show a certificate, -B bubblebabble. -f, -E and -v only qualify them.
+    const flags = [...c.short];
+    const reads = flags.some((f) => /^[lFLB]$/.test(f)) && flags.every((f) => /^[lFLBfEv]$/.test(f) || (f === 'H' && c.short.has('F'))) && c.long.size === 0;
+    if (reads) return { severity: 'readonly', reason: 'Prints key fingerprints or looks a host up in known_hosts; nothing is written.' };
+    if (c.short.has('R')) return { severity: 'modifies', reason: 'Removes a host from known_hosts (and keeps the old file as known_hosts.old).' };
+    return { severity: 'modifies', reason: 'Creates or changes an SSH key or known_hosts file.' };
+  }
+  if (p === 'ssh-add') {
+    if (c.argv.length > 0 && c.argv.every((w) => /^-[lLE]$|^(sha256|md5)$/.test(w.value))) return { severity: 'readonly', reason: 'Lists the keys your SSH agent holds.' };
+    return { severity: 'modifies', reason: 'Adds keys to, or removes them from, your SSH agent. The key files themselves are not changed.' };
+  }
+  const fw = firewallReadOnly(c);
+  if (fw) return { severity: 'readonly', reason: 'Only shows firewall rules or status.' };
+  return null;
 }
 
 /**

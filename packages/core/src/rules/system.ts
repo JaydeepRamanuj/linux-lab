@@ -1,3 +1,4 @@
+import { firewallReadOnly } from './base';
 import { hit } from './types';
 import type { Hit, Rule, SourceRule } from './types';
 
@@ -226,7 +227,7 @@ const infra: Rule = {
     if (p === 'crontab' && c.short.has('r')) return hit('elevated', '`crontab -r` deletes all your scheduled jobs without asking.');
     if (p === 'crontab' && (c.short.has('e') || c.operands.length)) return hit('elevated', 'Changes your scheduled (cron) jobs.');
     if (p && /^(useradd|userdel|usermod|passwd|chsh|visudo|groupadd|groupdel)$/.test(p)) return hit('elevated', `\`${p}\` changes user accounts or login settings.`);
-    if (p && /^(ufw|iptables|ip6tables|nft|firewall-cmd)$/.test(p) && !/^(status|-L|--list.*|list)$/.test(ops[0] ?? c.argv[0]?.value ?? '')) {
+    if (p && /^(ufw|iptables|ip6tables|nft|firewall-cmd)$/.test(p) && !firewallReadOnly(c)) {
       return hit('elevated', `\`${p}\` changes firewall rules; a wrong rule can lock you out.`);
     }
     if (p && /^(mount|umount|swapoff|swapon)$/.test(p) && c.argv.length) return hit('elevated', `\`${p}\` changes what is mounted.`);

@@ -1,0 +1,118 @@
+---
+track: networking
+order: 1
+title: "Network Interfaces, IP Addresses and Routes"
+summary: "Traffic leaves your machine through an interface. Each interface has one or more IP addresses, and the routing table decides which interface and which next hop every packet takes. `ip addr` and `ip route` show all of it."
+level: essentials
+readingMinutes: 7
+prerequisites: [ports-sockets]
+observe:
+  - command: ip -br addr
+    explain: "One line per interface: name, state, addresses. `lo` is loopback, the machine talking to itself. This is WSL, so the real one is `eth0`; on a laptop you'd see `wlp2s0` for Wi-Fi and `enp…` for Ethernet. `/20` is the prefix length, and `fe80::…` is an IPv6 address every interface gets for its own link."
+    output: |
+      lo               UNKNOWN        127.0.0.1/8 ::1/128
+      eth0             UP             172.19.250.113/20 fe80::215:5dff:fec0:c259/64
+  - command: ip route
+    explain: "The routing table. The second line says the whole `172.19.240.0/20` network is reachable directly on `eth0`. The first is the default route: everything else goes to the gateway `172.19.240.1`, here the Windows host. On a home network it's your router, usually `192.168.x.1`."
+    output: |
+      default via 172.19.240.1 dev eth0 proto kernel
+      172.19.240.0/20 dev eth0 proto kernel scope link src 172.19.250.113
+  - command: ip route get 1.1.1.1
+    explain: "Asks the kernel which route it would use for one address, without sending anything: via the gateway, out of `eth0`, from our own address as the source."
+    output: |
+      1.1.1.1 via 172.19.240.1 dev eth0 src 172.19.250.113 uid 1000
+          cache
+  - command: ip neigh
+    explain: "The neighbour table (ARP for IPv4): the hardware (MAC) addresses of machines on the same network that this one has talked to recently. The gateway is always here when the network works. `FAILED` or `INCOMPLETE` means it didn't answer."
+    output: |
+      172.19.240.1 dev eth0 lladdr 00:15:5d:a0:4a:04 REACHABLE
+  - command: nmcli device status
+    explain: "On Ubuntu Desktop, NetworkManager owns the interfaces: it joins Wi-Fi, runs DHCP and sets the addresses and routes you see with `ip`. `unavailable` here means no cable is plugged in. (Sample from a laptop; WSL has no NetworkManager.)"
+    output: |
+      DEVICE     TYPE      STATE                   CONNECTION
+      wlp2s0     wifi      connected               Home Wi-Fi
+      lo         loopback  connected (externally)  lo
+      enp0s31f6  ethernet  unavailable             --
+misconceptions:
+  - myth: "My IP address is the one websites see."
+    reality: "At home, your machine has a private address such as `192.168.1.42`. Your router replaces it with the household's one public address on the way out (NAT), so every device in the house looks the same to a website. `ip addr` shows only the private one."
+  - myth: "A machine has one IP address."
+    reality: "Every interface has its own, and usually more than one: `127.0.0.1` on `lo`, a private IPv4 address on Wi-Fi, an IPv6 link-local `fe80::` address, maybe a global IPv6 address and a VPN address too. Servers choose which ones to listen on."
+  - myth: "`sudo ip addr add …` sets my address for good."
+    reality: "`ip` changes the running kernel only. A reboot, or NetworkManager reconnecting, puts back whatever its configuration says. Permanent settings go in NetworkManager (the Settings app or `nmcli`) or in netplan's YAML files on a server."
+  - myth: "An address starting with 169.254 means I'm connected."
+    reality: "`169.254.x.x` is an address a machine gives itself when no DHCP server answered. It only reaches other machines in the same state. Depending on the network manager, a failed DHCP shows as this or as no `inet` line at all; either way, check the cable or Wi-Fi, then the router."
+commands: [ss, curl]
+references:
+  - label: "ip-address(8): show and change addresses"
+    url: https://man7.org/linux/man-pages/man8/ip-address.8.html
+  - label: "ip-route(8): the routing table"
+    url: https://man7.org/linux/man-pages/man8/ip-route.8.html
+  - label: "systemd.net-naming-scheme(7): where names like wlp2s0 come from"
+    url: https://man7.org/linux/man-pages/man7/systemd.net-naming-scheme.7.html
+  - label: "Ubuntu Server: configuring networks (netplan)"
+    url: https://documentation.ubuntu.com/server/explanation/networking/configuring-networks/
+  - label: "Netplan documentation"
+    url: https://netplan.readthedocs.io/en/stable/
+  - label: "nmcli(1): NetworkManager's command line"
+    url: https://networkmanager.dev/docs/api/latest/nmcli.html
+  - label: "RFC 1918: private IPv4 address ranges"
+    url: https://www.rfc-editor.org/rfc/rfc1918
+---
+
+## The mental model
+
+Three tables in the kernel decide where every packet goes.
+
+- **Interfaces.** Each network device the kernel can send through: `lo` (loopback), `wlp2s0` (Wi-Fi), `enp0s31f6` (Ethernet), and virtual ones such as `docker0` or a VPN's `tun0`. An interface is up or down, and has a hardware (MAC) address if it's a real network card.
+- **Addresses.** Each interface holds one or more IP addresses with a **prefix length**: `192.168.1.42/24` means "I'm `.42`, and every `192.168.1.x` address is on the same network as me". The prefix is what lets the kernel tell *near* from *far*.
+- **Routes.** For every outgoing packet the kernel looks up the destination in the routing table. A destination on your own network goes straight out of the interface. Anything else goes to the **default route**: the gateway, which is your router.
+
+<Layers spec={{
+  title: 'A packet to 1.1.1.1 from a laptop on Wi-Fi',
+  pathLabel: 'curl https://1.1.1.1',
+  layers: [
+    { name: 'Your program', tone: 'user', highlight: true, detail: 'Opens a socket and connects to `1.1.1.1:443`. It doesn\'t choose an interface; the kernel does.', chips: ['curl', 'connect()'], edge: 'system call' },
+    { name: 'Kernel: routing table', tone: 'kernel', highlight: true, detail: '`1.1.1.1` isn\'t in `192.168.1.0/24`, so the most specific match is the default route. It also picks the source address: the one on that interface.', chips: ['default via 192.168.1.1 dev wlp2s0', 'src 192.168.1.42'] },
+    { name: 'Kernel: neighbour table', tone: 'kernel', highlight: true, detail: 'To hand the packet to the router, the kernel needs the router\'s MAC address. It asks the network once with ARP and remembers the answer.', chips: ['192.168.1.1 lladdr a4:91:b1:…'] },
+    { name: 'Interface wlp2s0', tone: 'hardware', highlight: true, detail: 'The Wi-Fi card sends the frame to the router, which forwards it toward the internet and swaps your private address for its public one.', edge: 'radio' },
+    { name: 'Router, then the internet', tone: 'hardware', detail: 'Each router on the way does the same lookup in its own table until the packet reaches 1.1.1.1.' }
+  ]
+}} />
+
+Most network trouble on a single machine is one of these three tables being wrong or empty:
+
+| Symptom | Table to check |
+|---|---|
+| Interface `DOWN`, or no `inet` line | Interfaces and addresses: no link, or DHCP failed (`169.254.x.x`) |
+| No `default via …` line | Routes: you can reach the local network but nothing beyond it |
+| Gateway `FAILED` in `ip neigh` | Neighbours: the router isn't answering on this network |
+| All three fine, names fail | Not this layer: see [how a name becomes an IP](/g/dns-resolution) |
+
+Some addresses mean something before you look anything up:
+
+| Address | Meaning |
+|---|---|
+| `127.0.0.1`, `::1` | Loopback: this machine, never leaves it |
+| `10.x`, `172.16–31.x`, `192.168.x` | Private ranges, used inside homes, offices and VMs |
+| `169.254.x.x` | Self-assigned: DHCP didn't answer |
+| `fe80::…` | IPv6 link-local: only valid on that one network |
+| `0.0.0.0` | "Every address" for a listening socket, "anywhere" in a route |
+
+## Under the hood
+
+**Who sets all this.** Nothing in `ip`'s output is stored in a file. A network manager configures the kernel at boot and whenever a network appears. On Ubuntu Desktop that's **NetworkManager**: it joins Wi-Fi, asks the router for an address with DHCP, and adds the default route and DNS servers it hands out. On Ubuntu Server, **netplan** reads YAML from `/etc/netplan/` and passes it to systemd-networkd (`renderer: networkd`); on Desktop netplan hands everything to NetworkManager. `sudo ip addr add` and `sudo ip route add` work, but only until the manager next applies its own settings. ShellGyan rates those as `elevated`, including short forms such as `ip r a` and `ip link s`: iproute2 accepts any prefix of a verb.
+
+**Interface names.** The kernel names network cards `eth0`, `wlan0` in the order it finds them, which can change between boots. systemd renames them from where the hardware sits: `en` for Ethernet, `wl` for wireless, then `o1` for an onboard device, or `p2s0` for PCI bus 2, slot 0. So `wlp2s0` is "the Wi-Fi card on PCI bus 2". The name stays the same as long as the card stays in the same slot. Virtual machines, containers and WSL often keep `eth0`. [Kernel modules and drivers](/g/kernel-modules) covers how the card's driver loads in the first place.
+
+**Most specific route wins.** With routes for `0.0.0.0/0` (default), `10.0.0.0/8` and `10.8.0.0/24`, a packet to `10.8.0.5` takes the `/24`, the longest matching prefix. That's how a VPN works: it adds routes for the company network through `tun0`, or replaces the default route entirely. When two routes match equally, the lower `metric` wins, which is how NetworkManager prefers a cable over Wi-Fi when both are connected. `ip route get ADDRESS` answers "which way would this go?" without guessing.
+
+**The kernel answers for its own addresses.** A second table, `ip route show table local`, lists the addresses that belong to this machine. Traffic to any of them, even to your own Wi-Fi address, never touches the network card: it goes through `lo`. That's why a server bound to `0.0.0.0` answers `curl http://192.168.1.42:3000` from the same machine. [Ports and sockets](/g/ports-sockets) covers the listening side.
+
+**NAT, twice.** Your router translates between private addresses inside and one public address outside, and keeps a table of which inside machine started which connection, so replies find their way back. WSL adds a layer: Linux gets a private `172.x` address behind Windows, and Windows translates again on the way out. A server inside WSL reaches the Windows browser through `localhost` forwarding, but not other devices on your network unless you set that up.
+
+**IPv6.** Every interface gets an `fe80::` link-local address as soon as it's up, and that's all it has in WSL's NAT setup. On a home network with IPv6, the router also announces a prefix, and the machine builds global addresses from it (SLAAC), with no DHCP needed. Ubuntu adds temporary addresses for outgoing connections so websites can't track one fixed address. Without a global address or an IPv6 default route, tools that try IPv6 first report `network unreachable` and fall back to IPv4.
+
+**`ifconfig` and `route`.** They come from `net-tools`, which isn't installed on new Ubuntu systems and doesn't know about everything the kernel can do (several addresses per interface, policy routing). `ip a` and `ip r` replace them; [which package has the command](/s/which-package) finds `net-tools` if a tutorial insists.
+
+**Where the kernel keeps it.** `/sys/class/net/` has a folder per interface, with files such as `address`, `mtu` and `operstate`. `/proc/net/route` is the old text form of the routing table, with addresses in hex. Kernel settings such as `net.ipv4.ip_forward` live under `/proc/sys/net/` ([/proc and /sys](/g/proc-sys)).

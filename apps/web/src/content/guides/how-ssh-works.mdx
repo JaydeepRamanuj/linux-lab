@@ -1,0 +1,193 @@
+---
+track: networking
+order: 3
+title: How SSH Works
+summary: "SSH uses two key pairs. The server's host key proves you reached the right machine, checked against known_hosts. Your user key proves who you are, checked against the server's authorized_keys. Neither private key ever crosses the network."
+level: essentials
+readingMinutes: 8
+prerequisites: [ports-sockets, permissions-model]
+observe:
+  - command: "ssh -G example.com | grep -E '^(user|hostname|port|identityfile|stricthostkeychecking|hashknownhosts) '"
+    explain: "`-G` prints the settings ssh would use for a host after reading `~/.ssh/config` and `/etc/ssh/ssh_config`, and exits without connecting. The `identityfile` lines are the private keys it will try, in order. Ubuntu's system config sets `hashknownhosts yes`."
+    output: |
+      user jd
+      hostname example.com
+      port 22
+      hashknownhosts yes
+      stricthostkeychecking ask
+      identityfile ~/.ssh/id_rsa
+      identityfile ~/.ssh/id_ecdsa
+      identityfile ~/.ssh/id_ecdsa_sk
+      identityfile ~/.ssh/id_ed25519
+      identityfile ~/.ssh/id_ed25519_sk
+      identityfile ~/.ssh/id_xmss
+      identityfile ~/.ssh/id_dsa
+  - command: ls -l ~/.ssh
+    explain: "Your side of SSH. The private key and `config` are `600`, readable by you alone; ssh refuses a private key others can read. The `.pub` file is meant to be shared. `known_hosts.old` is the backup `ssh-keygen -R` leaves. (Sample from a laptop.)"
+    output: |
+      total 20
+      -rw------- 1 jd jd  182 Sep 14 10:02 config
+      -rw------- 1 jd jd  399 Sep 14 09:58 id_ed25519
+      -rw-r--r-- 1 jd jd   91 Sep 14 09:58 id_ed25519.pub
+      -rw------- 1 jd jd 1842 Oct 30 17:21 known_hosts
+      -rw-r--r-- 1 jd jd 1064 Oct 30 17:20 known_hosts.old
+  - command: ssh-keygen -lf ~/.ssh/id_ed25519.pub
+    explain: "The fingerprint of your public key: a short hash that names it. The server's log shows the same fingerprint when this key logs in, so you can tell which key was used."
+    output: |
+      256 SHA256:3XySzMM/y8P2933+9Uz9IVG5LKFN+OIsx4zHeiCgN/0 jd@laptop (ED25519)
+  - command: ssh-keygen -F github.com
+    explain: "Finds a host in `~/.ssh/known_hosts`. Ubuntu stores names hashed (`|1|…`), so you can't read them in the file, but `-F` still finds them. The key at the end is GitHub's public host key."
+    output: |
+      # Host github.com found: line 1
+      |1|cg4xInNqSrydGXoU3LZMFGxirbo=|szKIrQlnl+7si4Jjw21qTEarPUY= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+  - command: ssh-keyscan github.com 2>/dev/null | ssh-keygen -lf -
+    explain: "Fetches a server's host keys without logging in, and prints their fingerprints. Compare them with the ones the service publishes: these three match the list in GitHub's documentation. That's how to check a host key before trusting it."
+    output: |
+      3072 SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s github.com (RSA)
+      256 SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM github.com (ECDSA)
+      256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU github.com (ED25519)
+  - command: ssh-add -l
+    explain: "The keys your SSH agent holds, unlocked, for this login session. If it says `The agent has no identities.`, ssh falls back to the key files and asks for their passphrase. `Could not open a connection to your authentication agent.` means no agent is running in this terminal."
+    output: |
+      256 SHA256:3XySzMM/y8P2933+9Uz9IVG5LKFN+OIsx4zHeiCgN/0 jd@laptop (ED25519)
+misconceptions:
+  - myth: "SSH sends my private key, or my password, to the server."
+    reality: "With key login, the private key never leaves your machine. The server sends data to sign, and your key signs it; the server checks the signature with the public key in `authorized_keys`. Passwords are sent only if you use password login, and then only inside the encrypted connection."
+  - myth: "`REMOTE HOST IDENTIFICATION HAS CHANGED` is fixed by deleting the line from known_hosts."
+    reality: "Deleting the line silences the check that just fired. First find out why the key changed: the server was reinstalled, or the name now points at a different machine. Compare the new fingerprint with one you trust, then run the `ssh-keygen -R` command the message suggests."
+  - myth: "`Permission denied (publickey)` means I typed the wrong password."
+    reality: "No password was tried. The server accepts only keys, and none of the keys ssh offered is in your account's `authorized_keys` there. Either the right key wasn't offered (`ssh -v` lists each one), the public key was never added, or the server ignored the file because of its permissions."
+  - myth: "The .pub file must be kept secret too."
+    reality: "The public key is made to be handed out: you paste it into GitHub or a server's `authorized_keys`. Only the file without `.pub` is secret. Anyone with that file, and its passphrase if it has one, can log in as you."
+  - myth: "Agent forwarding (`ssh -A`) is the safe way to hop through a server."
+    reality: "While you're connected, root on that server can use your forwarded agent to log in anywhere your key works. `ssh -J jump host` (ProxyJump) reaches the second machine through the first without exposing your agent to it."
+commands: [chmod, journalctl, systemctl, ss]
+references:
+  - label: "ssh(1)"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/ssh.1.html
+  - label: "ssh_config(5): ~/.ssh/config"
+    url: https://manpages.ubuntu.com/manpages/noble/man5/ssh_config.5.html
+  - label: "sshd_config(5): the server's settings"
+    url: https://manpages.ubuntu.com/manpages/noble/man5/sshd_config.5.html
+  - label: "ssh-keygen(1)"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/ssh-keygen.1.html
+  - label: "ssh-agent(1)"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/ssh-agent.1.html
+  - label: "sshd(8): authorized_keys format and options"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/sshd.8.html
+  - label: "GitHub's SSH key fingerprints"
+    url: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
+  - label: "Ubuntu Server: OpenSSH server"
+    url: https://documentation.ubuntu.com/server/how-to/security/openssh-server/
+  - label: "RFC 4253: the SSH transport layer"
+    url: https://www.rfc-editor.org/rfc/rfc4253
+---
+
+## The mental model
+
+SSH is a program on your machine (`ssh`) talking to a server program on another (`sshd`), usually on TCP port 22. Everything it does rests on **two key pairs**, each a private key that stays put and a public key that can be shown to anyone:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Two key pairs, and where each half lives',
+  caption: 'The host key answers "is this the right server?" The user key answers "is this really you?" Each private half stays on the machine that owns it.',
+  zones: [
+    { title: 'Your machine', items: [{ text: '~/.ssh/id_ed25519', tone: 'bad', note: 'your private key, 600' }, { text: '~/.ssh/id_ed25519.pub', tone: 'base', note: 'copy goes to servers' }, { text: '~/.ssh/known_hosts', tone: 'focus', note: "servers' public host keys" }] },
+    { title: 'The server', items: [{ text: '/etc/ssh/ssh_host_ed25519_key', tone: 'bad', note: 'its private host key' }, { text: '~/.ssh/authorized_keys', tone: 'focus', note: 'your public key, pasted in' }] },
+    { title: 'Your agent', items: [{ text: 'ssh-agent', tone: 'good', note: 'holds unlocked keys in memory' }, { text: '$SSH_AUTH_SOCK', tone: 'base', note: 'socket ssh talks to' }] }
+  ]
+}} />
+
+Here's one login, from typing the command to getting a shell:
+
+<Flow spec={{
+  title: 'ssh jd@server, step by step',
+  stages: [
+    { title: 'Find and connect', tag: 'DNS, TCP port 22', detail: 'ssh looks the name up like any program ([how a name becomes an IP](/g/dns-resolution)) and opens a TCP connection. Both sides then announce their version, such as `SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.20`.' },
+    { title: 'Agree on a secret', tag: 'key exchange', detail: 'Both sides pick algorithms they share and compute the same session key from values they swap. The key itself never crosses the network, so someone listening can\'t work it out. From here on, everything is encrypted.' },
+    { title: 'The server proves who it is', tag: 'host key, known_hosts', detail: 'The server signs the exchange with its private host key. ssh checks the public half against `~/.ssh/known_hosts`. Unknown: it asks you. Different from last time: it stops with a warning.' },
+    { title: 'You prove who you are', tag: 'user key, authorized_keys', detail: 'ssh offers your public keys one by one. When the server finds one in your `authorized_keys`, ssh signs a challenge with the matching private key, and the server checks the signature. Password login, if the server allows it, comes after keys fail.' },
+    { title: 'The session starts', tag: 'channels', detail: 'sshd starts your login shell, or the command you gave, as your user on the server. Port forwards and agent forwarding run as extra channels inside the same connection.' }
+  ]
+}} />
+
+Every SSH error belongs to one of those steps, which tells you where to look:
+
+| Message | Step, and the usual cause |
+|---|---|
+| `Could not resolve hostname` | **Find.** The name isn't in DNS or `/etc/hosts`. |
+| `Connection refused` | **Connect.** Nothing listens on that port: sshd isn't running, or it's the wrong port. |
+| `Connection timed out` | **Connect.** A [firewall](/g/firewall-basics) drops the packets, or the host is down. |
+| `HOST IDENTIFICATION HAS CHANGED` | **Server proof.** The host key differs from the one in `known_hosts`. |
+| `Permission denied (publickey)` | **Your proof.** No key you offered is in the server's `authorized_keys`. |
+| `UNPROTECTED PRIVATE KEY FILE!` | **Your proof, locally.** Others can read your private key: `chmod 600` it. |
+
+## Under the hood
+
+**What `ssh -v` shows.** Each step above has its own debug lines. These are from a real login to a test server on this machine (port 2222), trimmed:
+
+```text
+debug1: Authenticating to localhost:2222 as 'jd'
+debug1: kex: algorithm: sntrup761x25519-sha512@openssh.com
+debug1: Server host key: ssh-ed25519 SHA256:TAnwRzUqZNjAUG7v3IyQWs26CPvHKJo0hux7eKqvc40
+debug1: Host '[localhost]:2222' is known and matches the ED25519 host key.
+debug1: Authentications that can continue: publickey
+debug1: Offering public key: /home/jd/.ssh/id_ed25519 ED25519 SHA256:3XySzMM/y8P2933+9Uz9IVG5LKFN+OIsx4zHeiCgN/0
+debug1: Server accepts key: /home/jd/.ssh/id_ed25519 ED25519 SHA256:3XySzMM/y8P2933+9Uz9IVG5LKFN+OIsx4zHeiCgN/0
+Authenticated to localhost ([127.0.0.1]:2222) using "publickey".
+```
+
+`sntrup761x25519` combines a classic key exchange with a post-quantum one; OpenSSH 9.x picks it when both sides support it. With a key the server doesn't know, the `Offering` line is followed by `Authentications that can continue: publickey` again, then `Permission denied (publickey)`.
+
+**Trust on first use.** The first time you connect, ssh has nothing to compare the host key with, so it asks:
+
+```text
+The authenticity of host '[localhost]:2222 ([127.0.0.1]:2222)' can't be established.
+ED25519 key fingerprint is SHA256:TAnwRzUqZNjAUG7v3IyQWs26CPvHKJo0hux7eKqvc40.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+```
+
+Answering `yes` writes the key to `known_hosts`, and every later connection must match it. The prompt is the one moment someone in the middle could get past, which is why services publish their fingerprints and `ssh-keyscan host | ssh-keygen -lf -` exists. You can paste the published fingerprint at the prompt instead of `yes`, and ssh compares it for you. A port other than 22 is stored as `[host]:port`, separately from the same host on 22.
+
+**When the key changes.** If the server presents a different key, ssh refuses before sending anything:
+
+```text
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+…
+Offending ED25519 key in /home/jd/.ssh/known_hosts:1
+  remove with:
+  ssh-keygen -f '/home/jd/.ssh/known_hosts' -R 'github.com'
+Host key verification failed.
+```
+
+Reinstalling a server generates new host keys, and cloud providers reuse IP addresses, so most of these are innocent. The check is there for the times they aren't.
+
+**The server's side.** Ubuntu Desktop doesn't include an SSH server; `sudo apt install openssh-server` adds it and generates the host keys in `/etc/ssh/`. On 24.04 the server is **socket-activated**: `ssh.socket` listens on port 22 and systemd starts `sshd` when the first connection arrives ([systemd units](/g/systemd-units) explains sockets). A `Port` set in `sshd_config` is turned into socket settings by a generator when systemd reloads, so after changing it run `sudo systemctl daemon-reload` and `sudo systemctl restart ssh.socket`. Ubuntu's `sshd_config` starts with `Include /etc/ssh/sshd_config.d/*.conf`, and sshd keeps the first value it reads for most settings, so a drop-in file there overrides the main file. `sudo sshd -T` prints the settings in effect; on a fresh install they include `passwordauthentication yes`, `pubkeyauthentication yes` and `permitrootlogin without-password` (root only by key).
+
+**authorized_keys.** One public key per line, exactly as in the `.pub` file, optionally with restrictions in front: `from="10.0.0.0/8" ssh-ed25519 AAAA… jd@laptop` accepts that key only from those addresses. `ssh-copy-id user@server` appends your key for you. sshd ignores the file if it, your `~/.ssh` folder or your home folder can be written by anyone but you; your side only shows `Permission denied (publickey)`, and the server's log says why: `Authentication refused: bad ownership or modes for file /home/jd/.ssh/authorized_keys`. [The permissions model](/g/permissions-model) and the [chmod numbers scenario](/s/chmod-numbers) cover the fix: `700` for `~/.ssh`, `600` for the files in it.
+
+**The server's log.** Each attempt is logged through the journal to `/var/log/auth.log` ([where logs live](/g/journald-logs)): `Accepted publickey for jd from 192.168.1.20 port 51234 ssh2: ED25519 SHA256:3XyS…` or `Failed publickey for jd …`. The fingerprint tells you which key was used. `journalctl -u ssh` shows the same lines.
+
+**The agent.** A private key can be protected by a passphrase, which encrypts the file. Typing it for every connection gets old, so `ssh-agent` keeps unlocked keys in memory and signs on ssh's behalf through the socket in `$SSH_AUTH_SOCK` (`srw-------`, yours only). `ssh-add` gives it a key; `ssh-add -l` lists them. Ubuntu Desktop starts an agent at login as part of the GNOME keyring, so a terminal there usually has one. Over plain SSH or in a bare terminal, `eval "$(ssh-agent -s)"` starts one for that shell.
+
+**~/.ssh/config.** Saves typing and settings per host:
+
+```text
+Host web
+    HostName 203.0.113.10
+    User deploy
+    IdentityFile ~/.ssh/id_ed25519
+    ServerAliveInterval 60
+```
+
+`ssh web` now means all of that. For each setting, the first value found wins, reading `~/.ssh/config` top to bottom and then `/etc/ssh/ssh_config`, so put specific `Host` blocks before a `Host *` block. `ssh -G web` shows the result. `ServerAliveInterval` makes ssh send a small message every 60 seconds, which keeps home routers from dropping an idle connection.
+
+**Host keys and package keys.** apt also trusts public keys, but differently: the archive's signing keys ship on your machine before you ever download anything ([what a package is](/g/what-is-a-package)). SSH has no such list for servers, which is why it trusts on first use and remembers.
+
+**When the connection drops.** The remote shell and everything it started get `SIGHUP`, as with closing a terminal; the [keep it running scenario](/s/keep-running) and [jobs and sessions](/g/jobs-sessions) cover tmux and friends. There's no screen on the far side, so programs that open windows fail ([open files from the terminal](/s/open-from-terminal)). ssh passes its stdin to the remote command, so `ssh server <<'EOF'` runs a block of commands there ([heredocs](/s/heredocs)).
+
+**Port forwarding.** `ssh -L 8080:127.0.0.1:3000 server` opens port 8080 on your machine (`ss -ltn` shows it on `127.0.0.1` and `[::1]`) and carries each connection through the encrypted session to port 3000 on the server's own loopback. It's the safe way to reach a database or dev server that listens only on `127.0.0.1` over there.

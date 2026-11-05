@@ -47,7 +47,7 @@ misconceptions:
   - myth: "A server needs a separate port for each client."
     reality: "Every client connects to the same listening port. The kernel tells connections apart by all four values: both addresses and both ports. Each client brings its own random port."
   - myth: "`127.0.0.1` and `0.0.0.0` mean the same thing."
-    reality: "A server listening on `127.0.0.1` can be reached only from this machine. `0.0.0.0` means every address the machine has, so other devices on your network can connect too, unless a firewall stops them."
+    reality: "A server listening on `127.0.0.1` can be reached only from this machine. `0.0.0.0` means every address the machine has, so other devices on your network can connect too, unless a [firewall](/g/firewall-basics) stops them."
   - myth: "You need `kill -9` to free a port."
     reality: "The port is freed when the process exits. A plain `kill` (SIGTERM) lets it exit cleanly, and that's enough for almost every server."
 commands: [lsof, ss, kill]
@@ -87,7 +87,7 @@ A **port** is a number from 1 to 65535 that the kernel uses to decide which sock
 Three facts explain most of the rest:
 
 - **A connection is four values.** Local address, local port, remote address, remote port. Every client of your server shares port 3000 on your side. The client's side gets its own random port, from the range in `ip_local_port_range`.
-- **The address matters.** `127.0.0.1` (loopback) is reachable only from this machine. `0.0.0.0` (`*` or `[::]` in some tools) means every address the machine has.
+- **The address matters.** `127.0.0.1` (loopback) is reachable only from this machine. `0.0.0.0` (`*` or `[::]` in some tools) means every address the machine has. [Interfaces and addresses](/g/interfaces-ip) covers where those addresses come from.
 - **Ports below 1024 need privileges.** Binding to 80 or 443 as a normal user fails with Permission denied. That's why dev servers use 3000, 5173 or 8080.
 
 ## Under the hood

@@ -16,4 +16,5 @@ examples:
 gotchas:
   - "`-p` shows processes of other users only with `sudo`."
 related: [lsof]
+concepts: [interfaces-ip, firewall-basics]
 scenarios: [port-in-use]

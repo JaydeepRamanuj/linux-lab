@@ -1,0 +1,141 @@
+---
+track: networking
+order: 2
+title: "How a Name Becomes an IP Address"
+summary: "A program asks glibc for a name. glibc checks /etc/hosts, then, on Ubuntu, asks systemd-resolved at 127.0.0.53, which answers from its cache or asks the DNS servers your network handed out. Every step can be looked at on its own."
+level: essentials
+readingMinutes: 8
+prerequisites: [interfaces-ip]
+observe:
+  - command: getent hosts github.com
+    explain: "Looks a name up exactly the way programs do: through glibc and the order in `/etc/nsswitch.conf`, `/etc/hosts` included. When `curl` or `ssh` can't find a host, this is the command that shows what they see."
+    output: |
+      20.207.73.82    github.com
+  - command: "grep '^hosts:' /etc/nsswitch.conf"
+    explain: "The order glibc tries: `files` is `/etc/hosts`, `dns` is the DNS server in `/etc/resolv.conf`. Ubuntu Desktop also has `mdns4_minimal [NOTFOUND=return]` before `dns`, for `.local` names on your home network (this line is from WSL, which doesn't)."
+    output: |
+      hosts:          files dns
+  - command: ls -l /etc/resolv.conf
+    explain: "On Ubuntu, `resolv.conf` is a link to a file systemd-resolved writes. Editing it doesn't stick. (Sample from a laptop; WSL replaces this link with a file of its own.)"
+    output: |
+      lrwxrwxrwx 1 root root 39 Oct  2  2025 /etc/resolv.conf -> ../run/systemd/resolve/stub-resolv.conf
+  - command: "grep -Ev '^#|^$' /run/systemd/resolve/stub-resolv.conf"
+    explain: "What that link points to. Every program that reads `resolv.conf` sends its DNS questions to `127.0.0.53`, systemd-resolved's local stub, never straight to your router."
+    output: |
+      nameserver 127.0.0.53
+      options edns0 trust-ad
+      search .
+  - command: resolvectl status
+    explain: "The real DNS servers, per interface. NetworkManager got `192.168.1.1` (the router) from DHCP and handed it to systemd-resolved for `wlp2s0`. `DNS Domain: lan` is a search domain: `printer` is tried as `printer.lan`. (Sample from a laptop.)"
+    output: |
+      Global
+               Protocols: -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+        resolv.conf mode: stub
+
+      Link 2 (enp0s31f6)
+          Current Scopes: none
+               Protocols: -DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+
+      Link 3 (wlp2s0)
+          Current Scopes: DNS
+               Protocols: +DefaultRoute -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported
+      Current DNS Server: 192.168.1.1
+             DNS Servers: 192.168.1.1
+              DNS Domain: lan
+  - command: resolvectl query github.com
+    explain: "Asks systemd-resolved directly, and says which interface's server answered and how long it took. A second run within the record's lifetime says `Data from: cache`."
+    output: |
+      github.com: 20.207.73.82                                    -- link: eth0
+
+      -- Information acquired via protocol DNS in 41.4ms.
+      -- Data is authenticated: no; Data was acquired via local or encrypted transport: no
+      -- Data from: network
+  - command: dig example.com
+    explain: "A raw DNS query to the server in `resolv.conf`, here the stub. `300` is the TTL: caches may keep this answer for 300 seconds. `dig` skips `/etc/hosts` and `nsswitch.conf`, so it can disagree with `getent`. It's in `bind9-dnsutils` if it's missing. (Trimmed; the server line is from a laptop.)"
+    output: |
+      ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 44178
+      ;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+      ;; ANSWER SECTION:
+      example.com.		300	IN	A	172.66.147.243
+      example.com.		300	IN	A	104.20.23.154
+
+      ;; Query time: 21 msec
+      ;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
+misconceptions:
+  - myth: "DNS changes take 48 hours to propagate."
+    reality: "Nothing is pushed anywhere. Every answer carries a TTL, and caches keep it that long. When the TTL runs out, the next lookup gets the new address. With a TTL of 300 that's five minutes; the 48 hours comes from TTLs of a day or two on older records."
+  - myth: "If `dig` finds a name, every program will."
+    reality: "`dig` sends its own DNS query and ignores `/etc/hosts` and `nsswitch.conf`. Programs go through glibc, which reads both. When they disagree, `getent hosts NAME` shows what programs actually get."
+  - myth: "To change DNS servers, edit /etc/resolv.conf."
+    reality: "On Ubuntu it's a link to a file systemd-resolved rewrites, and it only says `127.0.0.53`. Set DNS servers for a connection in NetworkManager (Settings or `nmcli`), in netplan on a server, or globally in `/etc/systemd/resolved.conf`."
+  - myth: "127.0.0.53 is my DNS server."
+    reality: "It's a local stub: a cache and forwarder that runs on your machine. The servers that actually answer are listed under `DNS Servers` in `resolvectl status`, usually your router or your ISP's."
+commands: [curl]
+references:
+  - label: "nsswitch.conf(5): the lookup order"
+    url: https://man7.org/linux/man-pages/man5/nsswitch.conf.5.html
+  - label: "hosts(5)"
+    url: https://man7.org/linux/man-pages/man5/hosts.5.html
+  - label: "resolv.conf(5)"
+    url: https://man7.org/linux/man-pages/man5/resolv.conf.5.html
+  - label: "getaddrinfo(3): the lookup call and its errors"
+    url: https://man7.org/linux/man-pages/man3/getaddrinfo.3.html
+  - label: "systemd-resolved.service(8): the stub at 127.0.0.53 and 127.0.0.54"
+    url: https://man7.org/linux/man-pages/man8/systemd-resolved.service.8.html
+  - label: "resolvectl(1)"
+    url: https://man7.org/linux/man-pages/man1/resolvectl.1.html
+  - label: "dig(1)"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/dig.1.html
+  - label: "Docker: networking and its embedded DNS server"
+    url: https://docs.docker.com/engine/network/
+  - label: "RFC 1034: Domain names, concepts and facilities"
+    url: https://www.rfc-editor.org/rfc/rfc1034
+---
+
+## The mental model
+
+Programs don't speak DNS themselves. They call one glibc function, `getaddrinfo("github.com")`, and get back a list of addresses. Everything else happens behind that call, in an order you can read in two files.
+
+<Flow spec={{
+  title: 'curl https://github.com, before it connects',
+  stages: [
+    { title: 'The program asks glibc', tag: 'getaddrinfo()', detail: 'curl, ssh, ping, your browser and Python all make the same call. `getent hosts github.com` makes it too, which is why it shows what they see.' },
+    { title: 'glibc reads the order', tag: '/etc/nsswitch.conf', detail: '`hosts: files mdns4_minimal [NOTFOUND=return] dns` on Ubuntu Desktop. Each word is a source, tried in the order written until one has an answer.' },
+    { title: 'files: /etc/hosts', tag: 'files', detail: 'A plain list of addresses and names. It has `localhost` and your own hostname (as `127.0.1.1`), and anything you add. A match here wins, and DNS is never asked.' },
+    { title: 'mdns4_minimal: .local names', tag: 'Avahi', detail: 'Names like `printer.local` are asked of the local network by multicast. `[NOTFOUND=return]` stops there for `.local`, so they never leak to the internet. Other names skip this step.' },
+    { title: 'dns: ask the server in resolv.conf', tag: '127.0.0.53', detail: 'glibc sends a small UDP packet to port 53 of the `nameserver` in `/etc/resolv.conf`. On Ubuntu that\'s systemd-resolved\'s stub on loopback.' },
+    { title: 'systemd-resolved answers or forwards', tag: 'cache, then upstream', detail: 'If it looked this name up within its TTL, it answers from cache. Otherwise it asks the DNS server for the right interface: the one DHCP handed to NetworkManager, often your router.' },
+    { title: 'A recursive resolver finds it', tag: 'root → com → github.com', detail: 'Your router or ISP\'s server asks the root servers who handles `.com`, asks them who handles `github.com`, and asks those for the address. It caches each step.' },
+    { title: 'The addresses come back', tag: 'A, AAAA', detail: 'IPv4 (`A`) and IPv6 (`AAAA`) records, each with a TTL. glibc sorts them, and curl connects to the first that works.' }
+  ]
+}} />
+
+When a name fails, the error says which kind of failure it was. These are the messages glibc gives, and programs pass them on:
+
+| Message | What it means |
+|---|---|
+| `Name or service not known` | DNS answered: the name doesn't exist. Check the spelling. |
+| `No address associated with hostname` | The name exists but has no address of the kind asked for. |
+| `Temporary failure in name resolution` | No DNS server answered at all. Check the network, then `resolvectl status`. |
+| `curl: (6) Could not resolve host` | curl's wording for any of the three. Try `getent hosts NAME`. |
+
+If `getent` finds the name but the program still can't connect, the problem isn't DNS. [Interfaces and routes](/g/interfaces-ip) and [firewalls](/g/firewall-basics) come next.
+
+## Under the hood
+
+**Why a local stub.** Ubuntu points every program at `127.0.0.53` and lets systemd-resolved deal with the real servers. It caches answers for the whole machine, keeps separate DNS servers per interface (so a VPN's company servers answer only for the company's domains), and follows network changes without rewriting `resolv.conf`. `ss -lun` shows it listening on `127.0.0.53%lo:53`. It also listens on `127.0.0.54`, a plainer "proxy" mode that passes DNS messages through mostly untouched, for programs that need that.
+
+**Where the servers come from.** NetworkManager gets DNS servers from DHCP along with the address and gateway ([interfaces and routes](/g/interfaces-ip)) and passes them to systemd-resolved for that interface. `resolvectl dns` lists them. To use different ones, set them on the connection in NetworkManager, or in netplan's `nameservers:` on a server. Setting `DNS=` in `/etc/systemd/resolved.conf` adds global servers. `/etc/resolv.conf` is rewritten either way.
+
+**Records and TTLs.** A DNS answer is a set of records: `A` (IPv4), `AAAA` (IPv6), `CNAME` (this name is an alias of that one), `MX` (mail servers), `NS` (who answers for this domain), `TXT` (free text, used for domain verification). `resolvectl query -t MX gmail.com` or `dig MX gmail.com` asks for one type. Each record has a TTL in seconds, set by whoever runs the domain. `dig +trace example.com` skips the caches and walks the chain itself: the root servers name the `.com` servers (TTL 172800, two days), those name Cloudflare's servers for `example.com`, and those return the address with TTL 300. `sudo resolvectl flush-caches` empties the local cache; the router's and ISP's caches still keep their copies.
+
+**`/etc/hosts` still wins.** It's checked before DNS, it's read on every lookup, and it needs no restart: adding `127.0.0.1 api.myapp.test` takes effect at once for `curl` and the browser, and not for `dig`. Ubuntu writes your hostname there as `127.0.1.1` so the machine can always look itself up, network or not.
+
+**Search domains.** With `search lan` in effect, a name with no dot such as `nas` is also tried as `nas.lan`. That's how short names work on some home and office networks, and why a typo can sometimes find a real machine. The stub's own file says `search .`; the real search domains are in `resolvectl status` per interface.
+
+**Names inside containers.** Docker gives containers on a user-defined network their own DNS server at `127.0.0.11`, which answers container and service names and forwards everything else to the host's servers. That's why `db:5432` works from inside the app's container and fails from your shell on the host. The [sed and awk scenario](/s/sed-awk) has that exact change.
+
+**What DNS can't promise.** A plain DNS answer isn't signed in a way Ubuntu checks by default (`DNSSEC=no/unsupported` above), so whoever answers could lie. HTTPS is what catches that: the server must also prove it owns the name with a certificate. That's one reason install one-liners should use `https://`, as in the [curl pipe bash scenario](/s/curl-pipe-bash).
+
+**Elsewhere.** Fedora also uses systemd-resolved with the same stub. Arch leaves `/etc/resolv.conf` as a plain file until you choose a resolver. WSL writes its own `resolv.conf` pointing at the Windows host, and says so in a comment at the top; `resolvectl status` then shows `resolv.conf mode: foreign`.

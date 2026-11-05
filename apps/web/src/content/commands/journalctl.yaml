@@ -22,5 +22,5 @@ gotchas:
   - "On Ubuntu, the first user is in the `adm` group and can read the system journal without `sudo`. Others see only their own messages until they use `sudo`."
   - "`--vacuum-size` and `--vacuum-time` delete old logs. They're the only options that change anything."
 related: [systemctl]
-concepts: [boot-sequence, kernel-modules]
+concepts: [boot-sequence, kernel-modules, how-ssh-works]
 scenarios: [system-service, watch-log]

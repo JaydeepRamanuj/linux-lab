@@ -1,0 +1,139 @@
+---
+track: networking
+order: 4
+title: "Firewall Basics: ufw and nftables"
+summary: "The kernel's netfilter checks every packet against a list of rules. nftables is how those rules are written today; iptables and ufw are front ends that write them for you. On Ubuntu, ufw is installed but off, so everything is allowed until you turn it on."
+level: deeper
+readingMinutes: 7
+prerequisites: [interfaces-ip, ports-sockets]
+observe:
+  - command: ss -ltn
+    explain: "Start here, not with the firewall: a firewall can only block what something listens for. These two are systemd-resolved's DNS stubs, on loopback addresses no other machine can reach. A machine running an SSH server would also show `0.0.0.0:22`, and that's the kind of line a firewall is for."
+    output: |
+      State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+      LISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*
+      LISTEN 0      4096      127.0.0.54:53        0.0.0.0:*
+  - command: grep ENABLED /etc/ufw/ufw.conf
+    explain: "Whether ufw loads its rules at boot. A fresh Ubuntu install says `no`: ufw is there, but no firewall rules are loaded. `sudo ufw enable` sets it to `yes` and loads them at once."
+    output: |
+      ENABLED=no
+  - command: "grep '^DEFAULT_.*POLICY' /etc/default/ufw"
+    explain: "What ufw does with traffic no rule mentions, once it's on: drop anything arriving (`INPUT`) or passing through (`FORWARD`), allow anything leaving (`OUTPUT`). `SKIP` means installing a package with a ufw profile doesn't open its port by itself."
+    output: |
+      DEFAULT_INPUT_POLICY="DROP"
+      DEFAULT_OUTPUT_POLICY="ACCEPT"
+      DEFAULT_FORWARD_POLICY="DROP"
+      DEFAULT_APPLICATION_POLICY="SKIP"
+  - command: cat /etc/ufw/applications.d/openssh-server
+    explain: "An application profile, installed by the `openssh-server` package. It lets you write `sudo ufw allow OpenSSH` instead of remembering `22/tcp`; `ufw app list` shows the profiles you have."
+    output: |
+      [OpenSSH]
+      title=Secure shell server, an rshd replacement
+      description=OpenSSH is a free implementation of the Secure Shell protocol.
+      ports=22/tcp
+  - command: iptables --version
+    explain: "`(nf_tables)` means this `iptables` is the compatibility version: it accepts the old iptables syntax and writes nftables rules. Ubuntu's iptables package installs both and gives this one the higher priority."
+    output: |
+      iptables v1.8.10 (nf_tables)
+  - command: cat /etc/nftables.conf
+    explain: "nftables' own file, for people who write rules directly. The default is three empty chains hooked into the kernel, which accept everything. Ubuntu doesn't load it unless you enable `nftables.service`; mixing it with ufw invites confusion, so pick one."
+    output: |
+      #!/usr/sbin/nft -f
+
+      flush ruleset
+
+      table inet filter {
+      	chain input {
+      		type filter hook input priority filter;
+      	}
+      	chain forward {
+      		type filter hook forward priority filter;
+      	}
+      	chain output {
+      		type filter hook output priority filter;
+      	}
+      }
+misconceptions:
+  - myth: "Ubuntu comes with its firewall switched on."
+    reality: "ufw is installed but disabled, and with no rules loaded the kernel accepts every packet. That's reasonable on a fresh desktop, which listens on almost nothing outside loopback. Turn ufw on before you install servers, or on any machine on a network you don't trust."
+  - myth: "`Connection refused` means a firewall blocked me."
+    reality: "Refused means the machine answered: nothing listens on that port (or a rule chose `REJECT`). ufw's `deny` drops packets silently, which the other side sees as a timeout. Refused points at the service; a timeout points at a firewall or a machine that's down."
+  - myth: "`sudo ufw deny 8080` blocks a Docker container published on 8080."
+    reality: "Docker adds its own rules for published ports, and traffic to a container is forwarded before ufw's rules see it. Publish only to loopback (`-p 127.0.0.1:8080:80`) unless the port really should be public. Docker's documentation describes this."
+  - myth: "A firewall makes it safe to run a service on 0.0.0.0."
+    reality: "It's a second line. The first is listening only where you mean to: `127.0.0.1` for anything only you use. A firewall rule is easy to remove by accident; a socket bound to loopback can't be reached from outside at all."
+commands: [ss, sudo, systemctl]
+references:
+  - label: "ufw(8)"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/ufw.8.html
+  - label: "Ubuntu Server: firewalls"
+    url: https://documentation.ubuntu.com/server/how-to/security/firewalls/
+  - label: "nft(8): nftables"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/nft.8.html
+  - label: "xtables-nft(8): iptables on top of nftables"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/xtables-nft.8.html
+  - label: "nftables wiki"
+    url: https://wiki.nftables.org/wiki-nftables/index.php/Main_Page
+  - label: "Docker: packet filtering and firewalls (Docker and ufw)"
+    url: https://docs.docker.com/engine/network/packet-filtering-firewalls/
+---
+
+## The mental model
+
+A firewall on Linux isn't a program that runs alongside your apps. It's a set of rules inside the kernel, in a part called **netfilter**. Every packet passes a few fixed checkpoints, called hooks: **input** for packets addressed to this machine, **output** for packets it sends, and **forward** for packets passing through (a router, or containers and VMs). At each hook the kernel walks a list of rules, and the first one that matches decides: accept, drop, or reject.
+
+Several tools write those rules, stacked on each other:
+
+<Layers spec={{
+  title: 'Who writes the rules on Ubuntu',
+  pathLabel: 'sudo ufw allow OpenSSH',
+  layers: [
+    { name: 'ufw', tone: 'user', highlight: true, detail: 'Ubuntu\'s front end. You say what to allow; it keeps your rules in `/etc/ufw/user.rules` and wraps them in its own defaults.', chips: ['ufw allow 22/tcp', 'ufw status'], edge: 'iptables-restore' },
+    { name: 'iptables (nf_tables)', tone: 'user', highlight: true, detail: 'Translates iptables-style rules into nftables. Docker and older tools write rules through this layer too.', chips: ['iptables -L', 'ufw-user-input'], edge: 'netlink' },
+    { name: 'nftables in the kernel', tone: 'kernel', highlight: true, detail: 'Tables of chains of rules, hooked into netfilter. `sudo nft list ruleset` shows every rule from every tool in one place.', chips: ['hook input', 'hook forward', 'hook output'] },
+    { name: 'Packets', tone: 'hardware', highlight: true, detail: 'Each packet arriving on an interface meets the input hook if it\'s for this machine. Accepted ones reach the socket that listens on that port.', chips: ['wlp2s0', 'lo'] }
+  ]
+}} />
+
+Turned on, ufw's defaults are: drop what arrives, allow what leaves, drop what passes through. That doesn't break your browsing, because the firewall is **stateful**: a reply to a connection you started is recognised as part of it and let back in. Only new connections from outside meet the "deny incoming" rule.
+
+| You want | Command |
+|---|---|
+| See whether it's on, and the rules | `sudo ufw status verbose` |
+| Allow SSH before turning it on | `sudo ufw allow OpenSSH` |
+| Turn it on (now and at boot) | `sudo ufw enable` |
+| Allow a port from your network only | `sudo ufw allow from 192.168.1.0/24 to any port 8080 proto tcp` |
+| Remove a rule | `sudo ufw status numbered`, then `sudo ufw delete N` |
+| Turn it off | `sudo ufw disable` |
+
+`ufw enable` over SSH warns `Command may disrupt existing ssh connections`: if you haven't allowed SSH first, the next connection, or this one, can be cut off. With SSH allowed, `sudo ufw status verbose` looks like this:
+
+```text
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+```
+
+## Under the hood
+
+**What ufw allows before your rules.** ufw's `before.rules` come first and accept: everything on loopback; replies to existing connections (`RELATED,ESTABLISHED`); ICMP errors and ping (`echo-request`); DHCP replies, so you keep your address; and multicast for mDNS (`.local` names, port 5353) and UPnP discovery (port 1900). Then your rules, then the default policy. That's why `ping` still works with ufw on, and why turning it on doesn't break `.local` printers.
+
+**Drop or reject.** `ufw deny` drops: the packet vanishes and the sender waits until it gives up, which shows up as `Connection timed out`. `ufw reject` sends an answer back, so the sender gets `Connection refused` straight away. Drop gives less away to scanners; reject is friendlier on your own network. This is the same distinction as the error table in [how SSH works](/g/how-ssh-works).
+
+**Order matters.** Rules are checked top to bottom and the first match wins. `sudo ufw status numbered` shows the order, and `sudo ufw insert 1 deny from 203.0.113.7` puts a rule in front of an existing allow. A deny written after a broader allow never fires.
+
+**A firewall can't stop what doesn't listen.** Without a listening socket, an incoming connection is refused by the kernel whether or not a firewall exists. So the first question is always `ss -ltn` ([ports and sockets](/g/ports-sockets)): anything on `127.0.0.1` or `[::1]` is unreachable from outside already; anything on `0.0.0.0`, `[::]` or a LAN address is what the firewall is for. A dev server started with `--host` is the usual surprise.
+
+**nftables directly.** nftables groups rules into **tables** (per protocol family: `ip`, `ip6`, `inet` for both) holding **chains**. A chain with `type filter hook input priority filter` is attached to the input hook; other chains are only jumped to. With no rules at all, `sudo iptables -L -n` on a machine shows only `Chain INPUT (policy ACCEPT)` and its two siblings, empty, and `sudo nft list ruleset` prints nothing. With ufw on, the same command shows ufw's chains (`ufw-before-input`, `ufw-user-input` and many more) inside `table ip filter`, written there by iptables-nft. Listing is harmless; `nft flush ruleset` deletes every rule from every tool at once.
+
+**Docker and other rule writers.** Docker, LXD, libvirt and Kubernetes all add rules for the networks they create. Docker forwards published ports to containers through its own chains, which is why ufw's input rules don't apply to them. `sudo nft list ruleset` shows who wrote what.
+
+**Kept across reboots.** Rules in the kernel vanish at shutdown. `ufw.service` runs early in boot (before `network-pre.target`) and reloads ufw's rules if `ENABLED=yes`. `nftables.service` loads `/etc/nftables.conf` the same way, if you enable it. Kernel settings such as `net.ipv4.ip_forward`, which turns a machine into a router, are sysctls ([/proc and /sys](/g/proc-sys)); ufw keeps its own copy in `/etc/ufw/sysctl.conf`.
+
+**Elsewhere.** Fedora uses **firewalld**, which is on by default and organises rules into zones (`public`, `home`, `trusted`) per interface; `sudo firewall-cmd --list-all` shows the active zone. Arch installs no firewall. Under WSL, Windows' own firewall sits in front of Linux, and in the cloud, the provider's security groups filter traffic before it reaches the machine.

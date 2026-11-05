@@ -232,9 +232,11 @@ Ship each track with, or just after, its matching scenario phase, so new scenari
 ### Phases G5 and G6: Tracks with no scenario module yet
 
 - **G5:** Kernel and boot. **Done, waiting for your review.** It adds `kernel-user-space`, `system-calls`, `boot-sequence` and `kernel-modules`. 4 scenarios and the `journalctl`, `systemctl`, `top` and `free` command pages link to them. The rule engine now rates `modinfo`, `lsinitramfs` and `modprobe -D` as read-only, treats `strace` as a wrapper, and rates `dmesg -C` (which was wrongly read-only) and `modprobe` as elevated. Three `boot-sequence` outputs (`systemd-analyze`, `/proc/cmdline`, `ls /boot`) are composed for a real install, and the strace sample is formatted from a real trace. See `docs/handoff/2026-11-05-guides-phase-g5.md`.
-- **G6:** Networking, starting with `how-ssh-works`.
+- **G6:** Networking. **Done, waiting for your review.** It adds `interfaces-ip`, `dns-resolution`, `how-ssh-works` and `firewall-basics`. 8 scenarios and the `ss`, `curl`, `systemctl`, `journalctl`, `chmod` and `sudo` command pages link to them. The rule engine now rates abbreviated `ip` verbs (`ip r a`, `ip link s`), `nmcli` changes, `ss -K`, `hostnamectl set-hostname`, `ifconfig eth0 down` and `route add` as elevated (all were wrongly read-only), and `resolvectl`, `networkctl`, `ssh -G`, `ssh-keyscan`, `ssh-keygen -l`/`-F` and the listing forms of `ufw`, `nft`, `iptables` and `firewall-cmd` as read-only. Eight outputs are composed or edited for a laptop (NetworkManager, the resolver stub, `dig`, `~/.ssh`, `ufw status`). See `docs/handoff/2026-11-05-guides-phase-g6.md`, which also lists what's needed before the PR into `main`.
 
-These may later get their own scenario modules, such as an "SSH & Remote" module (`Permission denied (publickey)`, `REMOTE HOST IDENTIFICATION HAS CHANGED`, setting up key login). That's a separate decision; see §9.
+**All guide phases are done: 35 guides in 8 tracks.**
+
+These may later get their own scenario modules, such as an "SSH & Remote" module (`Permission denied (publickey)`, `REMOTE HOST IDENTIFICATION HAS CHANGED`, setting up key login). That's a separate decision; see §9. `how-ssh-works` doesn't depend on it: its error table is a ready list of scenarios, and each one would link back through `concepts`.
 
 ## 8. Definition of done (each phase)
 

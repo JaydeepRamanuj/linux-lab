@@ -27,4 +27,5 @@ gotchas:
   - "Without `-f`, a 404 page is saved (or piped into `bash`) as if it were the script. `bash` then fails on the HTML, usually harmlessly but confusingly."
   - "`--proto '=https' --tlsv1.2` in an install line (rustup uses it) refuses plain HTTP and old TLS. It's a good sign, not something to remove."
 related: [sudo, bash]
+concepts: [dns-resolution]
 scenarios: [curl-pipe-bash]

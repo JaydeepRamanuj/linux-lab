@@ -74,6 +74,7 @@ avoid:
   - "`code: command not found`? In VS Code, open the command palette and run \"Shell Command: Install 'code' command in PATH\". On Linux, the .deb and snap install it for you."
   - "To open a file in a specific app instead of the default, run the app with the file: `gnome-text-editor notes.md`, `gimp photo.png`."
 related: [command-not-found, symlink-shortcut]
+concepts: [how-ssh-works]
 anatomy:
   ".": "The current folder."
 ---
