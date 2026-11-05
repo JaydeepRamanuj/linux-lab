@@ -1,0 +1,106 @@
+---
+track: kernel
+order: 1
+title: Kernel Space and User Space
+summary: "The kernel is the one program that runs with full control of the hardware. Everything else, root and systemd included, runs in user space and has to ask the kernel for every file, byte of memory and network packet."
+level: essentials
+readingMinutes: 7
+prerequisites: [processes-basics]
+observe:
+  - command: uname -r
+    explain: "The version of the kernel that's running now. On Ubuntu it looks like `6.8.0-85-generic`: the upstream version (6.8), Ubuntu's build number (85) and the flavour (`generic`). This output is from WSL, which runs Microsoft's own build of the kernel."
+    output: |
+      6.6.87.2-microsoft-standard-WSL2
+  - command: time ls -R /usr/share > /dev/null
+    explain: "`user` is the CPU time `ls` spent running its own code; `sys` is the time the kernel spent working for it, reading folders. Listing files is mostly the kernel's work, so `sys` is seven times `user`. `real` is the wall-clock time, which includes waiting for the disk."
+    output: |
+      real	0m0.482s
+      user	0m0.020s
+      sys	0m0.141s
+  - command: ls -l /dev/mem /proc/kcore
+    explain: "Two windows onto raw memory: the machine's physical memory and the running kernel's memory. Only root can open them, and on a locked-down kernel not even root can read most of it. Programs never need them: they get memory by asking the kernel."
+    output: |
+      crw-r----- 1 root kmem            1, 1 Nov  5 11:34 /dev/mem
+      -r-------- 1 root root 140737471594496 Nov  5 11:34 /proc/kcore
+  - command: grep -E '^(ctxt|processes)' /proc/stat
+    explain: "Counters the kernel keeps since boot: `ctxt` is how many times a CPU switched from one task to another, `processes` how many processes have been created. The machine had been up for a few seconds."
+    output: |
+      ctxt 41377
+      processes 675
+misconceptions:
+  - myth: "Programs run as root run in the kernel."
+    reality: "Root is a user like any other, with more permissions. A root process is still in user space and still asks the kernel for everything with system calls; the kernel says yes more often. Even root can't run code inside the kernel except by loading a [kernel module](/g/kernel-modules)."
+  - myth: "Linux is the whole operating system."
+    reality: "Strictly, Linux is the kernel. Ubuntu is a distribution: the Linux kernel plus systemd, the GNU tools, bash, the desktop and thousands of other programs, all of which run in user space."
+  - myth: "One crashing program can take the whole system down."
+    reality: "Each process has its own memory, protected by the CPU. A bad pointer gets that one process killed with `Segmentation fault` and nothing else notices. A bug in the kernel itself, often in a driver, is different: that can freeze or crash the whole machine."
+  - myth: "A high `sy` value in `top` means the kernel is wasting time."
+    reality: "`sy` is the kernel working on behalf of programs: reading files, sending packets, managing memory. A program that does lots of small reads or writes pushes it up. It's a hint about what the busy program is doing, not a fault in the kernel."
+commands: [top, free, ps]
+references:
+  - label: "intro(2): system calls, the interface to the kernel"
+    url: https://man7.org/linux/man-pages/man2/intro.2.html
+  - label: "uname(1): print system information"
+    url: https://man7.org/linux/man-pages/man1/uname.1.html
+  - label: "time(1): real, user and system time"
+    url: https://man7.org/linux/man-pages/man1/time.1.html
+  - label: "mem(4): /dev/mem and /dev/kmem"
+    url: https://man7.org/linux/man-pages/man4/mem.4.html
+  - label: "dmesg(1): the kernel ring buffer"
+    url: https://man7.org/linux/man-pages/man1/dmesg.1.html
+  - label: "Ubuntu kernel release cycle"
+    url: https://ubuntu.com/kernel/lifecycle
+  - label: "Microsoft's WSL 2 kernel source"
+    url: https://github.com/microsoft/WSL2-Linux-Kernel
+---
+
+## The mental model
+
+The CPU has (at least) two modes. In **kernel mode** code can do anything: touch any memory, talk to any device, stop any program. In **user mode** it can only compute on its own memory. The **kernel** is the program that runs in kernel mode, loaded at boot from `/boot/vmlinuz`. Everything else runs in user mode, in **user space**: your shell, your browser, `systemd`, and programs run as root.
+
+A program in user space can't open a file, allocate memory, start another program or send a packet on its own. It asks the kernel, through a **system call**, and the kernel decides whether to do it:
+
+<Layers spec={{
+  title: 'cat notes.txt, from program to disk',
+  pathLabel: 'request',
+  layers: [
+    { name: 'cat', tone: 'user', highlight: true, detail: 'Wants the contents of `notes.txt`. It has no way to reach the disk itself.', chips: ['user mode'], edge: 'calls read() in libc' },
+    { name: 'The C library (glibc)', tone: 'user', highlight: true, detail: 'A thin wrapper that puts the request in CPU registers and executes the `syscall` instruction.', chips: ['libc.so.6'], edge: 'system call' },
+    { name: 'The kernel', tone: 'kernel', highlight: true, detail: 'Switches to kernel mode, checks permissions, finds the file through the filesystem and the page cache, and copies the bytes into `cat`\'s memory.', chips: ['VFS', 'ext4', 'page cache'], edge: 'driver' },
+    { name: 'Disk driver', tone: 'kernel', highlight: true, detail: 'Part of the kernel. Speaks the NVMe or SATA protocol, if the data wasn\'t already cached in RAM.', chips: ['nvme'] },
+    { name: 'Disk', tone: 'hardware', detail: 'The hardware itself. Only the kernel ever talks to it.' }
+  ]
+}} />
+
+The kernel's jobs, roughly:
+
+| Job | What it means for you |
+|---|---|
+| Processes | Starts and stops them, and shares the CPUs between them many times a second |
+| Memory | Gives each process its own private memory, uses spare RAM as disk cache |
+| Files | Turns disks into folders and files, and enforces permissions |
+| Devices | Drivers for disks, USB, graphics, Wi-Fi, keyboards |
+| Network | TCP/IP, sockets, firewall rules |
+| Security | Users, capabilities, namespaces, AppArmor |
+
+So "Permission denied", "No such file or directory" and "Address already in use" are all the kernel answering a request. The program only prints the answer.
+
+## Under the hood
+
+**Two modes, enforced by the CPU.** On x86 the modes are called ring 0 (kernel) and ring 3 (user). User-mode code that tries a privileged instruction, or touches memory it doesn't own, causes a CPU exception, and the kernel kills the process: that's `Segmentation fault`. The only ways into kernel mode are system calls (a program asking), interrupts (hardware asking, such as a key press or a finished disk read) and exceptions (a page fault or an error). [System calls](/g/system-calls) shows the first in detail.
+
+**Every process has its own address space.** Memory addresses in a program are virtual: the kernel and the CPU's memory-management unit map them to real RAM page by page (4 KiB on x86). Two programs can use the same address and see different data. The kernel's own memory is mapped into every process too, but marked kernel-only, so a system call doesn't have to switch maps. When a program touches a page that isn't in RAM yet, the CPU raises a page fault, the kernel fills the page (from the program file, from swap, or with zeros) and the program carries on without knowing.
+
+**Root is not the kernel.** Root is user ID 0, and the kernel skips most permission checks for it, through [capabilities](/g/setuid-capabilities). But root runs in user space like everyone else. `/dev/mem` and `/proc/kcore` exist for debugging, and on a kernel in lockdown mode (Ubuntu turns it on with Secure Boot) even root can't use them to read or change the kernel. The way to run your own code in kernel mode is a [kernel module](/g/kernel-modules), which needs root and, with Secure Boot, a signature.
+
+**The kernel's own threads.** The kernel has work that belongs to no program: flushing data to disk, handling network queues. It does it in kernel threads, which show up in `ps` in square brackets, children of PID 2 (`kthreadd`). [Processes, PIDs and the tree](/g/processes-basics) covers them and why WSL looks different.
+
+**Reading CPU time.** `top`'s `%Cpu(s)` line splits the time: `us` is programs running their own code, `sy` the kernel working for them, `wa` waiting for the disk, `hi`/`si` interrupts, `st` time stolen by a hypervisor in a virtual machine. `time` gives the same split for one command. Copying, listing and networking are mostly `sy`; number crunching is all `us`.
+
+**When memory runs out.** The kernel hands out memory lazily and lets programs reserve more than exists, betting they won't all use it. When RAM and swap really run out, the **OOM killer** picks a process, usually the biggest, and kills it with SIGKILL. It logs `Out of memory: Killed process …` in the kernel log, which is why the [CPU and RAM hog scenario](/s/cpu-ram-hog) points at `journalctl -k`.
+
+**The kernel's log.** Drivers and the kernel write to a ring buffer in memory, which `dmesg` prints and journald copies into the journal. Ubuntu builds its kernels with `dmesg_restrict` on, so `dmesg` as a normal user fails with `Operation not permitted`; `sudo dmesg` works, and so does `journalctl -k` for members of `adm` ([where logs live](/g/journald-logs)). `/etc/sysctl.d/10-kernel-hardening.conf` explains the setting.
+
+**Kernel versions on Ubuntu.** Ubuntu 24.04 shipped with kernel 6.8. Security fixes arrive as new builds of the same version (`6.8.0-84`, `6.8.0-85`…), installed by apt like any package, and used after the next reboot. Later point releases also offer newer HWE (hardware enablement) kernels for new hardware. Old kernels stay installed for a while so you can pick one from the boot menu if a new one misbehaves.
+
+**Under WSL**, Windows runs a lightweight virtual machine with Microsoft's build of the Linux kernel (`microsoft-standard-WSL2`), shared by all your WSL distributions. Ubuntu's own kernel packages aren't installed and `/boot` is empty; the kernel is updated by `wsl --update` from Windows.

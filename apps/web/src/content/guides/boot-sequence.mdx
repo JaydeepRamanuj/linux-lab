@@ -1,0 +1,139 @@
+---
+track: kernel
+order: 3
+title: "The Boot Sequence: From Power Button to Login"
+summary: "Firmware finds a boot loader, the boot loader loads the kernel and an initramfs, the initramfs finds the real root filesystem, and systemd starts everything else. Knowing the stages tells you where a broken boot stopped."
+level: essentials
+readingMinutes: 8
+prerequisites: [kernel-user-space, systemd-units]
+observe:
+  - command: systemd-analyze
+    explain: "How long each stage of the last boot took: the firmware (UEFI), the boot loader (GRUB), the kernel together with the initramfs, and userspace up to the default target. Firmware and loader times appear only when the firmware reports them. Under WSL there's no firmware or boot loader, and this prints only a `(userspace)` time."
+    output: |
+      Startup finished in 6.204s (firmware) + 2.817s (loader) + 2.395s (kernel) + 9.522s (userspace) = 20.939s
+      graphical.target reached after 9.481s in userspace.
+  - command: cat /proc/cmdline
+    explain: "The kernel command line GRUB passed this boot: which kernel file, the root filesystem by UUID, mount it read-only at first (`ro`), and `quiet splash` to hide the messages behind a logo. `vt.handoff=7` lets the graphical boot screen hand over smoothly."
+    output: |
+      BOOT_IMAGE=/boot/vmlinuz-6.8.0-85-generic root=UUID=5d1c2a8e-37b4-4c1e-9d7e-2b9f0c6a41d3 ro quiet splash vt.handoff=7
+  - command: ls /boot
+    explain: "Each installed kernel brings three files: `vmlinuz-…` (the kernel), `initrd.img-…` (its initramfs) and `config-…` (how it was built), plus `System.map-…`. `vmlinuz` and `initrd.img` are symlinks to the newest, `.old` to the one before, so GRUB always has a fallback. `efi` is where the EFI partition is mounted; `grub` holds GRUB's menu."
+    output: |
+      config-6.8.0-84-generic      initrd.img.old
+      config-6.8.0-85-generic      System.map-6.8.0-84-generic
+      efi                          System.map-6.8.0-85-generic
+      grub                         vmlinuz
+      initrd.img                   vmlinuz-6.8.0-84-generic
+      initrd.img-6.8.0-84-generic  vmlinuz-6.8.0-85-generic
+      initrd.img-6.8.0-85-generic  vmlinuz.old
+  - command: journalctl -k -b -o short-monotonic | grep -E 'initramfs|Run /init|EXT4-fs'
+    explain: "Three moments from the kernel's log of this boot, in seconds since the kernel started: it unpacks the initramfs, runs `/init` from it, and the real root filesystem gets mounted. On a laptop the device is something like `nvme0n1p2`."
+    output: |
+      [    0.761311] laptop kernel: Trying to unpack rootfs image as initramfs...
+      [    0.976533] laptop kernel: Run /init as init process
+      [    1.323955] laptop kernel: EXT4-fs (sdd): mounted filesystem 022daf39-858c-4966-aeb7-31427aafec2f r/w with ordered data mode. Quota mode: none.
+  - command: systemd-analyze critical-chain
+    explain: "The chain of units the default target waited for, slowest path first. `@` is when a unit became active, `+` how long it took to start. Read it from the bottom up. This one is from WSL, where userspace starts in under two seconds."
+    output: |
+      The time when unit became active or started is printed after the "@" character.
+      The time the unit took to start is printed after the "+" character.
+
+      graphical.target @1.923s
+      └─multi-user.target @1.922s
+        └─snapd.seeded.service @998ms +514ms
+          └─basic.target @978ms
+            └─sockets.target @978ms
+              └─snapd.socket @956ms +21ms
+                └─sysinit.target @947ms
+                  └─systemd-resolved.service @790ms +156ms
+                    └─systemd-tmpfiles-setup.service @693ms +70ms
+                      └─systemd-journal-flush.service @477ms +185ms
+                        └─systemd-journald.service @363ms +86ms
+                          └─systemd-journald.socket @348ms
+                            └─system.slice @319ms
+                              └─-.slice @319ms
+misconceptions:
+  - myth: "The kernel finds and mounts my disk by itself."
+    reality: "On Ubuntu the kernel starts a small temporary system first, the initramfs, which loads the storage drivers, unlocks an encrypted disk if needed, and mounts the real root. That's why a disk problem can drop you at an `(initramfs)` prompt."
+  - myth: "`systemd-analyze blame` lists what to disable to boot faster."
+    reality: "It lists how long each unit took to start, and units start in parallel. A slow unit may only have been waiting for another one, and many don't delay the login screen at all. `critical-chain` shows what the boot actually waited for."
+  - myth: "A new kernel is used as soon as apt installs it."
+    reality: "The running kernel can't be swapped out. apt installs the new `vmlinuz` and `initrd.img`, updates GRUB's menu, and the new kernel runs from the next boot. Until then `uname -r` still shows the old one."
+  - myth: "Secure Boot checks everything that boots."
+    reality: "It checks the chain of programs: the firmware checks shim, shim checks GRUB and the kernel, the kernel checks modules. The initramfs isn't signed or checked on Ubuntu."
+commands: [systemctl, journalctl]
+references:
+  - label: "bootup(7): the system boot-up process"
+    url: https://man7.org/linux/man-pages/man7/bootup.7.html
+  - label: "systemd-analyze(1): time, blame, critical-chain"
+    url: https://man7.org/linux/man-pages/man1/systemd-analyze.1.html
+  - label: "kernel-command-line(7): parameters systemd understands"
+    url: https://man7.org/linux/man-pages/man7/kernel-command-line.7.html
+  - label: "initramfs-tools(7): Ubuntu's initramfs and its boot parameters"
+    url: https://manpages.ubuntu.com/manpages/noble/man7/initramfs-tools.7.html
+  - label: "lsinitramfs(8): list what's in an initramfs"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/lsinitramfs.8.html
+  - label: "update-grub(8): regenerate GRUB's menu"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/update-grub.8.html
+  - label: "GNU GRUB manual"
+    url: https://www.gnu.org/software/grub/manual/grub/grub.html
+  - label: "Ubuntu security docs: UEFI Secure Boot"
+    url: https://documentation.ubuntu.com/security/security-features/platform-protections/secure-boot/
+  - label: "systemd.special(7): the standard targets"
+    url: https://man7.org/linux/man-pages/man7/systemd.special.7.html
+---
+
+## The mental model
+
+Booting is a relay. Each stage is a program whose only job is to find and start the next one, and each runs with more of the system available than the one before:
+
+<Flow spec={{
+  title: 'Booting Ubuntu on a UEFI laptop',
+  stages: [
+    { title: 'Firmware', tag: 'UEFI', detail: 'Built into the motherboard. Tests and sets up the hardware, then reads its boot entries and loads a program from the EFI system partition, a small FAT partition mounted at `/boot/efi` once Linux runs.' },
+    { title: 'Boot loader', tag: 'shim → GRUB', detail: 'With Secure Boot, the firmware loads `shimx64.efi` (signed by Microsoft), which checks and loads GRUB (signed by Canonical). GRUB shows the menu, then loads the kernel and the initramfs from `/boot` into memory and passes the kernel command line.' },
+    { title: 'Kernel', tag: 'vmlinuz', detail: 'Sets up memory, CPUs and the built-in drivers, unpacks the initramfs into a RAM filesystem and runs its `/init` as the first process.' },
+    { title: 'initramfs', tag: 'initrd.img', detail: 'A small temporary root filesystem with the tools and [modules](/g/kernel-modules) needed to reach the real disk: storage drivers, LVM, disk encryption (it asks for your passphrase here). It mounts the real root filesystem.' },
+    { title: 'Switch to the real root', tag: 'PID 1', detail: 'The initramfs makes the real root filesystem the new `/`, frees itself, and replaces its process with `/sbin/init`, which is systemd. The PID stays 1.' },
+    { title: 'systemd brings up the system', tag: 'targets', detail: 'Mounts the rest of [fstab](/g/mounts-devices), applies [sysctl settings](/g/proc-sys), starts services in parallel through `sysinit.target`, `basic.target` and `multi-user.target`.' },
+    { title: 'Login', tag: 'graphical.target', detail: 'The display manager (GDM on Ubuntu) shows the login screen. On a server, `multi-user.target` ends with a text login and SSH.' }
+  ]
+}} />
+
+When a boot fails, the screen you're left at tells you which stage stopped:
+
+| You see | It stopped in |
+|---|---|
+| Maker's logo, no GRUB, "no bootable device" | Firmware: wrong boot order, or the EFI partition is damaged |
+| `grub>` or `grub rescue>` | GRUB: it can't find its files or the kernel |
+| `Kernel panic - not syncing` | Kernel: often a missing or broken initramfs |
+| `(initramfs)` prompt | initramfs: the root disk wasn't found, or needs a check |
+| "You are in emergency mode" | systemd: usually a bad line in `/etc/fstab` |
+| Black screen after the logo | Login stage: often the graphics driver |
+
+## Under the hood
+
+**UEFI and the EFI partition.** Modern PCs use UEFI firmware; older ones used BIOS, which loaded the first sector of the disk. Your system booted with UEFI if `/sys/firmware/efi` exists. The firmware keeps a list of boot entries (`efibootmgr` lists them) and loads `EFI/ubuntu/shimx64.efi` from the EFI system partition. Ubuntu's `grub.cfg` there is a three-line stub that points GRUB at the real menu, `/boot/grub/grub.cfg`.
+
+**Secure Boot.** The firmware runs only programs signed by a key it trusts, which on most PCs means Microsoft's. Ubuntu's shim is signed by Microsoft and carries Canonical's key; it uses that to check GRUB and the kernel, both signed by Canonical. The kernel then refuses unsigned [kernel modules](/g/kernel-modules). The initramfs isn't checked.
+
+**GRUB's menu.** Ubuntu hides the menu when it's the only system installed. Hold Shift (BIOS) or tap Esc (UEFI) during boot to see it. **Advanced options for Ubuntu** lists the older kernel and a recovery mode, which boots to a root shell menu without the desktop. `e` on an entry edits its command line for one boot. Permanent changes go in `/etc/default/grub` (such as `GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"`), followed by `sudo update-grub`, which rewrites `/boot/grub/grub.cfg`; don't edit that file directly.
+
+**The kernel command line.** Parameters the kernel doesn't use are passed on to the initramfs and systemd. Ones worth knowing:
+
+| Parameter | Effect |
+|---|---|
+| `quiet splash` | Hide messages, show the logo. Remove both to see what boot is doing |
+| `root=UUID=…` `ro` | The root filesystem, mounted read-only until it's checked |
+| `systemd.unit=rescue.target` | Boot to a root shell with only local disks mounted |
+| `systemd.unit=emergency.target` | Even less: a root shell with almost nothing started |
+| `break=premount` | Stop inside the initramfs with a shell |
+| `nomodeset` | Basic graphics only, for when the graphics driver hangs |
+
+**Inside the initramfs.** Ubuntu builds it with initramfs-tools: a small busybox system with `/init` (a shell script), udev and the kernel modules for your storage. Its scripts run in phases (`init-top`, `premount`, `local-top` and so on), find the root device, check it and mount it, then hand over to the real `/sbin/init`. `lsinitramfs /boot/initrd.img | less` lists what's inside. `sudo update-initramfs -u` rebuilds it, which apt does for you after kernel updates and after installing anything that adds a hook, such as disk encryption. Fedora builds its initramfs with dracut and runs systemd inside it, so its `systemd-analyze` adds an `(initrd)` time; Arch uses mkinitcpio.
+
+**systemd's part.** From here [systemd units and targets](/g/systemd-units) take over. `bootup(7)` draws the order: mounts and swap, then `sysinit.target`, then sockets, timers and paths, `basic.target`, and the services wanted by `multi-user.target` and `graphical.target`. Units without an order between them start at the same time, which is why boot logs look interleaved. `systemctl get-default` names the final target.
+
+**Reading boot problems after the fact.** The journal keeps earlier boots: `journalctl -b -1 -p warning` shows the warnings and errors from the previous boot, and `journalctl --list-boots` lists them ([where logs live](/g/journald-logs)). `systemctl --failed` lists units that didn't start. `systemd-analyze blame` sorts units by start time, but they start in parallel, so check `critical-chain` before you disable anything.
+
+**Under WSL** there's no firmware, GRUB or Ubuntu kernel. Windows starts a virtual machine with Microsoft's kernel and its own initramfs, whose `/init` is WSL's. With systemd enabled in `/etc/wsl.conf`, WSL's `/init` starts systemd as PID 1 of the distribution and stays alongside it as PID 2; from there the systemd part of the boot is the same as on a laptop. `/boot` is empty.

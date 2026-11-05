@@ -19,4 +19,5 @@ gotchas:
   - "Load average is the number of processes wanting CPU or waiting on disk, averaged over 1, 5 and 15 minutes. Compare it to the number of cores (`nproc`)."
   - "`wa` in the %Cpu(s) line is time spent waiting for the disk. High `wa` with low CPU use means the disk is the bottleneck."
 related: [htop, ps, free]
+concepts: [kernel-user-space]
 scenarios: [cpu-ram-hog]

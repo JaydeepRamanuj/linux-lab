@@ -16,7 +16,7 @@ const READONLY = new Set([
   'awk', 'gawk', 'mawk', 'sed', 'base64', 'gzip', 'zcat', 'nl', 'fold', 'fmt', 'rev', 'tac', 'yes', 'seq', 'expr', 'bc',
   'node', 'python', 'python3', 'xdg-open', 'open', 'code', 'gio', 'nautilus', 'watch', 'tmux', 'screen', 'ssh-add',
   'curl', 'wget', 'gpg', 'ncdu', 'hash', 'exit', 'return', 'pstree', 'lslocks', 'systemd-cgls', 'systemd-cgtop', 'systemd-delta',
-  'namei', 'getcap', 'gpgv', 'readelf', 'objdump'
+  'namei', 'getcap', 'gpgv', 'readelf', 'objdump', 'modinfo', 'lsinitramfs', 'systemd-detect-virt'
 ]);
 
 // Subcommands of `systemd-analyze` that only report. Others (`set-log-level` and friends) change the running manager.
@@ -84,12 +84,20 @@ export function baseSeverity(c: NormalizedCommand): Basis {
     return { severity: 'readonly', reason: 'Prints or decodes capabilities.' };
   }
 
-  // `ldconfig -p` prints the library cache; plain `ldconfig` (or `-v`) rebuilds it.
-  if (p === 'ldconfig' && c.argv.length > 0 && c.argv.every((w) => /^(-p|--print-cache|-V|--version)$/.test(w.value))) {
-    return { severity: 'readonly', reason: 'Prints the shared library cache.' };
+  // `dmesg` reads the kernel log; a few flags clear it or change what reaches the console.
+  if (p === 'dmesg' && (c.short.has('C') || c.short.has('c') || ['clear', 'read-clear'].some((f) => c.long.has(f)))) {
+    return { severity: 'elevated', reason: 'Clears the kernel message buffer for everyone. The messages are gone from `dmesg` afterwards (the journal keeps its copy).' };
   }
-  if (p === 'ldd') {
-    return { severity: 'readonly', reason: "Lists the shared libraries a program needs. Only use it on programs you trust: for some files ldd runs them to find out. On a file you don't trust, use `readelf -d` or `objdump -p` instead." };
+  if (p === 'dmesg' && (c.short.has('n') || c.short.has('D') || c.short.has('E') || ['console-level', 'console-off', 'console-on'].some((f) => c.long.has(f)))) {
+    return { severity: 'elevated', reason: 'Changes which kernel messages are printed to the console.' };
+  }
+
+  // Kernel modules: `modprobe -D`, `-c` and `-n` only print; loading or removing a module changes the running kernel.
+  if (p === 'modprobe' && (['D', 'c', 'n'].some((f) => c.short.has(f)) || ['show-depends', 'showconfig', 'dry-run'].some((f) => c.long.has(f)))) {
+    return { severity: 'readonly', reason: 'Only prints module dependencies or modprobe settings; nothing is loaded.' };
+  }
+  if (p === 'modprobe' || p === 'insmod' || p === 'rmmod') {
+    return { severity: 'elevated', reason: 'Loads or removes a kernel module: code that runs inside the kernel, for the whole machine.' };
   }
 
   // `ldconfig -p` prints the library cache; plain `ldconfig` (or `-v`) rebuilds it.

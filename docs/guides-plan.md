@@ -231,7 +231,7 @@ Ship each track with, or just after, its matching scenario phase, so new scenari
 
 ### Phases G5 and G6: Tracks with no scenario module yet
 
-- **G5:** Kernel and boot.
+- **G5:** Kernel and boot. **Done, waiting for your review.** It adds `kernel-user-space`, `system-calls`, `boot-sequence` and `kernel-modules`. 4 scenarios and the `journalctl`, `systemctl`, `top` and `free` command pages link to them. The rule engine now rates `modinfo`, `lsinitramfs` and `modprobe -D` as read-only, treats `strace` as a wrapper, and rates `dmesg -C` (which was wrongly read-only) and `modprobe` as elevated. Three `boot-sequence` outputs (`systemd-analyze`, `/proc/cmdline`, `ls /boot`) are composed for a real install, and the strace sample is formatted from a real trace. See `docs/handoff/2026-11-05-guides-phase-g5.md`.
 - **G6:** Networking, starting with `how-ssh-works`.
 
 These may later get their own scenario modules, such as an "SSH & Remote" module (`Permission denied (publickey)`, `REMOTE HOST IDENTIFICATION HAS CHANGED`, setting up key login). That's a separate decision; see §9.

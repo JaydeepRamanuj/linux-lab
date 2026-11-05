@@ -1,0 +1,146 @@
+---
+track: kernel
+order: 2
+title: "System Calls: How Programs Ask the Kernel"
+summary: "Every file a program opens, every byte it prints and every process it starts is a system call: a numbered request to the kernel. strace lets you watch them, and most error messages are a system call's answer turned into words."
+level: deeper
+readingMinutes: 7
+prerequisites: [kernel-user-space, file-descriptors]
+observe:
+  - command: cat /proc/self/syscall
+    explain: "The kernel shows which system call a process is in. `cat` reads this file about itself, so it catches itself in the act: call number 0 is `read` on x86-64, `0x3` is the file descriptor, `0x20000` asks for up to 131072 bytes. The rest are registers and addresses, different every run."
+    output: |
+      0 0x3 0x79148b8df000 0x20000 0x22 0x0 0x79148b9a6440 0x7ffdbdba58e8 0x79148b71bd31
+  - command: strace -e trace=openat,read,write,close cat /etc/hostname
+    explain: "Every call `cat` makes for these four kinds, with arguments and return values. First the loader opens the library cache and libc; then `cat` opens the file (fd 3), reads 7 bytes, writes them to fd 1, reads again and gets 0, which means end of file. strace writes to stderr, so `cat`'s own output lands in the middle of the `write` line. Trimmed: a few more calls open locale files. Install strace first with `sudo apt install strace` if it's missing."
+    output: |
+      openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+      close(3)                                = 0
+      openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+      read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+      close(3)                                = 0
+      openat(AT_FDCWD, "/etc/hostname", O_RDONLY) = 3
+      read(3, "laptop\n", 131072)             = 7
+      write(1, "laptop\n", 7laptop
+      )                 = 7
+      read(3, "", 131072)                     = 0
+      close(3)                                = 0
+      close(1)                                = 0
+      close(2)                                = 0
+      +++ exited with 0 +++
+  - command: cat /proc/$$/wchan
+    explain: "Where in the kernel your shell is waiting right now. While `cat` runs, the shell sits inside a `wait4` system call, parked in the kernel function `do_wait` until its child exits."
+    output: |
+      do_wait
+  - command: grep vdso /proc/self/maps
+    explain: "A small piece of kernel-supplied code mapped into every process, the vDSO. Calls like `clock_gettime` run here, in user mode, so asking the time doesn't need a trip into the kernel."
+    output: |
+      7ffcf85a2000-7ffcf85a4000 r-xp 00000000 00:00 0                          [vdso]
+  - command: systemd-analyze syscall-filter @file-system | head -8
+    explain: "systemd groups system calls by purpose, so a service can be allowed only the groups it needs. These are the first few calls that work with files. `systemctl show -p SystemCallFilter` shows a service's list."
+    output: |
+      @file-system
+          # File system operations
+          access
+          chdir
+          chmod
+          close
+          creat
+          faccessat
+misconceptions:
+  - myth: "`cd` and `echo` are separate programs the shell runs."
+    reality: "They're built into the shell. `cd` has to be: it calls `chdir` inside the shell's own process, because a child process changing its folder wouldn't change yours. [Pressing Enter](/g/pressing-enter) explains builtins."
+  - myth: "Error messages are written by each program."
+    reality: "The wording usually comes from the kernel's error code. The kernel returns a number such as `ENOENT` or `EACCES`, the C library stores it in `errno`, and the program prints the standard text for it, which is why so many different tools say exactly `No such file or directory`."
+  - myth: "strace is only for kernel developers."
+    reality: "It's one of the most useful debugging tools there is for ordinary problems: which config file a program actually reads, why it says Permission denied, what it's stuck waiting for. Trace the `openat` calls and look for the failing one."
+  - myth: "A process that can't be killed has ignored the signal."
+    reality: "A process in state `D` is inside a system call waiting for hardware, usually a disk or network filesystem, and the kernel delivers signals only when it comes out. Even `kill -9` waits. See the [frozen app scenario](/s/frozen-app)."
+commands: [ps, lsof, cat]
+references:
+  - label: "syscalls(2): the list of Linux system calls"
+    url: https://man7.org/linux/man-pages/man2/syscalls.2.html
+  - label: "syscall(2): calling conventions per architecture"
+    url: https://man7.org/linux/man-pages/man2/syscall.2.html
+  - label: "errno(3): error numbers and their names"
+    url: https://man7.org/linux/man-pages/man3/errno.3.html
+  - label: "strace(1): trace system calls and signals"
+    url: https://man7.org/linux/man-pages/man1/strace.1.html
+  - label: "proc_pid_syscall(5): /proc/<pid>/syscall"
+    url: https://man7.org/linux/man-pages/man5/proc_pid_syscall.5.html
+  - label: "vdso(7): the virtual dynamic shared object"
+    url: https://man7.org/linux/man-pages/man7/vdso.7.html
+  - label: "ptrace(2): how strace watches a process"
+    url: https://man7.org/linux/man-pages/man2/ptrace.2.html
+  - label: "seccomp(2): filtering system calls"
+    url: https://man7.org/linux/man-pages/man2/seccomp.2.html
+  - label: "systemd.exec(5): SystemCallFilter="
+    url: https://man7.org/linux/man-pages/man5/systemd.exec.5.html
+---
+
+## The mental model
+
+A **system call** is a request from a program to the kernel, identified by a number: `read` is 0 on x86-64, `write` 1, `openat` 257, `execve` 59. Linux has a few hundred of them, and together they're the whole interface between user space and the kernel. Programs rarely make them directly. They call functions in the C library, such as `read()` or `fopen()`, and the library makes the system call.
+
+Here's one `read()` from start to finish:
+
+<Flow spec={{
+  title: 'cat calls read() on /etc/hostname',
+  stages: [
+    { title: 'The program calls read()', tag: 'cat', detail: '`read(3, buffer, 131072)`: from file descriptor 3, into this buffer, at most 131072 bytes. To `cat` it looks like any function call.' },
+    { title: 'The C library prepares the call', tag: 'glibc', detail: 'The wrapper puts the call number (0) in the `rax` register and the three arguments in `rdi`, `rsi` and `rdx`, then executes the `syscall` instruction.' },
+    { title: 'The CPU switches to kernel mode', tag: 'CPU', detail: 'Execution jumps to the kernel\'s entry point. The program is paused; nothing it does can interfere.' },
+    { title: 'The kernel does the work', tag: 'kernel', detail: 'Looks up call 0 in its table, checks that fd 3 is open for reading, finds the data in the page cache or asks the disk driver (the process sleeps if it has to wait), and copies the bytes into the buffer.' },
+    { title: 'The result comes back', tag: 'rax', detail: 'The kernel puts the result in `rax`: the number of bytes read (7), or a negative error number such as -9 for a bad descriptor. The CPU returns to user mode.' },
+    { title: 'The library returns it', tag: 'errno', detail: 'On success, `read()` returns 7. On an error it stores the error number in `errno` and returns -1, and the program can turn it into text with `strerror()`: `Bad file descriptor`.' }
+  ]
+}} />
+
+Even a tiny command makes many of these. Traced on the test machine, `true` made 30 system calls, `cat /etc/hostname` about 60, and `ls -l /etc` over 700. Most of them come before the program's own code runs: the loader opening and mapping [shared libraries](/g/shared-libraries), setting up memory and loading locale files.
+
+## Under the hood
+
+**Watching with strace.** `strace cmd` runs a command and prints every system call it makes, with arguments and results, to stderr. The options you'll use most:
+
+| Option | Does |
+|---|---|
+| `-e trace=openat` | Only these calls |
+| `-e trace=%file` | Every call that takes a file name |
+| `-f` | Follow child processes |
+| `-o file` | Write the trace to a file |
+| `-s 200` | Show more of each string |
+| `-c` | Count calls and time, as a table |
+| `-p PID` | Attach to a running process |
+
+`-p` needs permission to trace the process. Ubuntu sets `kernel.yama.ptrace_scope = 1`, which lets you trace only your own children, so attaching to an already running program takes `sudo strace -p PID`. strace uses `ptrace`, the same mechanism debuggers use, and slows the traced program down noticeably.
+
+**Errors are numbers.** When a call fails, strace shows the name and text. Two real ones: `ls /nonexistent` ends with a `statx` call returning `-1 ENOENT (No such file or directory)`, and `echo hi > /root/x` as a normal user shows the shell's
+
+```
+openat(AT_FDCWD, "/root/x", O_WRONLY|O_CREAT|O_TRUNC, 0666) = -1 EACCES (Permission denied)
+```
+
+The ones you'll meet most:
+
+| Name | The message you see |
+|---|---|
+| `ENOENT` | No such file or directory |
+| `EACCES` | Permission denied |
+| `EPERM` | Operation not permitted |
+| `EEXIST` | File exists |
+| `EADDRINUSE` | Address already in use |
+| `ENOSPC` | No space left on device |
+| `EMFILE` | Too many open files |
+| `EAGAIN` | Resource temporarily unavailable |
+
+`EACCES` and `EPERM` look alike but differ: the first is a failed permission check on a file ([the rwx model](/g/permissions-model)), the second an operation that needs a privilege you lack, such as changing a file's owner. `ENOENT` from `execve` can mean the program's interpreter is missing rather than the file itself, which is why a script with a bad `#!` line, or Windows line endings, says `cannot execute: required file not found` ([the permission denied scenario](/s/permission-denied-script)).
+
+**Finding what a program reads.** "Which config file is it actually using?" is answered by `strace -f -e trace=openat,statx prog 2>&1 | grep -v ENOENT`: every file it opened or looked at, minus the ones that don't exist. Leave the `grep` out to also see the places it searched in vain, which shows the search order.
+
+**Waiting is a system call too.** A program waiting for input, a network reply, a child process or a timer is inside a system call (`read`, `poll`, `wait4`, `clock_nanosleep`), and the process sleeps until the kernel has an answer. `ps` shows it as `S` (sleeping, can be woken by a signal) or `D` (uninterruptible, usually disk or network I/O, which even SIGKILL has to wait for). The `WCHAN` column in `ps -o pid,stat,wchan:20,comm`, or `/proc/<PID>/wchan`, names the kernel function it's waiting in. [Signals](/g/signals) covers how a signal interrupts a waiting call.
+
+**The vDSO.** Some calls are made so often, and change so little, that the kernel offers them without the switch to kernel mode. It maps a small library, the vDSO, into every process; on x86-64 it provides `clock_gettime`, `gettimeofday`, `time` and `getcpu`. The C library uses it automatically, so a program checking the clock thousands of times a second stays fast.
+
+**Filtering system calls.** A process can ask the kernel to refuse any call outside a list, using seccomp. systemd uses this for its own services: `SystemCallFilter=` in a unit file, and settings like `ProtectKernelModules=yes`, which blocks the calls that load [kernel modules](/g/kernel-modules). On the test machine `systemd-timesyncd` runs with `Seccomp: 2` in its `/proc/<PID>/status`, meaning a filter is active; your shell shows `0`. Container runtimes such as Docker apply a default filter too, and browsers sandbox their tabs the same way.
+
+**Numbers differ by architecture.** `read` is 0 on x86-64 but 63 on 64-bit ARM, and the registers differ too. strace and the C library handle this for you; it only matters if you read raw numbers, as in `/proc/<PID>/syscall`.

@@ -24,4 +24,5 @@ gotchas:
   - "After editing a `.service` file, run `sudo systemctl daemon-reload` before restarting, or systemd keeps using the old version."
   - "`status` opens a pager when the output is long. Press `q`, or add `--no-pager`."
 related: [journalctl, sudo]
+concepts: [boot-sequence]
 scenarios: [system-service]

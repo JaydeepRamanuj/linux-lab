@@ -54,6 +54,7 @@ const WRAPPER_VALUE_OPTS: Record<string, Set<string>> = {
   watch: new Set(['-n', '--interval', '-d']),
   stdbuf: new Set(['-i', '-o', '-e']),
   time: new Set(['-f', '-o']),
+  strace: new Set(['-a', '-b', '-e', '-E', '-I', '-o', '-O', '-p', '-P', '-s', '-S', '-u', '-U', '-X']),
   nohup: new Set(),
   exec: new Set(['-a']),
   command: new Set(),
@@ -79,11 +80,8 @@ export function normalize(cmd: SimpleCommand, inheritedSudo = false): Normalized
     // `command -v x` and `type x` are lookups, not wrappers.
     if (prog === 'command' && words[1] && /^-[vV]$/.test(words[1].value)) break;
 
-    wrappers.push(prog);
-    if (prog === 'sudo' || prog === 'doas') sudo = true;
-    if (prog === 'xargs') viaXargs = true;
-
     let i = 1;
+    let keep = false;
     while (i < words.length) {
       const v = words[i]!.value;
       if (v === '--') {
@@ -95,8 +93,16 @@ export function normalize(cmd: SimpleCommand, inheritedSudo = false): Normalized
         continue;
       }
       if (!v.startsWith('-') || v === '-') break;
+      // `strace cmd` is rated by what it runs. With `-o file` it also writes a file, and with `-p` it attaches to
+      // a running process; then strace isn't peeled and gets rated itself.
+      if (prog === 'strace' && /^(-o|-p|--output(=.*)?|--attach(=.*)?)$/.test(v)) keep = true;
       i += valueOpts.has(v) ? 2 : 1;
     }
+    if (keep) break;
+
+    wrappers.push(prog);
+    if (prog === 'sudo' || prog === 'doas') sudo = true;
+    if (prog === 'xargs') viaXargs = true;
     // `timeout 10 cmd`: the duration comes before the program.
     if (prog === 'timeout' && words[i] && /^\d/.test(words[i]!.value)) i++;
     words = words.slice(i);

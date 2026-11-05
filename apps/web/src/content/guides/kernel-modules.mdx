@@ -1,0 +1,156 @@
+---
+track: kernel
+order: 4
+title: Kernel Modules and Drivers
+summary: "Most drivers are kernel modules: pieces of the kernel kept in separate files and loaded when the hardware that needs them appears. lsmod lists what's loaded, modinfo describes a module, and modprobe.d decides what loads and with which options."
+level: deeper
+readingMinutes: 7
+prerequisites: [kernel-user-space, proc-sys]
+observe:
+  - command: lsmod
+    explain: "The modules loaded now, read from `/proc/modules`: the name, the size in memory, and how many users each has, with the modules that depend on it. `bridge` is used by `br_netfilter`, and `stp` and `llc` are used by `bridge`. WSL loads only a dozen; a laptop typically has a hundred or more, for Wi-Fi, sound, graphics, USB and Bluetooth."
+    output: |
+      Module                  Size  Used by
+      intel_rapl_msr         16384  0
+      intel_rapl_common      32768  1 intel_rapl_msr
+      crc32c_intel           16384  0
+      sch_fq_codel           16384  1
+      configfs               53248  1
+      autofs4                45056  0
+      br_netfilter           28672  0
+      bridge                282624  1 br_netfilter
+      stp                    12288  1 bridge
+      llc                    12288  2 bridge,stp
+      ip_tables              28672  0
+      tun                    53248  0
+  - command: modinfo bridge
+    explain: "What the module file says about itself: where it lives under `/lib/modules/<kernel version>/`, what it depends on, and `vermagic`, the exact kernel it was built for. On Ubuntu you'll also see `signer` and `sig_key` lines: Canonical's signature, checked when the module loads."
+    output: |
+      filename:       /lib/modules/6.6.87.2-microsoft-standard-WSL2/kernel/net/bridge/bridge.ko
+      alias:          rtnl-link-bridge
+      version:        2.3
+      license:        GPL
+      srcversion:     4DDF2A9EB97A9EEC5B15340
+      depends:        stp,llc
+      retpoline:      Y
+      intree:         Y
+      name:           bridge
+      vermagic:       6.6.87.2-microsoft-standard-WSL2 SMP preempt mod_unload modversions
+  - command: modinfo ext4 | head -3
+    explain: "Not every driver is a module. ext4 is compiled into this kernel, so there's no file to load and it never appears in `lsmod`. Distributions build in what's needed to boot and make the rest modules."
+    output: |
+      name:           ext4
+      filename:       (builtin)
+      softdep:        pre: crc32c
+  - command: modprobe -D br_netfilter
+    explain: "What `modprobe br_netfilter` would load, in order, without loading anything: its dependencies first. modprobe works this out from `modules.dep`, which `depmod` builds when a kernel is installed."
+    output: |
+      insmod /lib/modules/6.6.87.2-microsoft-standard-WSL2/kernel/net/llc/llc.ko
+      insmod /lib/modules/6.6.87.2-microsoft-standard-WSL2/kernel/net/802/stp.ko
+      insmod /lib/modules/6.6.87.2-microsoft-standard-WSL2/kernel/net/bridge/bridge.ko
+      insmod /lib/modules/6.6.87.2-microsoft-standard-WSL2/kernel/net/bridge/br_netfilter.ko
+  - command: cat /sys/module/bridge/refcnt; ls /sys/module/bridge/holders
+    explain: "The same information in `/sys`: one user, and that user is `br_netfilter`. A module with users can't be removed. `/sys/module/` lists built-in parts of the kernel too, so it has many more entries than `lsmod`."
+    output: |
+      1
+      br_netfilter
+  - command: ls /etc/modprobe.d
+    explain: "Your settings for modprobe: modules not to load automatically (`blacklist`), options to pass, and commands to run instead. Ubuntu ships these; add your own file here rather than editing them."
+    output: |
+      blacklist-ath_pci.conf
+      blacklist-firewire.conf
+      blacklist-framebuffer.conf
+      blacklist-rare-network.conf
+      blacklist.conf
+      disable-algif_aead.conf
+      iwlwifi.conf
+  - command: cat /proc/sys/kernel/tainted
+    explain: "0 means the kernel is untainted: only modules from the kernel's own source tree, properly signed. Loading a proprietary or unsigned module sets bits here, and kernel developers ask for this number in bug reports."
+    output: |
+      0
+misconceptions:
+  - myth: "On Linux you have to install drivers, like on Windows."
+    reality: "Almost all drivers come with the kernel package and load on their own when the hardware appears. The exceptions are mostly NVIDIA's own graphics driver and some Wi-Fi chips, which Ubuntu offers under **Additional Drivers**."
+  - myth: "`blacklist` in modprobe.d stops a module from ever loading."
+    reality: "It only stops automatic loading by hardware alias. `modprobe name` still loads it, and so does another module that depends on it. To block it completely, add `install name /bin/false`."
+  - myth: "`lsmod` shows every driver in use."
+    reality: "It shows only modules loaded from files. Drivers compiled into the kernel, like ext4 here, never appear. `/sys/module/` and `/lib/modules/$(uname -r)/modules.builtin` include them."
+  - myth: "A module works with any kernel."
+    reality: "A module is built for one exact kernel version (its `vermagic`), and each kernel has its own folder under `/lib/modules/`. After a kernel update, out-of-tree modules such as NVIDIA's must be rebuilt, which DKMS does automatically."
+commands: [journalctl]
+references:
+  - label: "lsmod(8): show loaded modules"
+    url: https://man7.org/linux/man-pages/man8/lsmod.8.html
+  - label: "modinfo(8): show information about a module"
+    url: https://man7.org/linux/man-pages/man8/modinfo.8.html
+  - label: "modprobe(8): add and remove modules"
+    url: https://man7.org/linux/man-pages/man8/modprobe.8.html
+  - label: "modprobe.d(5): blacklist, options and install"
+    url: https://man7.org/linux/man-pages/man5/modprobe.d.5.html
+  - label: "modules-load.d(5): modules to load at boot"
+    url: https://man7.org/linux/man-pages/man5/modules-load.d.5.html
+  - label: "depmod(8): module dependencies"
+    url: https://man7.org/linux/man-pages/man8/depmod.8.html
+  - label: "udev(7): reacting to new devices"
+    url: https://man7.org/linux/man-pages/man7/udev.7.html
+  - label: "proc_sys_kernel(5): /proc/sys/kernel/tainted"
+    url: https://man7.org/linux/man-pages/man5/proc_sys_kernel.5.html
+  - label: "dkms(8): rebuild modules for new kernels"
+    url: https://manpages.ubuntu.com/manpages/noble/man8/dkms.8.html
+  - label: "mokutil(1): manage Secure Boot keys"
+    url: https://manpages.ubuntu.com/manpages/noble/man1/mokutil.1.html
+  - label: "Ubuntu security docs: UEFI Secure Boot and module signing"
+    url: https://documentation.ubuntu.com/security/security-features/platform-protections/secure-boot/
+  - label: "kernel_lockdown(7): what lockdown blocks"
+    url: https://man7.org/linux/man-pages/man7/kernel_lockdown.7.html
+---
+
+## The mental model
+
+A **kernel module** is a piece of the kernel kept in its own file (`.ko`, sometimes compressed as `.ko.zst` or `.ko.xz`) under `/lib/modules/<kernel version>/`. Once loaded, it's part of the running kernel, with the same full access as the rest of it. Most modules are **drivers**: the code that knows how to talk to one kind of hardware. Others add filesystems, network protocols or firewall features.
+
+A distribution's kernel can't build in a driver for every device that exists, so it builds in what it needs to boot and ships thousands of modules beside it. You rarely load one by hand. When hardware appears, the kernel and udev find the right module:
+
+<Flow spec={{
+  title: 'Plugging in a USB Wi-Fi adapter',
+  stages: [
+    { title: 'The device appears', tag: 'kernel', detail: 'The USB driver sees a new device and reads its IDs: vendor, product, class. It publishes them as a `MODALIAS` string such as `usb:v0BDAp8179…`.' },
+    { title: 'udev hears about it', tag: 'udev', detail: 'The kernel sends a uevent. `systemd-udevd` receives it and asks modprobe to load whatever matches the alias.' },
+    { title: 'modprobe finds the module', tag: 'modules.alias', detail: 'Each module declares the devices it handles. `depmod` collected those into `modules.alias` (11,007 lines on the test machine), so the alias leads to one module name. `/etc/modprobe.d` can veto it (`blacklist`) or add options.' },
+    { title: 'Dependencies load first', tag: 'modules.dep', detail: 'The Wi-Fi driver needs the wireless stack, which needs the crypto modules. modprobe loads them in order, each with the `init_module` system call.' },
+    { title: 'The driver takes the device', tag: 'probe', detail: 'Its start-up code runs inside the kernel, may load a firmware file from `/lib/firmware`, and registers a network interface. `ip link` shows it, and messages land in the kernel log.' }
+  ]
+}} />
+
+The same happens for most hardware at every boot, which is why `lsmod` on a laptop is long without anyone having loaded anything.
+
+## Under the hood
+
+**Driver versus firmware.** A driver is kernel code, running on your CPU. Firmware is a program for the device's own processor (a Wi-Fi chip, a GPU), which the driver uploads when it starts. Ubuntu ships the free drivers inside the kernel package and the firmware files in the `linux-firmware` package, under `/lib/firmware`. "firmware: failed to load …" in the kernel log means the driver is there but the file it needs isn't.
+
+**Which driver is a device using?** `lspci -k` shows each PCI device with a `Kernel driver in use:` line, and `lsusb -t` shows the driver for each USB device. `journalctl -k -b | grep -i -e firmware -e error` lists the kernel's complaints from this boot. `ip link` and `lsblk` show whether the network card or disk the driver should create actually exists.
+
+**Loading and removing by hand.** `sudo modprobe name` loads a module and its dependencies; `sudo modprobe -r name` removes it, and the dependencies if nothing else uses them. It refuses while the module is in use (a nonzero count in `lsmod`). `insmod` and `rmmod` are the low-level versions without dependency handling; prefer `modprobe`. A module loaded by hand is gone after a reboot.
+
+**Making it permanent.** The files in `/etc/modprobe.d/*.conf` take these lines:
+
+| Line | Effect |
+|---|---|
+| `blacklist name` | Don't load it automatically for hardware |
+| `install name /bin/false` | Never load it, even when asked |
+| `options name key=value` | Parameters to pass when it loads |
+| `softdep name pre: other` | Load `other` first |
+
+Modules to load at every boot, needed or not, go one per line in a file in `/etc/modules-load.d/`, read by `systemd-modules-load.service`. On Ubuntu, `/etc/modules` still works but its own comment calls it obsolete. Settings that matter before the root disk is mounted, such as for a storage or graphics driver, are copied into the initramfs, so run `sudo update-initramfs -u` after changing them ([the boot sequence](/g/boot-sequence)).
+
+**Parameters.** Many modules take options. `modinfo -p name` lists them, and `/sys/module/<name>/parameters/` shows the current values, some of which root can change at runtime ([/proc and /sys](/g/proc-sys)). A parameter can also go on the kernel command line as `name.key=value`, which works for built-in drivers too.
+
+**Out-of-tree modules and DKMS.** Drivers that aren't part of the kernel source, such as NVIDIA's proprietary driver, VirtualBox's modules or some Wi-Fi drivers, come as source code. DKMS builds them for each installed kernel and rebuilds them automatically when apt installs a new kernel. If a driver stops working after a kernel update, `dkms status` shows whether its build for the new kernel succeeded.
+
+**Secure Boot and signatures.** With Secure Boot on, Ubuntu's kernel loads only modules with a valid signature. Canonical signs the modules it ships. For DKMS modules, Ubuntu creates a Machine Owner Key (MOK) on your machine and signs with it, and the key has to be enrolled once: after installing, you set a password, and at the next reboot a text-mode MokManager screen asks you to choose **Enroll MOK** and type it. Skip that screen and the module won't load, which is a common reason a freshly installed NVIDIA driver "does nothing". `mokutil --sb-state` says whether Secure Boot is on.
+
+**Tainting.** Loading a module from outside the kernel's source tree, a proprietary one or an unsigned one sets flags in `/proc/sys/kernel/tainted` and in crash reports. The kernel still works; the flags tell developers that code they can't inspect was running, and many will ask you to reproduce a bug without it.
+
+**Loading modules is a privilege.** It needs root (`CAP_SYS_MODULE`), because a module can do anything the kernel can. That's why services that never need it run with `ProtectKernelModules=yes`, which blocks the [system calls](/g/system-calls) that load modules, and why a kernel in lockdown refuses unsigned ones even from root.
+
+**Under WSL** the kernel is Microsoft's, with most drivers built in and about 900 modules in a separate image mounted at `/lib/modules/`. There's no real hardware to probe, so only a handful load.

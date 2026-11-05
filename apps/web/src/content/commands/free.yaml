@@ -15,5 +15,5 @@ gotchas:
   - "A small `free` number is normal: Linux fills spare RAM with disk cache and hands it back on demand. Look at `available`."
   - "Heavy swap use plus low `available` is when things get slow. That's the time to find the memory hog."
 related: [top, htop, ps]
-concepts: [proc-sys]
+concepts: [proc-sys, kernel-user-space]
 scenarios: [cpu-ram-hog]

@@ -243,7 +243,33 @@ table('processes and services', [
   ['readelf -d /usr/bin/ls | grep NEEDED', 'readonly'],
   ["objdump -T /usr/bin/ls | grep -o 'GLIBC_[0-9.]*' | sort -uV", 'readonly'],
   ['gpgv --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg /var/lib/apt/lists/x_InRelease', 'readonly'],
-  ['readelf -d ./app > deps.txt', 'modifies']
+  ['readelf -d ./app > deps.txt', 'modifies'],
+  // Kernel and boot inspection (guides G5).
+  ['modinfo bridge', 'readonly'],
+  ['modinfo -F filename tun', 'readonly'],
+  ['lsinitramfs /boot/initrd.img | head', 'readonly'],
+  ['systemd-detect-virt', 'readonly'],
+  ['dmesg | tail', 'readonly'],
+  ['dmesg -T --level=err,warn', 'readonly'],
+  ['dmesg -C', 'elevated'],
+  ['sudo dmesg -c', 'elevated'],
+  ['dmesg --clear', 'elevated'],
+  ['dmesg -n 1', 'elevated'],
+  ['dmesg --console-off', 'elevated'],
+  ['modprobe bridge', 'elevated'],
+  ['sudo modprobe -r bridge', 'elevated'],
+  ['sudo insmod ./hello.ko', 'elevated'],
+  ['rmmod bridge', 'elevated'],
+  ['modprobe -D bridge', 'readonly'],
+  ['modprobe --show-depends bridge', 'readonly'],
+  ['modprobe -c | grep blacklist', 'readonly'],
+  ['modprobe -n -v bridge', 'readonly'],
+  ['strace -e trace=openat,read,write,close cat /etc/hostname', 'readonly'],
+  ['strace -f -e trace=execve bash -c ls', 'readonly'],
+  ['strace ls -p', 'readonly'],
+  ['strace rm -rf ~', 'destructive'],
+  ['strace -o trace.txt ls', 'modifies'],
+  ['strace -p 1234', 'modifies']
 ]);
 
 table('packages', [

@@ -71,6 +71,14 @@ describe('normalisation', () => {
     expect(c!.wrappers).toEqual(['sudo', 'env', 'nohup', 'nice']);
   });
 
+  it('unwraps strace and its value options, but not when it writes a file or attaches', () => {
+    const [c] = analyze('strace -f -e trace=openat -s 80 cat /etc/hostname').commands;
+    expect(c!.program).toBe('cat');
+    expect(c!.wrappers).toEqual(['strace']);
+    expect(analyze('strace -o out.txt ls').commands[0]!.program).toBe('strace');
+    expect(analyze('strace -p 42').commands[0]!.program).toBe('strace');
+  });
+
   it('merges short flags and maps long ones', () => {
     const [c] = analyze('rm -r -f --interactive=never x').commands;
     expect([...c!.short].sort()).toEqual(['f', 'i', 'r']);
