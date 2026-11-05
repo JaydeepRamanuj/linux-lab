@@ -120,6 +120,7 @@ avoid:
   - "Ubuntu's `awk` is `mawk`, which has no `-i inplace`. To change a file with awk, write to a new file and `mv` it over the old one."
   - "`sed -n '20,30p' file` prints lines 20 to 30; `sed '/^#/d' file` prints the file without comment lines. Neither touches the file."
 related: [find-exec-xargs, find-files, redirection, watch-log]
+concepts: [quoting-expansion]
 anatomy:
   "-i": "In place: write the result back into the file. Without it, sed only prints."
   "'s/localhost:5432/db:5432/g'": "The script: substitute `localhost:5432` with `db:5432`, globally (every match on each line, not just the first)."

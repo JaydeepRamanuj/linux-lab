@@ -1,0 +1,106 @@
+---
+track: shell
+order: 6
+title: "Shell Startup Files: .bashrc, .profile and Login Shells"
+summary: Which files bash reads depends on two questions, whether the shell is a login shell and whether it's interactive. Ubuntu's defaults chain the files so that most settings end up in ~/.bashrc.
+level: deeper
+readingMinutes: 7
+prerequisites: [environment-variables, path]
+observe:
+  - command: shopt -q login_shell && echo login || echo not login
+    explain: "`shopt -q` sets the exit code from an option without printing anything. In a terminal window on the Ubuntu desktop the answer is `not login`. Over SSH, or on a text console after typing your password, it's `login`."
+    output: |
+      not login
+  - command: echo $-
+    explain: "The shell's current single-letter options. An `i` means interactive: it reads commands from you and shows a prompt. A script's shell has no `i`."
+    output: |
+      himBHs
+  - command: ls -a ~ | grep -E '^\.(bash|profile)'
+    explain: "The per-user startup files Ubuntu gives every new account, copied from `/etc/skel`. `~/.bash_profile` isn't there, and that matters: see below."
+    output: |
+      .bash_history
+      .bash_logout
+      .bashrc
+      .profile
+  - command: grep -n bashrc ~/.profile
+    explain: "Ubuntu's `~/.profile` runs `~/.bashrc` when the shell is bash. That's how a login shell gets your aliases and prompt, even though bash itself reads only one of the two files."
+    output: |
+      13:    # include .bashrc if it exists
+      14:    if [ -f "$HOME/.bashrc" ]; then
+      15:	. "$HOME/.bashrc"
+  - command: sed -n 5,9p ~/.bashrc
+    explain: "The first thing Ubuntu's `~/.bashrc` does: stop unless the shell is interactive. Aliases and prompt settings below this line never reach scripts."
+    output: |
+      # If not running interactively, don't do anything
+      case $- in
+          *i*) ;;
+            *) return;;
+      esac
+misconceptions:
+  - myth: "Editing `~/.bashrc` changes my open terminals."
+    reality: "Each shell read the file once, when it started. Run `source ~/.bashrc` in a terminal to apply it there, or open a new one."
+  - myth: "Creating `~/.bash_profile` is a harmless place to add settings."
+    reality: "A login bash reads the first of `~/.bash_profile`, `~/.bash_login` and `~/.profile` and ignores the others. Creating `~/.bash_profile` silently stops `~/.profile` from running, along with its `PATH` lines and its call to `~/.bashrc`."
+  - myth: "Aliases from `~/.bashrc` work in scripts."
+    reality: "A script runs in a non-interactive shell, which doesn't read `~/.bashrc` at all. Even if it did, Ubuntu's `~/.bashrc` returns at the top, and alias expansion is off in scripts."
+  - myth: "My shell is bash, so these files apply."
+    reality: "Check with `echo $SHELL`. Zsh, the default on macOS and a common choice on Linux, reads `~/.zshenv`, `~/.zprofile`, `~/.zshrc` and `~/.zlogin` instead, and never reads `~/.bashrc`."
+commands: [source, bash, alias, export]
+references:
+  - label: "Bash Reference Manual: Bash Startup Files"
+    url: https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html
+  - label: "Bash Reference Manual: Interactive Shells"
+    url: https://www.gnu.org/software/bash/manual/html_node/Interactive-Shells.html
+  - label: "Ubuntu wiki: Environment variables"
+    url: https://help.ubuntu.com/community/EnvironmentVariables
+  - label: "Zsh manual: Startup/Shutdown Files"
+    url: https://zsh.sourceforge.io/Doc/Release/Files.html
+---
+
+## The mental model
+
+A shell starts with nothing but the environment it inherited. Everything else, your aliases, your prompt, extra `PATH` folders, comes from files it runs on the way up. Which files depends on two yes-or-no questions:
+
+- **Login shell?** The first shell of a session: SSH, a text console, `su -` or `sudo -i`, or `bash -l`. It's meant to set up the session once.
+- **Interactive?** It reads commands from you and shows a prompt. A script, or `bash -c '…'`, is not.
+
+| Shell | Example | Bash reads |
+|---|---|---|
+| Login, interactive | SSH into a server | `/etc/profile`, then the **first** of `~/.bash_profile`, `~/.bash_login`, `~/.profile` |
+| Not login, interactive | A new terminal window or tab on the desktop | `/etc/bash.bashrc`, then `~/.bashrc` |
+| Not interactive | `./script.sh`, `bash -c '…'`, cron jobs | Nothing, except a file named in `$BASH_ENV` |
+
+The two sets of files look unrelated, but Ubuntu links them so you rarely need to think about it. Here's an SSH login:
+
+<Flow spec={{
+  title: 'ssh into an Ubuntu machine',
+  stages: [
+    { title: '/etc/profile', tag: 'system', detail: 'Bash runs this first for every login shell. Ubuntu\'s version runs `/etc/bash.bashrc` too, if the shell is interactive.' },
+    { title: '/etc/profile.d/*.sh', tag: 'system', detail: '`/etc/profile` then runs every `.sh` file in this folder. Packages drop their login-time setup here: snapd adds `/snap/bin` to `PATH`, and bash-completion turns on Tab completion.' },
+    { title: '~/.profile', tag: 'you', detail: 'There\'s no `~/.bash_profile` or `~/.bash_login`, so bash runs this. It adds `~/bin` and `~/.local/bin` to `PATH` if they exist. Settings that should apply to the whole session, and not only to bash, belong here.' },
+    { title: '~/.bashrc', tag: 'you', detail: '`~/.profile` runs it because the shell is bash. Its first lines return early unless the shell is interactive. Then it sets history options, the prompt and colour aliases.', code: '. "$HOME/.bashrc"' },
+    { title: '~/.bash_aliases', tag: 'you', detail: '`~/.bashrc` runs this file at the end if it exists. It\'s the tidy place for your own aliases, so you never need to edit the long default `~/.bashrc`.' },
+    { title: 'The prompt', tag: 'shell', detail: 'Startup is done. When you log out, a login shell runs `~/.bash_logout`.' }
+  ]
+}} />
+
+A terminal window skips the first three stages and starts at `~/.bashrc`. So the practical rule on Ubuntu is:
+
+- **Aliases, functions, the prompt, shell options:** `~/.bashrc` (or `~/.bash_aliases`). They apply to every interactive bash, login or not. The [persistent alias scenario](/s/persistent-alias) does this.
+- **Environment variables and `PATH`:** `~/.bashrc` works for terminals. Use `~/.profile` if programs launched from the desktop need them too, then log out and back in. The [Add a folder to PATH scenario](/s/add-to-path) uses `~/.bashrc`.
+
+## Under the hood
+
+**Why the desktop reads `~/.profile`.** On Ubuntu, the graphical login runs your session through a login shell, so `~/.profile` runs once at the start, and apps started from the dock or app menu inherit that environment. They never see `~/.bashrc`, which only runs in terminals. Changes to `~/.profile` take effect at the next login. A terminal window on the desktop isn't a login shell because the session already did that work. GNOME Terminal has an option to change this, which is rarely what you want.
+
+**The `~/.bash_profile` trap.** Many guides written for other systems say "add this to `~/.bash_profile`". On Ubuntu that file doesn't exist, and creating it changes which file a login shell reads: `~/.profile` stops running, along with its `PATH` lines and its call to `~/.bashrc`. If you need one, make it a single line that hands over: `[ -f ~/.profile ] && . ~/.profile`. Fedora is the other way round: it ships a `~/.bash_profile` that runs `~/.bashrc`, and no `~/.profile`.
+
+**Why `/etc/bash.bashrc` exists.** Upstream bash reads only `~/.bashrc` for interactive non-login shells. Debian and Ubuntu build it to read the system-wide `/etc/bash.bashrc` first, so administrators can set defaults for every user. Fedora uses `/etc/bashrc` instead, called from the user's `~/.bashrc`.
+
+**How bash knows.** A login shell is one started with `-l` or `--login`, or whose name (`$0`) starts with a dash. `login` and `sshd` start it as `-bash`, which is how it recognises itself. Interactive means started with `-i`, or with no script or `-c` and with stdin and stderr connected to a terminal. `$-` contains `i` in that case, which is exactly what the guard at the top of `~/.bashrc` checks.
+
+**`source` versus a new shell.** `source ~/.bashrc` (or `. ~/.bashrc`) runs the file inside the current shell, so the changes apply there. It also runs everything again: a line like `PATH="$HOME/go/bin:$PATH"` adds a second copy each time. That's harmless, but it's why `PATH` can grow long. `exec bash` replaces the shell with a fresh one instead, which starts clean but keeps exported variables. Opening a new terminal is the cleanest test of what your files really do.
+
+**Seeing what runs.** `bash -lx -c exit 2>&1 | less` starts a login shell with tracing on and shows every line of every startup file as it runs, in order. It's the fastest way to find which file sets a variable you don't recognise.
+
+**sh is not bash.** On Ubuntu, `/bin/sh` is `dash`, a smaller shell. As a login shell it reads `/etc/profile` and `~/.profile`, never `~/.bashrc`. That's why `~/.profile` checks `$BASH_VERSION` before running `~/.bashrc`: the file may be read by a shell that would choke on bash syntax.

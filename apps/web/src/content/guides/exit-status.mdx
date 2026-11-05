@@ -1,0 +1,109 @@
+---
+track: shell
+order: 7
+title: How Exit Status Works
+summary: A finishing program hands the kernel one byte, its parent collects it, and the shell turns it into $?. Every if, && and || in bash is a test of that number.
+level: essentials
+readingMinutes: 7
+prerequisites: [pressing-enter]
+observe:
+  - command: bash -c 'exit 300'; echo $?
+    explain: "The status is a single byte, 0 to 255, so a program can't return 300. Only the lowest 8 bits survive: 300 − 256 = 44. `exit -1` comes out as 255 the same way."
+    output: |
+      44
+  - command: type [ test true false
+    explain: "The things that look like syntax in `if [ … ]` are commands. `[` is a builtin that takes `]` as its last argument, and exits 0 or 1 depending on the test. `true` and `false` do nothing except exit 0 and 1."
+    output: |
+      [ is a shell builtin
+      test is a shell builtin
+      true is a shell builtin
+      false is a shell builtin
+  - command: '[ 2 -gt 10 ]; echo $?'
+    explain: "A test that's false is a command that fails. `if`, `&&`, `||` and `while` all read exit codes, and nothing else."
+    output: |
+      1
+  - command: '! grep -q root /etc/passwd; echo $?'
+    explain: "`grep -q` exits 0 because it found a match. `!` in front inverts the code, so the line counts as a failure."
+    output: |
+      1
+  - command: bash -ec 'false && true; echo "kept going"'
+    explain: "With `-e`, bash should stop at `false`. But `false` is on the left of `&&`, a position where a failure counts as a tested answer, not an error. The script carries on."
+    output: |
+      kept going
+  - command: bash -ec 'x=$(false); echo "unreached"'; echo $?
+    explain: "A plain assignment takes the status of its `$(…)`, so `-e` stops the script here, with `false`'s 1."
+    output: |
+      1
+  - command: bash -ec 'export x=$(false); echo "still running"'
+    explain: "The same failure, but `export` is a command of its own, and it succeeded. The line's status is `export`'s 0, so `-e` never sees the failure. `local` and `declare` hide it the same way."
+    output: |
+      still running
+misconceptions:
+  - myth: "A non-zero exit code means the program crashed."
+    reality: "It means whatever that program says it means. `grep` returns 1 for \"no match\" and `diff` returns 1 for \"the files differ\". Only 2 and up are real errors for those two. Check the program's man page under EXIT STATUS."
+  - myth: "`if` checks whether a condition is true."
+    reality: "`if` runs a command and checks whether it exited 0. `[ … ]` and `[[ … ]]` are just the commands most often used there. `if grep -q x file` and `if mkdir dir` work the same way."
+  - myth: "`$?` keeps the status until the next failure."
+    reality: "Every command replaces it, `echo` and `[` included. Save it straight away (`rc=$?`) if you need it later."
+  - myth: "`set -e` stops a script at any failure."
+    reality: "Not inside an `if` test, on the left of `&&` or `||`, after `!`, or before the last command of a pipeline. Failures inside functions called from those places are ignored too. It's a safety net with holes."
+commands: [set, bash, kill]
+scenarios: [exit-codes, command-chaining]
+references:
+  - label: "Bash Reference Manual: Exit Status"
+    url: https://www.gnu.org/software/bash/manual/html_node/Exit-Status.html
+  - label: "Bash Reference Manual: The set builtin (-e and its exceptions)"
+    url: https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
+  - label: "exit(3): cause normal process termination"
+    url: https://man7.org/linux/man-pages/man3/exit.3.html
+  - label: "wait(2): wait for a process to change state"
+    url: https://man7.org/linux/man-pages/man2/wait.2.html
+  - label: "signal(7): signal numbers"
+    url: https://man7.org/linux/man-pages/man7/signal.7.html
+---
+
+## The mental model
+
+When a program ends, it leaves behind one number from 0 to 255. **0 means success. Anything else means some kind of failure**, and the program decides which kind. The number travels from the program, through the kernel, to the parent that started it:
+
+<Flow spec={{
+  title: 'From exit(1) to $?',
+  stages: [
+    { title: 'The program finishes', tag: 'program', detail: 'It calls `exit(1)`, returns 1 from `main`, or a script runs `exit 1`. A script that just reaches its end exits with the status of the last command it ran.', code: 'exit(1)' },
+    { title: 'The kernel keeps the status', tag: 'kernel', detail: 'The process is gone, but the kernel keeps a small record of it, with its status, until the parent asks. A finished process in this state is a zombie, `Z` in `ps`.' },
+    { title: 'The parent collects it', tag: 'kernel', detail: 'Bash has been waiting in `wait()`. The kernel hands over a status word saying either "exited normally with code 1" or "killed by signal N". Then the zombie record is removed.' },
+    { title: 'The shell sets $?', tag: 'shell', detail: 'A normal exit becomes its code. A death by signal becomes 128 + the signal number: 130 for Ctrl+C (SIGINT, 2), 137 for `kill -9`, 143 for a plain `kill` (SIGTERM, 15).', code: '$? = 1' },
+    { title: 'Operators read it', tag: 'shell', detail: '`&&` runs the next command only if `$?` is 0, `||` only if it isn\'t, and `if` and `while` choose a branch. Nothing in bash looks at a command\'s output to decide whether it worked.' }
+  ]
+}} />
+
+Some codes have a fixed meaning because the shell or a convention sets them:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Reading an exit code',
+  caption: 'Codes from 1 to 125 belong to the program. The ones above are set by the shell when it couldn\'t run the program, or when a signal ended it.',
+  zones: [
+    { title: 'Success', items: [{ text: '0', tone: 'good' }] },
+    { title: 'Program\'s own', items: [{ text: '1  general failure', tone: 'bad' }, { text: '2  bad usage, or a real error for grep and diff', tone: 'bad' }, { text: '124  timeout ran out', tone: 'caution', note: 'the timeout command' }] },
+    { title: 'Set by the shell', items: [{ text: '126  found but not executable', tone: 'bad' }, { text: '127  command not found', tone: 'bad' }, { text: '128 + n  killed by signal n', tone: 'caution', note: '130, 137, 141, 143' }] }
+  ]
+}} />
+
+The [exit codes scenario](/s/exit-codes) shows `$?`, `|| true`, `PIPESTATUS` and `set -euo pipefail` in a CI script, and [What &&, ||, ; and | actually do](/s/command-chaining) covers the operators.
+
+## Under the hood
+
+**Only eight bits.** The kernel's status word has room for one byte of exit code, plus the signal number if a signal ended the process. So `exit 256` reports 0, a success, and `exit 300` reports 44. Programs that want to return a count, such as "number of errors found", cap it below 256 for that reason.
+
+**Signals and 128.** A process killed by a signal never chose an exit code, so the shell makes one up: 128 plus the signal number. That's why codes above 128 usually mean "killed": 137 is SIGKILL (9), often the kernel's out-of-memory killer, and 141 is SIGPIPE (13), a writer whose reader went away, explained in [stdin, stdout, stderr and pipes](/g/standard-streams). A program can also `exit 130` by choice, so the shell's number alone can't tell the two apart. `kill -l 137` prints `KILL`.
+
+**Collecting the status is the parent's job.** Until the parent calls `wait`, the dead process stays in the process table as a zombie. It uses no memory or CPU, only an entry. A few zombies are harmless. Thousands mean the parent program has a bug. If the parent itself dies, its children are adopted by PID 1 (or by a "subreaper" such as your `systemd --user` session), which collects them.
+
+**Builtins and compound commands have statuses too.** `cd` into a missing folder returns 1. A pipeline returns its last command's status, or with `set -o pipefail` the last non-zero one. `! cmd` inverts. An `if` with no branch taken returns 0. A function returns the status of its last command, or the number given to `return`. A syntax error makes bash exit with 2.
+
+**`set -e` in detail.** Bash exits when a command fails, *unless* the failure is being tested. The exceptions are: the condition of `if`, `while` and `until`; any command in an `&&` or `||` list except the last; anything after `!`; and any command in a pipeline except the last. The rule applies to the whole call, so a function called from a tested position runs without `-e` all the way through: in `f || echo failed`, a failing command inside `f` doesn't stop it. Assignments are the other trap: `x=$(false)` on its own line does stop the script, because a plain assignment takes the status of its command substitution, but `local x=$(false)` doesn't, because `local` succeeded. The last three examples above show both.
+
+**Programs choose their own codes.** Most use only 0 and 1. Some document more: `grep` and `diff` use 1 for a negative answer and 2 for trouble, `curl` has over 90 codes, and `timeout` returns 124 when the time ran out. A C header, `sysexits.h`, proposes codes 64 to 78 (such as 64 for bad usage), but few programs follow it. When a code matters, check the program's man page under EXIT STATUS.
+
+**`$?` versus `PIPESTATUS`.** `$?` is a single number, replaced after every command. `PIPESTATUS` is an array with one status per command of the most recent pipeline, a single command counting as a pipeline of one. Both are lost as soon as another command runs, so read them on the next line: `cmd1 | cmd2; s=("${PIPESTATUS[@]}")`.

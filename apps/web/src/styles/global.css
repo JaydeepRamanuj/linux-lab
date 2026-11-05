@@ -128,6 +128,15 @@
   text-transform: uppercase;
 }
 
+/* Like label-caps, but keeps the text's case: widget titles are often commands or paths, where case matters. */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 @utility btn-primary {
   background-image: linear-gradient(135deg, #4f46e5 0%, #7073f5 100%);
   color: white;

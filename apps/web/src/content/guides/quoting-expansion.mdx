@@ -1,0 +1,108 @@
+---
+track: shell
+order: 5
+title: Quoting and the Order of Expansion
+summary: Bash rewrites each word in a fixed order, from braces to globs, and quotes switch off some of those steps. Most quoting bugs come from a step running when you didn't expect it.
+level: deeper
+readingMinutes: 8
+prerequisites: [pressing-enter]
+observe:
+  - command: f='my file.txt'; printf '[%s]\n' $f "$f" '$f'
+    explain: "`printf '[%s]\\n'` prints each argument it gets in brackets, so you can count them. Unquoted, the value is split into two words. Double quotes keep it as one. Single quotes stop the expansion itself."
+    output: |
+      [my]
+      [file.txt]
+      [my file.txt]
+      [$f]
+  - command: bash -xc 'v="a b"; printf "%s\n" $v "$v"'
+    explain: "`-x` prints each command after every expansion, with quotes added where an argument contains a space. You can see `$v` arrive as two arguments and `\"$v\"` as one."
+    output: |
+      + v='a b'
+      + printf '%s\n' a b 'a b'
+      a
+      b
+      a b
+  - command: n=3; echo {1..$n}
+    explain: "Brace expansion runs before variables are filled in. At that point the word is the text `{1..$n}`, which isn't a valid range, so it's left alone."
+    output: |
+      {1..3}
+  - command: echo *.nomatch
+    explain: "A glob that matches nothing is passed on unchanged. The program receives the literal text `*.nomatch`, and usually says that file doesn't exist."
+    output: |
+      *.nomatch
+  - command: set -- one "two three"; printf '[%s]\n' "$@"; printf '[%s]\n' "$*"
+    explain: "`set --` sets the positional parameters, like a script's arguments. `\"$@\"` gives each one as its own word, exactly as passed. `\"$*\"` joins them into one word with spaces."
+    output: |
+      [one]
+      [two three]
+      [one two three]
+  - command: echo ~ "~" ~root
+    explain: "`~` expands only unquoted and at the start of a word. `~name` is another user's home folder."
+    output: |
+      /home/jd ~ /root
+misconceptions:
+  - myth: "Quotes are part of the value."
+    reality: "Quotes are instructions to the shell, and the last expansion step removes them. `name=\"Jo\"` stores `Jo`, two characters."
+  - myth: "`$var` and `\"$var\"` are the same unless the value has spaces."
+    reality: "Unquoted, the value is also checked for glob characters. `x='*'; echo $x` lists the folder. A value that's empty disappears entirely unquoted, so `[ $x = y ]` turns into `[ = y ]` and fails with a syntax error."
+  - myth: "Single quotes and double quotes are interchangeable."
+    reality: "Double quotes still expand `$var`, `$(…)`, `$((…))` and backticks. Single quotes expand nothing, and can't contain a single quote at all, even with a backslash."
+  - myth: "Variables need quotes everywhere."
+    reality: "Nearly everywhere. Two places don't split or glob: the right-hand side of an assignment (`b=$a`) and inside `[[ … ]]`. Quoting there does no harm, so the safe habit is to quote anyway."
+commands: [echo, bash, set]
+references:
+  - label: "Bash Reference Manual: Shell Expansions (the order)"
+    url: https://www.gnu.org/software/bash/manual/html_node/Shell-Expansions.html
+  - label: "Bash Reference Manual: Quoting"
+    url: https://www.gnu.org/software/bash/manual/html_node/Quoting.html
+  - label: "Bash Reference Manual: Word Splitting"
+    url: https://www.gnu.org/software/bash/manual/html_node/Word-Splitting.html
+  - label: "Bash Reference Manual: Filename Expansion"
+    url: https://www.gnu.org/software/bash/manual/html_node/Filename-Expansion.html
+  - label: "POSIX Shell Command Language: Word Expansions"
+    url: https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html
+---
+
+## The mental model
+
+After bash has split your line into words, it rewrites each word in a fixed order. Every step can change what the next step sees. Here is one line going through all of them, with `pattern='*.md'` and `name='my notes.txt'`:
+
+<Flow spec={{
+  title: 'cp ~/{docs,src}/$pattern "$name" /tmp',
+  stages: [
+    { title: 'Brace expansion', tag: 'text only', detail: 'Pure text, before anything else is looked at. `{docs,src}` makes two words. Variables are still unexpanded text, which is why `{1..$n}` can\'t work.', code: 'cp ~/docs/$pattern ~/src/$pattern "$name" /tmp' },
+    { title: 'Tilde expansion', tag: 'unquoted', detail: 'A `~` at the start of a word becomes your home folder.', code: 'cp /home/jd/docs/$pattern /home/jd/src/$pattern "$name" /tmp' },
+    { title: 'Parameter, command and arithmetic expansion', tag: 'unquoted and "…"', detail: 'Left to right, `$var`, `${var}`, `$(command)` and `$((1+2))` are replaced by their results. This step also runs inside double quotes.', code: 'cp /home/jd/docs/*.md /home/jd/src/*.md "my notes.txt" /tmp' },
+    { title: 'Word splitting', tag: 'unquoted only', detail: 'Results of the previous step that weren\'t in double quotes are split at spaces, tabs and newlines. `"my notes.txt"` was quoted, so it stays one word. Text you typed is never split again: only expansion results are.', code: 'cp  /home/jd/docs/*.md  /home/jd/src/*.md  "my notes.txt"  /tmp' },
+    { title: 'Filename expansion (globs)', tag: 'unquoted only', detail: 'Each unquoted word with `*`, `?` or `[…]` is replaced by the matching file names, sorted. A pattern with no matches stays as it is.', code: 'cp  /home/jd/docs/a.md  /home/jd/docs/b.md  /home/jd/src/*.md  "my notes.txt"  /tmp' },
+    { title: 'Quote removal', tag: 'all', detail: 'The quote characters that did their job are removed. What\'s left is the final argument list `cp` receives. `src/*.md` matched nothing, so `cp` gets the literal pattern and reports that it doesn\'t exist.', code: '[cp] [/home/jd/docs/a.md] [/home/jd/docs/b.md] [/home/jd/src/*.md] [my notes.txt] [/tmp]' }
+  ]
+}} />
+
+Quotes decide which steps run on each part of a word:
+
+| | Expansion (`$`, `$(…)`) | Splitting | Globs |
+|---|---|---|---|
+| No quotes | yes | yes | yes |
+| `"double"` | yes | no | no |
+| `'single'` | no | no | no |
+
+So the one rule worth keeping: **put double quotes around every `$`** unless you want splitting and globbing on the result. The [expansion and quoting scenario](/s/expansion-quoting) shows the bugs this prevents, file names with spaces above all.
+
+## Under the hood
+
+**The third step is several at once, left to right.** Parameter expansion, command substitution, arithmetic and process substitution (`<(…)`) are one step in bash's order, done in the order they appear on the line. A `$(…)` runs in a subshell, a child process, and its output replaces it with every trailing newline removed. That's why `"$(printf 'a\n\n\n')"` is just `a`.
+
+**Splitting uses `IFS`.** Word splitting cuts at the characters in the `IFS` variable, by default space, tab and newline. `IFS=: ; p='x:y'; printf '[%s]\n' $p` prints `[x]` and `[y]`. Scripts that set `IFS` and forget to restore it break every unquoted expansion after it. Spaces and tabs in a row count as one separator, while other `IFS` characters count once each, so `a::b` split on `:` gives three fields, one empty.
+
+**What a glob can and can't match.** `*` and `?` don't match a leading `.`, so `*` skips hidden files, and they never match a `/`. A pattern with no match is left as it is. Two options change that: `shopt -s nullglob` removes it instead, and `shopt -s failglob` makes it an error. Zsh errors by default, with `no matches found`, which is why an unquoted `?` in a URL fails in zsh but works in bash: `curl https://x.test/a?b=1` should be quoted in both.
+
+**Globs in variables expand late.** `x='*'` stores one character. The glob only happens when `$x` is used unquoted, at step 5. A filename stored in a variable can contain `*` and turn into a list of other files.
+
+**`"$@"` is the special case.** Inside double quotes, `$@` expands to one word per positional parameter, keeping each exactly as it was passed, spaces and all. Arrays work the same way: `"${arr[@]}"` gives one word per element. It's the only way to pass a script's arguments on to another command unchanged. `$*` and `$@` without quotes are split and globbed like anything else.
+
+**Other quoting forms.** A backslash quotes the next character. `$'…'` (ANSI-C quoting) understands escapes like `\t`, `\n` and `\'`, so `$'it\'s'` works where `'it\'s'` doesn't. `$"…"` is for translations and behaves like double quotes otherwise. Inside double quotes, `\` keeps its meaning only before `$`, `` ` ``, `"`, `\` and a newline.
+
+**Where splitting doesn't happen.** In an assignment, `b=$a` gets the whole value, spaces included, and no globbing. Inside `[[ … ]]`, variables aren't split or globbed either. (On the right of `==`, an unquoted value is a *pattern*, though: `[[ $f == *.md ]]` matches by suffix.) `case` words and here-strings follow the same rule. Bash's old `[ … ]` is a normal command, so everything is split there.
+
+**Aliases come even earlier.** They're replaced while the line is split into words, before any of this. That's why an alias can contain operators like `|` and `&&`, and why aliases aren't expanded in scripts unless `shopt -s expand_aliases` is set.

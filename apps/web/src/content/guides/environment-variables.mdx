@@ -1,0 +1,124 @@
+---
+track: shell
+order: 2
+title: How Programs Inherit Their Environment
+summary: Every process carries a list of NAME=value pairs that it got as a copy from the process that started it. Copies flow down the process tree, never back up.
+level: essentials
+readingMinutes: 7
+prerequisites: [pressing-enter]
+observe:
+  - command: printenv HOME USER
+    explain: "`printenv` prints variables from its own environment, which it got as a copy from your shell. Without names, it prints all of them, one `NAME=value` per line."
+    output: |
+      /home/jd
+      jd
+  - command: FOO=1; declare -p FOO; export FOO; declare -p FOO
+    explain: "`declare -p` shows how the shell stores a variable. `--` is a plain shell variable, visible only inside this shell. `-x` means exported: it now goes into the environment of every program this shell starts."
+    output: |
+      declare -- FOO="1"
+      declare -x FOO="1"
+  - command: bash -c 'export X=child'; echo "X=[$X]"
+    explain: "The child shell exports `X` into its own environment and exits. Your shell never sees it: there is no way for a child to change its parent's variables."
+    output: |
+      X=[]
+  - command: env -i bash -c env
+    explain: "`env -i` starts a program with an empty environment. The three names left are ones bash adds for itself when it starts: `PWD`, `SHLVL` and `_`. Everything else you normally see came from somewhere up the process tree."
+    output: |
+      PWD=/home/jd
+      SHLVL=0
+      _=/usr/bin/env
+  - command: tr '\0' '\n' < /proc/$$/environ | head -n 3
+    explain: "The kernel's copy of the environment your shell was started with. The entries are separated by zero bytes, so `tr` turns them into lines. Only the process's owner (and root) can read this file."
+    output: |
+      HOSTTYPE=x86_64
+      LANG=C.UTF-8
+      PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+misconceptions:
+  - myth: "`export` makes a variable available everywhere."
+    reality: "It marks the variable for programs this shell starts from now on. Other terminals, programs already running, and the shell that started yours are all unaffected."
+  - myth: "A script can set variables for the terminal you ran it from."
+    reality: "`./setup.sh` runs in a child process, and its exports disappear when it exits. To change the current shell, run the file inside it with `source setup.sh`."
+  - myth: "Changing a variable changes it for programs that are already running."
+    reality: "Each program got its own copy when it started. Changing your shell's copy afterwards does nothing to theirs. Restart the program to pick up the new value."
+  - myth: "Variables in `~/.bashrc` reach every program."
+    reality: "Only programs started from a bash terminal. Services, cron jobs and apps launched from the desktop are started by other processes that never read `~/.bashrc`."
+  - myth: "`sudo` keeps your environment."
+    reality: "Ubuntu's sudo resets it (`env_reset`) and replaces `PATH` with a fixed list (`secure_path`). A variable you exported is usually gone inside `sudo`."
+commands: [env, export, source, sudo]
+references:
+  - label: "environ(7): the user environment"
+    url: https://man7.org/linux/man-pages/man7/environ.7.html
+  - label: "execve(2): how argv and envp reach a new program"
+    url: https://man7.org/linux/man-pages/man2/execve.2.html
+  - label: "Bash Reference Manual: Environment"
+    url: https://www.gnu.org/software/bash/manual/html_node/Environment.html
+  - label: "proc_pid_environ(5): /proc/pid/environ"
+    url: https://man7.org/linux/man-pages/man5/proc_pid_environ.5.html
+  - label: "sudoers(5): env_reset and secure_path"
+    url: https://www.sudo.ws/docs/man/sudoers.man/
+---
+
+## The mental model
+
+Every process has an **environment**: a list of `NAME=value` strings, set when the program starts. When a process starts another one, it hands over a copy of the list. The new process can change its copy as much as it likes, and the parent's copy stays as it was.
+
+Your shell keeps two kinds of variable, and only one kind gets copied:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'What your shell holds, and what a child gets',
+  caption: 'Only exported variables are copied into a program the shell starts. `PORT=4000 npm run dev` adds a variable to that one copy.',
+  zones: [
+    { title: 'Shell variables', items: [{ text: 'count=3', tone: 'ghost', note: 'set with count=3' }, { text: 'PS1=…', tone: 'ghost', note: 'prompt, not exported' }] },
+    { title: 'Exported', items: [{ text: 'HOME=/home/jd', tone: 'good' }, { text: 'PATH=/usr/local/bin:…', tone: 'good' }, { text: 'NODE_ENV=production', tone: 'good', note: 'after export' }] },
+    { title: 'Child process gets', items: [{ text: 'HOME, PATH, NODE_ENV', tone: 'good', note: 'copies' }, { text: 'count, PS1', tone: 'ghost', note: 'missing' }] }
+  ]
+}} />
+
+Follow one variable down the process tree and the rules become visible:
+
+<Flow spec={{
+  title: 'NODE_ENV from login to your app',
+  stages: [
+    { title: 'Login', tag: 'system', detail: 'The login process builds a starting environment: `HOME`, `USER`, `SHELL` and `LOGNAME` from your account, and `PATH` and other values from `/etc/environment`.' },
+    { title: 'Your shell starts', tag: 'shell', detail: 'Bash gets that list as its environment and turns every entry into an exported shell variable. Then its startup files run, and `export` lines in them add more.' },
+    { title: 'You run export', tag: 'shell', detail: '`export NODE_ENV=production` marks the variable for export. Nothing outside the shell changes yet: no other process can see it.', code: 'export NODE_ENV=production' },
+    { title: 'You start a program', tag: 'kernel', detail: 'Bash forks, then calls `execve` with two lists: the arguments and the environment, built from every exported variable. The kernel copies both into the new program\'s memory.', code: 'npm run dev' },
+    { title: 'The program reads its copy', tag: 'child', detail: 'Node reads `process.env.NODE_ENV`, Python `os.environ`, C `getenv()`. They all read the copy in their own memory. If npm starts more processes, each gets a copy of npm\'s list in turn.' },
+    { title: 'Nothing flows back', tag: 'child', detail: 'When the program exits, its copy goes with it. Whatever it set or changed never reaches your shell.' }
+  ]
+}} />
+
+That one rule, copies flow down and never up, explains the usual surprises:
+
+- **A script can't change your terminal.** It runs as a child. That's why setup scripts tell you to `source` them, which runs them inside your shell instead.
+- **A new value needs a restart.** A running editor or server keeps the copy it started with.
+- **Each terminal is separate.** Two terminals are two shells, each with its own copies. An `export` in one doesn't reach the other. Lines in a startup file run in every new shell, which is how a setting becomes permanent. See [shell startup files](/g/shell-startup-files).
+
+The [environment variables scenario](/s/env-vars) covers the three ways to set a variable (`VAR=x`, `export`, `VAR=x cmd`) and `.env` files.
+
+## Under the hood
+
+**Where the list lives.** `execve` takes the program, the argument list and the environment list. The kernel copies the strings onto the top of the new program's stack, next to the arguments. The C library exposes them as `environ`, and `getenv` searches that array. There's no central store of variables anywhere: each process has its own block of memory.
+
+**`/proc/<pid>/environ` is the starting copy.** It shows the environment as it was when the program started. If the program later changes its variables, the file doesn't follow. Your shell is a good example: run `export LATE=1`, and `LATE` still isn't in `/proc/$$/environ`, because bash keeps its variables in its own tables and only builds a fresh list when it starts a program. The file is readable only by the process's owner and root, because environments often hold tokens.
+
+**Arguments and environment share one limit.** The kernel caps the combined size of the arguments and environment passed to `execve`. On a typical system that's 2 MB (`getconf ARG_MAX` prints `2097152`), a quarter of the stack size limit. When a command fails with `Argument list too long`, a huge environment counts against the same budget as the arguments.
+
+**What bash adds and leaves out.** When bash starts, it sets `PWD`, `SHLVL` (how many shells deep you are) and `_` (the last argument of the previous command). With no `PATH` at all, it sets a default one for its own lookups but doesn't export it, which is why `env -i bash -c env` shows no `PATH`. Arrays can't be exported: `export arr` copies nothing. Functions can, with `export -f`: bash passes them as specially named variables like `BASH_FUNC_name%%`.
+
+**Who doesn't read your shell files.** A variable only reaches a process if something on its way down the tree set it:
+
+| Started by | Gets |
+|---|---|
+| A terminal (bash) | Login environment plus whatever `~/.bashrc` exports |
+| The desktop (dock, app menu) | Login environment. On Ubuntu the graphical login reads `~/.profile`, not `~/.bashrc` |
+| `sudo` | A fresh, small environment: `env_reset`, and `secure_path` as `PATH`. `sudo -E` asks to keep yours, if the policy allows |
+| cron | A handful of variables (`SHELL`, `HOME`, `LOGNAME`), plus `/etc/environment` on Ubuntu. Nothing from your shell files |
+| systemd services | Only what the unit file sets with `Environment=` or `EnvironmentFile=` |
+
+So a tool that works in your terminal but fails in cron, a service or under `sudo` is very often a missing variable, with `PATH` the most common one. The [PATH guide](/g/path) covers that case.
+
+**`/etc/environment` isn't a script.** It's read at login by the `pam_env` module as plain `NAME=value` lines. `$HOME`, `export` and `if` don't work there. Fedora and Arch use the same file through the same module.
+
+**Names.** Variable names are case-sensitive. By convention, exported variables are UPPER_CASE, and lowercase names are used for shell-local variables, so a local `path` can't clobber `PATH` by accident.

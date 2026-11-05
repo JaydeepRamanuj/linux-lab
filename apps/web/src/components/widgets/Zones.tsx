@@ -31,7 +31,7 @@ export default function Zones({ spec }: { spec: ZonesSpec }) {
     <div className={`grid gap-2 ${spec.zones.length >= 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
       {spec.zones.map((zone, zi) => (
         <div key={zone.title} className="rounded-lg bg-surface-container/50 border border-white/5 p-2.5 min-w-0">
-          <div className="label-caps text-outline mb-2 text-[10px]! truncate">{zone.title}</div>
+          <div className="label-mono text-outline mb-2 text-[10px]! truncate">{zone.title}</div>
           <div className="space-y-1.5">
             {zone.items.length === 0 && (
               <div className="text-[11px] font-mono text-outline/70 italic px-1 py-1.5">{zone.empty ?? 'empty'}</div>

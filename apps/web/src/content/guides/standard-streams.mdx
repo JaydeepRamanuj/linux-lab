@@ -1,0 +1,103 @@
+---
+track: shell
+order: 4
+title: stdin, stdout, stderr and Pipes
+summary: Every program starts with three open file descriptors, 0, 1 and 2. Redirection and pipes work by pointing those numbers somewhere else before the program starts.
+level: essentials
+readingMinutes: 7
+prerequisites: [pressing-enter]
+observe:
+  - command: ls -l /proc/$$/fd
+    explain: "Your shell's open file descriptors. 0, 1 and 2 all point at the same terminal device, `/dev/pts/0`. Bash keeps 255 as a spare copy for itself."
+    output: |
+      total 0
+      lrwx------ 1 jd jd 64 Nov  5 06:54 0 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 06:54 1 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 06:54 2 -> /dev/pts/0
+      lrwx------ 1 jd jd 64 Nov  5 06:54 255 -> /dev/pts/0
+  - command: tty
+    explain: "The terminal connected to stdin. Each terminal window or tab gets its own numbered device under `/dev/pts`."
+    output: |
+      /dev/pts/0
+  - command: echo hi | ls -l /proc/self/fd/0
+    explain: "`/proc/self` is whichever process reads it, here `ls`. Inside a pipeline, its stdin is no longer the terminal but one end of a pipe, an unnamed buffer in the kernel."
+    output: |
+      lr-x------ 1 jd jd 64 Nov  5 06:54 /proc/self/fd/0 -> pipe:[8072]
+  - command: ls /nope /etc/hostname 2>/dev/null
+    explain: "`ls` writes the error to fd 2 and the result to fd 1. Sending fd 2 to `/dev/null` leaves only the result. Both normally land on the same screen, which is why they look like one stream."
+    output: |
+      /etc/hostname
+  - command: ls -l /dev/stdin /dev/stdout /dev/stderr
+    explain: "Handy names for the three numbers, for programs that want a file name. They're links into `/proc/self/fd`."
+    output: |
+      lrwxrwxrwx 1 root root 15 Nov  5 06:51 /dev/stderr -> /proc/self/fd/2
+      lrwxrwxrwx 1 root root 15 Nov  5 06:51 /dev/stdin -> /proc/self/fd/0
+      lrwxrwxrwx 1 root root 15 Nov  5 06:51 /dev/stdout -> /proc/self/fd/1
+  - command: yes | head -n 2; echo "${PIPESTATUS[@]}"
+    explain: "`yes` prints `y` forever. When `head` has its two lines and exits, the pipe has no reader, and the kernel stops `yes` with the signal SIGPIPE. 141 is 128 + 13, SIGPIPE's number."
+    output: |
+      y
+      y
+      141 0
+misconceptions:
+  - myth: "`2>&1` merges stderr into stdout."
+    reality: "It copies: fd 2 is pointed wherever fd 1 points at that moment. That's why order matters. `> log 2>&1` sends both to the file, while `2>&1 > log` leaves errors on the screen."
+  - myth: "The program opens the file you redirect to."
+    reality: "The shell opens it, in the child process, before the program starts. The program only finds fd 1 already pointing at a file. That's also why `sudo echo x > /etc/file` fails: your shell opens the file, as you, before `sudo` runs."
+  - myth: "A pipe runs the commands one after the other."
+    reality: "All commands in a pipeline start at once. The kernel pauses a writer when the pipe's buffer is full and a reader when it's empty, so they move in step."
+  - myth: "Output is the same whether it goes to a screen or a file."
+    reality: "Programs can check whether fd 1 is a terminal, and many change behaviour: `ls` drops colours and columns, and output is buffered differently, so stdout and stderr lines can come out in another order in a file."
+commands: [cat, tee, echo, ls]
+references:
+  - label: "Bash Reference Manual: Redirections"
+    url: https://www.gnu.org/software/bash/manual/html_node/Redirections.html
+  - label: "Bash Reference Manual: Pipelines"
+    url: https://www.gnu.org/software/bash/manual/html_node/Pipelines.html
+  - label: "stdin(3): standard I/O streams"
+    url: https://man7.org/linux/man-pages/man3/stdin.3.html
+  - label: "pipe(7): overview of pipes and FIFOs"
+    url: https://man7.org/linux/man-pages/man7/pipe.7.html
+  - label: "dup(2): duplicate a file descriptor"
+    url: https://man7.org/linux/man-pages/man2/dup.2.html
+---
+
+## The mental model
+
+A program doesn't write "to the screen". It writes to a **file descriptor**, a small number that stands for something it has open: a file, a terminal, a pipe or a network connection. Every process has a table of them, and by convention the first three are already open when it starts:
+
+| fd | Name | Used for | Usually points at |
+|---|---|---|---|
+| 0 | stdin | Input | The terminal (your keyboard) |
+| 1 | stdout | Normal output | The terminal |
+| 2 | stderr | Errors, warnings, progress | The terminal |
+
+The program doesn't know or care what's behind each number. That's the whole trick: the shell rewires the table before the program starts, and the program writes to fd 1 as usual.
+
+<Flow spec={{
+  title: 'npm test > log.txt 2>&1',
+  stages: [
+    { title: 'The child starts with the shell\'s table', tag: 'child', detail: 'After the fork, the child has a copy of the shell\'s file descriptors. All three point at the terminal.', code: '0 → terminal   1 → terminal   2 → terminal' },
+    { title: '> log.txt', tag: 'child', detail: 'Redirections run left to right. The child opens `log.txt`, emptying it, and puts it at fd 1. Nothing else changes.', code: '0 → terminal   1 → log.txt    2 → terminal' },
+    { title: '2>&1', tag: 'child', detail: 'Make fd 2 a copy of fd 1, as it is now. Both now point at the same open file, sharing one write position, so lines don\'t overwrite each other.', code: '0 → terminal   1 → log.txt    2 → log.txt' },
+    { title: 'Exec npm', tag: 'kernel', detail: 'The table survives `exec`. npm starts with fds 0, 1 and 2 already open and never learns that a file is involved.' }
+  ]
+}} />
+
+Swap the two redirections, `2>&1 > log.txt`, and step 2 copies fd 1 while it still points at the terminal. Errors stay on screen. The [redirection scenario](/s/redirection) has the everyday forms: `>`, `>>`, `2>`, `&>` and `/dev/null`.
+
+A **pipe** is the same idea with a kernel buffer in the middle. For `a | b`, the shell creates a pipe, which has a write end and a read end, then starts both commands at once: `a` with fd 1 on the write end, `b` with fd 0 on the read end. Only stdout goes through. Errors from `a` still go to the terminal unless you add `2>&1` before the `|`.
+
+## Under the hood
+
+**Redirection is two system calls.** `> log.txt` is `open("log.txt", O_WRONLY|O_CREAT|O_TRUNC)` followed by `dup2(fd, 1)`, which makes fd 1 refer to the same open file. `2>&1` is `dup2(1, 2)`. The shell does this in the child, after `fork` and before `exec`. Because the file is opened by the shell, it's opened with the shell's permissions, which is why `sudo cmd > /root/file` fails and `cmd | sudo tee /root/file` works: there, `tee` opens the file as root.
+
+**Pipes have a size.** A pipe holds 64 KiB by default on Linux. When it's full, the writer's next `write` waits until the reader takes some out. When it's empty, the reader waits. If every reader has gone, a write kills the writer with **SIGPIPE**, and in bash its exit status reads `141`. That's normal and harmless at the end of a pipeline like `yes | head`, and it's why a pipeline ending in `head` can report a failure under `set -o pipefail`. The [exit status guide](/g/exit-status) explains the 128 + n rule.
+
+**Buffering changes the order.** Programs built on the C library (and Python, and many others) don't send every `printf` straight to the kernel. Output to a terminal is sent line by line. Output to a file or pipe collects in a buffer, often 4 or 8 KiB, and goes out when it fills or the program exits. stderr is sent straight away, or at the latest at each newline. So with `> log 2>&1`, a program's errors can appear in the file *before* output it printed earlier. `python3 -u`, `stdbuf -oL` and `grep --line-buffered` turn that off when it matters, for example with `tail -f`.
+
+**Programs check what they're talking to.** The `isatty()` call asks whether an fd is a terminal. `ls` prints columns and colours to a terminal and one plain name per line to a pipe. `grep --color=auto` and `git` do the same, and some programs drop progress bars. When output looks different in a pipe, that's why.
+
+**stdin without a terminal.** `< file` puts a file at fd 0. `<<EOF` and `<<<` (here-documents and here-strings) feed text the shell builds itself. The [heredocs scenario](/s/heredocs) shows them. A program reading stdin waits until the other end closes, which for a terminal is when you press Ctrl+D. A command that seems to hang with no output is often waiting on stdin.
+
+**More than three.** Programs open more fds as they go: files, sockets, other pipes, numbered from 3 upwards, the lowest free number first. `ls -l /proc/<pid>/fd` shows a process's whole table. A listening server's socket sits in the same table, which is the link to [ports and sockets](/g/ports-sockets). Bash can use extra fds too: `exec 3> trace.log` opens fd 3 for the rest of the session, and `echo x >&3` writes to it.

@@ -1,0 +1,113 @@
+---
+track: shell
+order: 3
+title: How PATH Lookup Works
+summary: PATH is a colon-separated list of folders. The shell searches them in order for a command's name and runs the first executable match, then remembers where it found it.
+level: essentials
+readingMinutes: 6
+prerequisites: [pressing-enter, environment-variables]
+observe:
+  - command: echo "$PATH" | tr ':' '\n'
+    explain: "The search order, one folder per line. Earlier folders win. `/usr/local/bin` comes before `/usr/bin`, so something you install by hand beats the version from the package manager."
+    output: |
+      /home/jd/.local/bin
+      /usr/local/sbin
+      /usr/local/bin
+      /usr/sbin
+      /usr/bin
+      /sbin
+      /bin
+      /usr/games
+      /usr/local/games
+      /snap/bin
+  - command: type -a python3
+    explain: "Every match, in search order. The first line is the one that runs. Here both are the same file, because `/bin` is a link to `/usr/bin`."
+    output: |
+      python3 is /usr/bin/python3
+      python3 is /bin/python3
+  - command: ls -ld /bin /sbin
+    explain: "On current Ubuntu, Debian, Fedora and Arch, `/bin` and `/sbin` are links into `/usr`. They stay on `PATH` so that old scripts with `/bin/...` paths keep working."
+    output: |
+      lrwxrwxrwx 1 root root 7 Apr 22  2024 /bin -> usr/bin
+      lrwxrwxrwx 1 root root 8 Apr 22  2024 /sbin -> usr/sbin
+  - command: hash
+    explain: "The shell's memory of where it found each program, with how many times it has used each entry. A program shows up here after the first time you run it in this shell."
+    output: |
+      hits	command
+         1	/usr/bin/ls
+         1	/usr/bin/cat
+  - command: command -v ls cd nope; echo $?
+    explain: "`command -v` answers like the shell would: an alias definition, a builtin's bare name, or a full path. It prints nothing for a name it can't find and exits with 1. This is the reliable check in scripts."
+    output: |
+      alias ls='ls --color=auto'
+      cd
+      1
+misconceptions:
+  - myth: "The shell searches the whole disk for a command."
+    reality: "It looks only in the folders listed in `PATH`, in order. A program in any other folder is invisible to it until you add that folder or type the full path."
+  - myth: "The current folder is always searched."
+    reality: "Not unless `PATH` contains it. That's why you type `./deploy.sh`. An empty entry in `PATH` (a leading or trailing `:`, or `::`) does mean the current folder, which is a security risk."
+  - myth: "A new folder on `PATH` works everywhere once you add it to `~/.bashrc`."
+    reality: "Only in new bash terminals. Open terminals, cron jobs, services and `sudo` each have their own `PATH`."
+  - myth: "`which` shows what the shell will run."
+    reality: "On Debian and Ubuntu, `which` is a small `sh` script that searches `PATH`. It knows nothing about your aliases, functions, builtins or the hash table. Use `type`."
+commands: [type, which, command, export, sudo]
+references:
+  - label: "Bash Reference Manual: Command Search and Execution"
+    url: https://www.gnu.org/software/bash/manual/html_node/Command-Search-and-Execution.html
+  - label: "Bash Reference Manual: the hash builtin"
+    url: https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html
+  - label: "POSIX: environment variables, including PATH"
+    url: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html
+  - label: "execvp(3): the C library's PATH search"
+    url: https://man7.org/linux/man-pages/man3/execvp.3.html
+  - label: "The /usr merge (freedesktop.org)"
+    url: https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/
+---
+
+## The mental model
+
+`PATH` is an ordinary environment variable holding a list of folders, separated by colons. When you type a command name with no `/` in it, and it isn't an alias, a function or a builtin, the shell walks that list from left to right:
+
+<Zones spec={{
+  kind: 'zones',
+  title: 'Looking for node',
+  caption: 'The first folder with an executable file named `node` wins. Later matches are never reached: the copy in `/usr/bin` is shadowed.',
+  zones: [
+    { title: '~/.local/bin', items: [{ text: 'no node', tone: 'ghost' }] },
+    { title: '/usr/local/bin', items: [{ text: 'node (v22)', tone: 'good', note: 'runs' }] },
+    { title: '/usr/bin', items: [{ text: 'node (v18)', tone: 'caution', note: 'shadowed' }] },
+    { title: '/snap/bin', items: [{ text: 'not searched', tone: 'ghost' }] }
+  ]
+}} />
+
+Three rules cover almost everything:
+
+- **Order decides.** When two folders have a program with the same name, the earlier folder wins. That's how version managers work: they put their own folder at the front.
+- **Only executable files count.** A file with the right name but no `x` bit is skipped, and the search carries on. If that was the only match, you get `Permission denied` (code 126) instead of `command not found` (127).
+- **A `/` turns the search off.** `./build.sh`, `bin/tool` and `/usr/bin/python3` are paths. The shell runs exactly that file and never looks at `PATH`.
+
+`command not found` therefore means one of two things: the program isn't installed, or it lives in a folder that isn't on `PATH`. The [command not found scenario](/s/command-not-found) works out which, and [Add a folder to PATH](/s/add-to-path) fixes the second.
+
+## Under the hood
+
+**The hash table.** Searching every folder for every command would be slow, so bash remembers each program's path the first time it finds it. Later runs skip the search. The table belongs to one shell process and starts empty in each new terminal. It goes stale when a program moves: installing a newer copy earlier on `PATH` doesn't take effect until `hash -r`, and deleting the remembered copy gives `No such file or directory`. Changing `PATH` itself clears the table. Zsh does the same, and its command is `rehash`.
+
+**Where `PATH` comes from on Ubuntu.** It's built in layers, at login and as each shell starts:
+
+| Step | Adds |
+|---|---|
+| `/etc/environment`, read at login by `pam_env` | The system folders, ending in `/snap/bin` |
+| `/etc/profile.d/apps-bin-path.sh`, for login shells | `/snap/bin` again, if it's missing |
+| `~/.profile`, for login shells | `~/bin` and `~/.local/bin`, but only if they **exist at that moment** |
+| `~/.bashrc`, for each interactive bash | Whatever installers and you appended there |
+
+The third row explains a common puzzle. `pip install --user` or `pipx` creates `~/.local/bin` for the first time, and its programs aren't found until you log out and back in, because `~/.profile` checked for the folder at login and skipped it. The [shell startup files guide](/g/shell-startup-files) covers which files run when.
+
+**`sudo` uses its own `PATH`.** Ubuntu's `/etc/sudoers` has `secure_path`, a fixed list of system folders that replaces yours. A tool in `~/.local/bin` or a version manager's folder works without `sudo` and gives `command not found` with it. Run it by its full path, `sudo "$(command -v tool)"`, or install it somewhere system-wide. The fixed list is a defence: otherwise anything that could write to a folder early in your `PATH` could plant a fake `apt` and wait for you to run it as root.
+
+**Programs search `PATH` too.** The search isn't only a shell feature. The C library's `execvp`, Python's `subprocess`, Node's `child_process` and `env` all walk `PATH` the same way. That's how a `#!/usr/bin/env python3` line works: `env` is always at a fixed path, and it finds `python3` on whatever `PATH` it's given.
+
+**The empty entry.** POSIX says a zero-length entry means the current folder. `PATH=:/usr/bin`, `PATH=/usr/bin:` and `PATH=/a::/b` all make the shell run files from wherever you happen to be. It usually creeps in from a line like `export PATH=$EXTRA:$PATH` where `EXTRA` is empty. Look for a leading, trailing or doubled colon in `echo "$PATH"`.
+
+**Folders that don't exist are skipped** silently. A typo in a `PATH` entry gives no error, only programs that can't be found.

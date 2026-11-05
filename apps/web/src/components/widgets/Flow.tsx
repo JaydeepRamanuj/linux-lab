@@ -26,7 +26,7 @@ export default function Flow({ spec }: { spec: FlowSpec }) {
   return (
     <figure className="not-prose well p-4 sm:p-5 my-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {spec.title ? <figcaption className="label-caps text-outline">{spec.title}</figcaption> : <span />}
+        {spec.title ? <figcaption className="label-mono text-outline">{spec.title}</figcaption> : <span />}
         <div className="flex items-center gap-1.5">
           {stepping ? (
             <>

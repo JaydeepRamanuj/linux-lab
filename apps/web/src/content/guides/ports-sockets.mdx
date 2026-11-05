@@ -5,6 +5,7 @@ title: "Ports and Sockets: What \"Address Already in Use\" Means"
 summary: A socket is a file descriptor for network traffic, a port is the number the kernel uses to deliver traffic to it, and only one listener can hold an address and port at a time.
 level: essentials
 readingMinutes: 7
+prerequisites: [standard-streams]
 observe:
   - command: ss -ltn
     explain: "Every listening TCP socket on the machine: `-l` listening, `-t` TCP, `-n` numbers instead of names. `0.0.0.0:3000` is a dev server reachable on every address. `127.0.0.53%lo:53` is Ubuntu's local DNS stub, reachable only from this machine."

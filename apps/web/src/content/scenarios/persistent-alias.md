@@ -99,6 +99,7 @@ avoid:
   - "Aliases can't take arguments in the middle. For that, write a function in the same file: `mkcd() { mkdir -p \"$1\" && cd \"$1\"; }`."
   - "Aliases don't apply inside scripts. A script that needs a shortcut should spell the command out."
 related: [add-to-path, command-not-found, safe-mv-cp]
+concepts: [shell-startup-files]
 anatomy:
   "\"alias gs='git status'\"": "The line to write, quoted as one argument to `echo`."
   "~/.bash_aliases": "The file Ubuntu's `~/.bashrc` loads at startup for your aliases."

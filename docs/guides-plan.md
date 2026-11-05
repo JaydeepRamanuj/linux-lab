@@ -121,7 +121,7 @@ The first pass is 35 guides. `E` = essentials, `D` = deeper.
 | `standard-streams` | stdin, stdout, stderr, redirection and pipes | E |
 | `quoting-expansion` | Quoting and expansion order (globs, `$var`, `$(...)`) | D |
 | `shell-startup-files` | `.bashrc`, `.profile`, login and interactive shells | D |
-| `exit-codes` | Exit codes, `&&`, `\|\|` and `set -e` | E |
+| `exit-status` | Exit status, `&&`, `\|\|` and `set -e` (renamed from `exit-codes` in G1: the scenario has that slug) | E |
 
 ### Track 2: Filesystem (`filesystem`)
 
@@ -213,6 +213,8 @@ Review the pilots before writing more, to settle tone, depth and how the widgets
 ### Phases G1 to G4: Tracks that line up with scenario modules
 
 Ship each track with, or just after, its matching scenario phase, so new scenarios have concepts to link to.
+
+**G1 is done and waiting for your review.** It adds the six other Shell guides: `environment-variables`, `path`, `standard-streams`, `quoting-expansion`, `shell-startup-files` and `exit-status`. 11 scenarios now link to them. See `docs/handoff/2026-11-05-guides-phase-g1.md`.
 
 | Guide phase | Tracks | Ships with scenarios-plan phase |
 |---|---|---|

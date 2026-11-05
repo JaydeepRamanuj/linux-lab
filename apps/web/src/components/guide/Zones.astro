@@ -11,7 +11,7 @@ const { spec } = Astro.props;
 ---
 
 <figure class="not-prose well p-4 sm:p-5 my-6 space-y-3">
-  {spec.title && <figcaption class="label-caps text-outline">{spec.title}</figcaption>}
+  {spec.title && <figcaption class="label-mono text-outline">{spec.title}</figcaption>}
   <ZonesView spec={spec} />
   {
     spec.caption && (

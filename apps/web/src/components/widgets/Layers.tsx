@@ -39,7 +39,7 @@ export default function Layers({ spec }: { spec: LayersSpec }) {
     <figure className="not-prose well p-4 sm:p-5 my-6 space-y-3">
       {(spec.title || spec.pathLabel) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {spec.title && <figcaption className="label-caps text-outline">{spec.title}</figcaption>}
+          {spec.title && <figcaption className="label-mono text-outline">{spec.title}</figcaption>}
           {spec.pathLabel && (
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-tertiary">
               <span className="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(76,215,246,0.7)]" />

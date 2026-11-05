@@ -126,7 +126,7 @@ avoid:
   - "To make a variable permanent, put the `export` line in `~/.bashrc`. See the PATH scenario. For project settings, `.env` is the better place."
   - "`unset PORT` removes it from this shell. `env -u PORT cmd` runs one command without it."
 related: [add-to-path, expansion-quoting, exit-codes, agent-cleanup, redirection]
-concepts: [pressing-enter]
+concepts: [pressing-enter, environment-variables]
 anatomy:
   "PORT=4000": "Sets PORT in the environment of this one command. Your shell doesn't keep it."
   "dev": "`npm run dev` runs the `dev` script from package.json. It, and everything it starts, sees PORT=4000."
