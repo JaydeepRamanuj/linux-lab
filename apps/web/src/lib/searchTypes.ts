@@ -1,7 +1,7 @@
 import type { Severity } from '@shellgyan/core/severity';
 
 export interface SearchItem {
-  type: 'scenario' | 'command' | 'guide' | 'chapter' | 'event';
+  type: 'scenario' | 'command' | 'guide' | 'chapter' | 'event' | 'lore';
   title: string;
   url: string;
   /** Short tag shown at the left: scenario number, command name, guide track, chapter number or event year. */

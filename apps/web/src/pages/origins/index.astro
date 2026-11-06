@@ -6,6 +6,7 @@ import { Prose } from '../../components/ui/ui';
 import { publishedChapters } from '../../lib/origins';
 import { TIMELINE } from '../../data/timeline';
 import { DISTROS, DISTRO_FAMILIES } from '../../data/distros';
+import { LORE } from '../../data/lore';
 
 const chapters = await publishedChapters();
 
@@ -28,7 +29,7 @@ const upcoming = PLANNED.filter((p) => !chapters.some((c) => c.id === p.slug));
 const PAGES = [
   { href: '/origins/timeline', Icon: History, title: 'Timeline', text: `${TIMELINE.length} dates from 1969 on, filterable by Unix, GNU and the kernel, each with its source.`, live: true },
   { href: '/origins/distros', Icon: GitFork, title: 'Distro family tree', text: `${DISTROS.length} distributions in ${DISTRO_FAMILIES.length} families: which came from which, and how they differ.`, live: true },
-  { href: null, Icon: Quote, title: 'Names & lore', text: 'Where grep, awk, bash and daemon got their names, and the jargon around them.', live: false }
+  { href: '/origins/lore', Icon: Quote, title: 'Names & lore', text: `Where grep, awk, bash and daemon got their names, and ${LORE.filter((l) => l.kind === 'jargon').length} pieces of jargon explained.`, live: true }
 ];
 ---
 

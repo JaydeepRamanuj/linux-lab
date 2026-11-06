@@ -32,7 +32,8 @@ const GROUPS: { type: SearchItem['type']; label: string; tone: string }[] = [
   { type: 'command', label: 'Commands', tone: 'text-tertiary' },
   { type: 'guide', label: 'Guides', tone: 'text-secondary' },
   { type: 'chapter', label: 'Origins', tone: 'text-caution' },
-  { type: 'event', label: 'Timeline', tone: 'text-tertiary' }
+  { type: 'event', label: 'Timeline', tone: 'text-tertiary' },
+  { type: 'lore', label: 'Names & lore', tone: 'text-caution' }
 ];
 
 export default function SearchBar({ variant = 'header', hotkey = false }: { variant?: 'header' | 'hero'; hotkey?: boolean }) {

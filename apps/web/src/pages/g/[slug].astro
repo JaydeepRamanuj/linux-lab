@@ -15,6 +15,8 @@ import { buildAnatomy } from '../../lib/anatomy';
 import { assertContentValid } from '../../lib/contentChecks';
 import { publishedGuides, LEVEL_LABEL } from '../../lib/guides';
 import { moduleById } from '../../data/modules';
+import Background from '../../components/origins/Background.astro';
+import { chaptersForGuide } from '../../lib/origins';
 
 export async function getStaticPaths() {
   await assertContentValid();
@@ -37,6 +39,8 @@ const inTrack = guides.filter((x) => x.data.track === g.track);
 const position = inTrack.findIndex((x) => x.id === guide.id);
 const prev = inTrack[position - 1];
 const next = inTrack[position + 1];
+
+const background = await chaptersForGuide(guide.id);
 
 const observe = await Promise.all(g.observe.map(async (o) => ({ ...o, anatomy: await buildAnatomy(o.command) })));
 
@@ -203,6 +207,8 @@ const commands = (await getCollection('commands'))
         </section>
       )
     }
+
+    <Background chapters={background} />
 
     {
       g.references.length > 0 && (

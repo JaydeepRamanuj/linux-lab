@@ -1,0 +1,45 @@
+---
+import { Quote } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import LoreList from '../../components/origins/LoreList';
+import { LORE } from '../../data/lore';
+import { assertContentValid } from '../../lib/contentChecks';
+import { resolvedLore } from '../../lib/origins';
+
+await assertContentValid();
+const entries = await resolvedLore();
+---
+
+<Base
+  title="Names & lore"
+  description="Where grep, sed, awk, bash, tar and daemon got their names, and what upstream, backport, LTS, userland and copyleft mean."
+  current="origins"
+>
+  <div class="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Origins', href: '/origins' }, { label: 'Names & lore' }]} back={{ href: '/origins', label: 'Back to Origins' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-tertiary/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 bg-tertiary/10 border-tertiary/30">
+          <Quote className="h-6 w-6 text-tertiary" />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Origins</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">Names &amp; lore</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">
+            Why a search tool is called grep and what a daemon has to do with physics, plus the jargon you'll meet in Linux documentation and
+            forums. Each entry links to its source and to the command, guide or chapter it belongs to.
+          </p>
+          <p class="font-mono text-[11px] text-outline pt-1">
+            {LORE.filter((l) => l.kind === 'name-origin').length} name origins <span class="text-outline-variant mx-1">•</span>
+            {LORE.filter((l) => l.kind === 'jargon').length} jargon terms
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <LoreList entries={entries} client:load />
+  </div>
+</Base>

@@ -4,6 +4,7 @@ import type { SearchItem } from '../lib/searchTypes';
 import { trackById } from '../data/tracks';
 import { TIMELINE, formatEventDate } from '../data/timeline';
 import { personById } from '../data/people';
+import { LORE } from '../data/lore';
 
 /** The text of a chapter's "## The short version" section. */
 const shortVersion = (body: string) => /^## The short version\s*$([\s\S]*?)^## /m.exec(body)?.[1] ?? '';
@@ -70,6 +71,15 @@ export const GET: APIRoute = async () => {
       subtitle: `${formatEventDate(e.date)}: ${e.why}`,
       command: '',
       tags: [e.why]
+    })),
+    ...LORE.map((l) => ({
+      type: 'lore' as const,
+      title: l.term,
+      url: `/origins/lore#${l.id}`,
+      badge: l.kind === 'name-origin' ? 'name' : 'jargon',
+      subtitle: plainText(l.explanation),
+      command: '',
+      tags: [l.command ?? '', l.term]
     }))
   ];
 

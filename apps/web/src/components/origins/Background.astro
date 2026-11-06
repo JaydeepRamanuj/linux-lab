@@ -1,0 +1,51 @@
+---
+// "Background" on guide and command pages (docs/origins-plan.md §6, Phase H4): the Origins chapters that tell
+// the history behind this page, and, on command pages, where the command's name comes from.
+import { Landmark, Quote, ChevronRight } from 'lucide-react';
+import { Prose } from '../ui/ui';
+import type { Chapter } from '../../lib/origins';
+import { chapterLabel } from '../../lib/origins';
+import type { LoreEntry } from '../../data/lore';
+
+interface Props {
+  chapters: Chapter[];
+  lore?: LoreEntry[];
+}
+const { chapters, lore = [] } = Astro.props;
+---
+
+{
+  (chapters.length > 0 || lore.length > 0) && (
+    <section class="card p-5 sm:p-6 space-y-4" aria-label="Background">
+      <h2 class="flex items-center gap-2 label-caps text-on-surface">
+        <Landmark className="h-4 w-4 text-caution" />
+        Background
+      </h2>
+      {lore.map((l) => (
+        <div class="rounded-xl bg-surface-low border border-white/5 p-4 space-y-1.5">
+          <div class="flex items-center gap-2 label-caps text-outline">
+            <Quote className="h-3.5 w-3.5 text-tertiary" />
+            {l.kind === 'name-origin' ? 'Name origin' : 'Jargon'}
+          </div>
+          <p class="text-sm text-on-surface-variant leading-relaxed">
+            <Prose text={l.explanation} />
+          </p>
+          <a href={`/origins/lore#${l.id}`} class="inline-block text-[12px] text-tertiary hover:underline underline-offset-3">
+            More names and lore
+          </a>
+        </div>
+      ))}
+      {chapters.length > 0 && (
+        <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+          {chapters.map((c) => (
+            <a href={`/o/${c.id}`} class="group flex items-center gap-3 rounded-lg bg-surface-low border border-white/5 hover:border-primary-container/40 transition px-3 py-2.5 min-w-0">
+              <span class="font-mono text-[11px] text-caution shrink-0">{chapterLabel(c.data.order)}</span>
+              <span class="text-sm text-on-surface min-w-0">{c.data.title}</span>
+              <ChevronRight className="h-3.5 w-3.5 text-outline group-hover:text-primary shrink-0" />
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}

@@ -12,6 +12,9 @@ import { COMMAND_CATEGORIES, LEVELS } from '../../data/commandCategories';
 import { buildAnatomy } from '../../lib/anatomy';
 import ConceptLinks from '../../components/guide/ConceptLinks.astro';
 import { guidesForCommand } from '../../lib/guides';
+import Background from '../../components/origins/Background.astro';
+import { chaptersForCommand } from '../../lib/origins';
+import { loreForCommand } from '../../data/lore';
 
 export async function getStaticPaths() {
   await assertContentValid();
@@ -38,6 +41,8 @@ const related = c.related.map((name) => allCommands.find((x) => x.data.name === 
 const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filter((s) => c.scenarios.includes(s.id));
 const distros = Object.entries(c.distros ?? {}).filter(([, v]) => v) as [string, string][];
 const concepts = await guidesForCommand(command);
+const background = await chaptersForCommand(command.data.name);
+const nameLore = loreForCommand(command.data.name).filter((l) => l.kind === 'name-origin');
 ---
 
 <Base title={`${c.name}: ${c.title}`} description={c.summary} current="library">
@@ -147,6 +152,8 @@ const concepts = await guidesForCommand(command);
     }
 
     <ConceptLinks title="Concepts behind this command" guides={concepts} />
+
+    <Background chapters={background} lore={nameLore} />
 
     {
       (related.length > 0 || scenarios.length > 0) && (

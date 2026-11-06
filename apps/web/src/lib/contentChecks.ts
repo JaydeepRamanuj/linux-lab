@@ -20,7 +20,8 @@
 //     share an `order`; a chapter's `people`, `events`, `guides`, `commands` or `scenarios` entry doesn't exist;
 //     `asOf` isn't an ISO date; the body doesn't start with "The short version" and end with "Why it matters
 //     today"; the body links to a page that doesn't exist; a distro has a duplicate id, an unknown family or
-//     parent, a parent founded after it, or a parent chain that loops
+//     parent, a parent founded after it, or a parent chain that loops; a lore entry has a duplicate id, an
+//     unknown command, guide or chapter, or a source that is neither a URL nor a page on this site
 // Warnings (printed as `[content] …`; the plan's definition of done is zero of them):
 //   - a scenario runs a program that has no command page
 //   - a command page exists for a program a scenario runs, but doesn't list that scenario under `scenarios`
@@ -32,6 +33,7 @@ import { buildAnatomy } from './anatomy';
 import { TIMELINE, ERAS, TIMELINE_CATEGORIES, isValidEventDate, eventYear } from '../data/timeline';
 import { PEOPLE } from '../data/people';
 import { DISTROS, DISTRO_FAMILIES } from '../data/distros';
+import { LORE } from '../data/lore';
 
 export interface ContentReport {
   errors: string[];
@@ -246,6 +248,24 @@ export async function collectContentReport(): Promise<ContentReport> {
     }
   }
 
+  const loreIds = new Set<string>();
+  for (const l of LORE) {
+    const where = `lore ${l.id}`;
+    if (loreIds.has(l.id)) errors.push(`${where}: id is used twice`);
+    loreIds.add(l.id);
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(l.id)) errors.push(`${where}: id must be kebab-case (it's the anchor on /origins/lore)`);
+    if (l.command && !commandByName.has(l.command)) errors.push(`${where}: command "${l.command}" doesn't exist`);
+    if (l.guide && !publishedGuides.has(l.guide)) errors.push(`${where}: guide "${l.guide}" doesn't exist (or is a draft)`);
+    if (l.chapter && !publishedChapters.has(l.chapter)) errors.push(`${where}: chapter "${l.chapter}" doesn't exist (or is a draft)`);
+    const sitePath = /^\/([sgco])\/([^/#\s]+)$/.exec(l.source);
+    if (sitePath) {
+      if (!pageExists(sitePath[1]!, sitePath[2]!)) errors.push(`${where}: source ${l.source} doesn't exist`);
+    } else if (!/^https?:\/\/\S+$/.test(l.source)) errors.push(`${where}: source "${l.source}" is neither a URL nor a /s/, /g/, /c/ or /o/ page`);
+    for (const [kind, slug] of bodyLinks(l.explanation)) {
+      if (!pageExists(kind, slug)) errors.push(`${where}: explanation links to /${kind}/${slug}, which doesn't exist`);
+    }
+  }
+
   const seenChapterOrders = new Map<number, string>();
   for (const chapter of allChapters) {
     const c = chapter.data;
@@ -285,7 +305,7 @@ export async function collectContentReport(): Promise<ContentReport> {
 export const ORIGINS_FIRST_H2 = 'The short version';
 export const ORIGINS_LAST_H2 = 'Why it matters today';
 /** Pages under /origins/ that exist in this phase. */
-const ORIGINS_PAGES = ['/origins/timeline', '/origins/distros'];
+const ORIGINS_PAGES = ['/origins/timeline', '/origins/distros', '/origins/lore'];
 
 /** The H2s a guide's MDX body must have, in order. The page renders the rest from frontmatter. */
 export const GUIDE_BODY_H2S = ['The mental model', 'Under the hood'];

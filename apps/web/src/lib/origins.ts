@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import { TIMELINE, sortedTimeline } from '../data/timeline';
 import type { TimelineEvent } from '../data/timeline';
+import { LORE } from '../data/lore';
 
 export type Chapter = CollectionEntry<'origins'>;
 
@@ -32,4 +33,21 @@ export async function resolvedEvents(ids?: string[]): Promise<ResolvedEvent[]> {
   const titles = new Map(chapters.map((c) => [c.id, c.data.title]));
   const events = ids ? TIMELINE.filter((e) => ids.includes(e.id)) : TIMELINE;
   return sortedTimeline(events).map((e) => ({ ...e, chapterTitle: e.chapter ? titles.get(e.chapter) : undefined }));
+}
+
+/** Chapters that list a guide in their `guides`: shown as "Background" on that guide's page. */
+export async function chaptersForGuide(slug: string): Promise<Chapter[]> {
+  return (await publishedChapters()).filter((c) => c.data.guides.includes(slug));
+}
+
+/** Chapters that list a command in their `commands`: shown as "Background" on that command's page. */
+export async function chaptersForCommand(name: string): Promise<Chapter[]> {
+  return (await publishedChapters()).filter((c) => c.data.commands.includes(name));
+}
+
+/** Lore entries with their guide and chapter titles filled in, for the Names & lore page. */
+export async function resolvedLore() {
+  const chapters = new Map((await publishedChapters()).map((c) => [c.id, c.data.title]));
+  const guides = new Map((await getCollection('guides', (g) => !g.data.draft)).map((g) => [g.id, g.data.title]));
+  return LORE.map((l) => ({ ...l, guideTitle: l.guide ? guides.get(l.guide) : undefined, chapterTitle: l.chapter ? chapters.get(l.chapter) : undefined }));
 }
