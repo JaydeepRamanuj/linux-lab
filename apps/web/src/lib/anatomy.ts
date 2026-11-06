@@ -3,8 +3,8 @@
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { getCollection } from 'astro:content';
-import { createNodeAnalyzer } from '@shellgyan/core/node';
-import type { Analysis, Analyzer } from '@shellgyan/core';
+import { createNodeAnalyzer } from '@linux-lab/core/node';
+import type { Analysis, Analyzer } from '@linux-lab/core';
 import { anatomyFromAnalysis, libraryFromEntries, protectPlaceholders } from './anatomyTokens';
 import type { AnatomyData, CommandDocEntry, CommandLibrary } from './anatomyTokens';
 
@@ -13,7 +13,7 @@ export type { AnatomyData, AnatomyToken } from './anatomyTokens';
 let analyzer: Promise<Analyzer> | null = null;
 export function analyze(command: string): Promise<Analysis> {
   // This module gets bundled, so point the core at its real location to find the parser's .wasm files.
-  analyzer ??= createNodeAnalyzer({ from: createRequire(join(process.cwd(), 'package.json')).resolve('@shellgyan/core/package.json') });
+  analyzer ??= createNodeAnalyzer({ from: createRequire(join(process.cwd(), 'package.json')).resolve('@linux-lab/core/package.json') });
   return analyzer.then((a) => a.analyze(command));
 }
 

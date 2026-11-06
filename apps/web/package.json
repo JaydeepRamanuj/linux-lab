@@ -11,7 +11,7 @@
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
     "@astrojs/react": "^5.0.7",
-    "@shellgyan/core": "workspace:*",
+    "@linux-lab/core": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^6.4.8",
     "fuse.js": "^7.5.0",

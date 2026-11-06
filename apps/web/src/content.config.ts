@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
-import { SEVERITY_LEVELS } from '@shellgyan/core/severity';
+import { SEVERITY_LEVELS } from '@linux-lab/core/severity';
 import { MODULE_IDS } from './data/modules';
 import { COMMAND_CATEGORY_IDS } from './data/commandCategories';
 import { TRACK_IDS } from './data/tracks';

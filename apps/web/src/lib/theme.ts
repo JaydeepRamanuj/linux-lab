@@ -1,6 +1,6 @@
 import { LifeBuoy, Activity, FolderLock, Package, Bot, AlertTriangle, ShieldAlert, X, Circle, SquareTerminal, FolderTree, KeyRound, GitFork, Cpu, ServerCog, Network } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { Severity } from '@shellgyan/core/severity';
+import type { Severity } from '@linux-lab/core/severity';
 
 export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   LifeBuoy,
@@ -31,7 +31,7 @@ export const ACCENTS: Record<Accent, { text: string; bg: string; ring: string; d
 };
 
 // The four severity levels (plan §5.3) are defined once, in the rule engine.
-export { SEVERITY_LEVELS } from '@shellgyan/core/severity';
+export { SEVERITY_LEVELS } from '@linux-lab/core/severity';
 export type { Severity };
 
 export const SEVERITY: Record<

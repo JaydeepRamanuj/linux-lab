@@ -11,7 +11,7 @@ flags:
   - { flag: "-r, --relative", meaning: "Store the target as a path relative to the link's location." }
   - { flag: "-v, --verbose", meaning: "Print each link made." }
 examples:
-  - { command: "ln -s ~/projects/shellgyan/apps/web ~/web", explain: "A short name in your home folder for a deep project folder.", severity: modifies }
+  - { command: "ln -s ~/projects/linux-lab/apps/web ~/web", explain: "A short name in your home folder for a deep project folder.", severity: modifies }
   - { command: "ln -s /usr/bin/batcat ~/.local/bin/bat", explain: "Make a program callable under another name.", severity: modifies }
   - { command: "ln -sfn ~/releases/v2 ~/current", explain: "Re-point an existing link in one step.", severity: modifies }
 gotchas:

@@ -1,7 +1,7 @@
 // Explainer history in localStorage (plan §3.4). Entries are keyed by a hash of the normalised, redacted command,
 // so explaining the same command again is a cache hit. M4 stores the AI explanation on the entry (`ai`).
 // Storage can be missing or throw (private windows, blocked site data), so every access is wrapped.
-import type { Severity } from '@shellgyan/core/severity';
+import type { Severity } from '@linux-lab/core/severity';
 
 export interface HistoryEntry {
   id: string;
@@ -19,7 +19,9 @@ export interface HistoryEntry {
   ai?: unknown;
 }
 
-const KEY = 'shellgyan:history:v1';
+const KEY = 'linux-lab:history:v1';
+/** The key used while the app was called ShellGyan. */
+const LEGACY_KEY = 'shellgyan:history:v1';
 const MAX_ENTRIES = 300;
 
 /** Same command, same key: line endings unified, each line trimmed, blank lines dropped. Spacing inside a line is kept, since it can matter in quotes. */
@@ -50,6 +52,10 @@ export const historyKey = (redactedCommand: string) => cyrb53(normalizeCommand(r
 
 export function loadHistory(): HistoryEntry[] {
   try {
+    // History saved before the rename to linux-lab lives under the old key; carry it over once.
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy !== null && localStorage.getItem(KEY) === null) localStorage.setItem(KEY, legacy);
+    if (legacy !== null) localStorage.removeItem(LEGACY_KEY);
     const raw = localStorage.getItem(KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? (parsed as HistoryEntry[]).filter((e) => e && typeof e.id === 'string' && typeof e.command === 'string') : [];
@@ -100,7 +106,7 @@ export function exportHistory(entries: HistoryEntry[]): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `shellgyan-history-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `linux-lab-history-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }

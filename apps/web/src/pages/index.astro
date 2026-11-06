@@ -6,7 +6,7 @@ import SearchBar from '../components/search/SearchBar';
 import { CategoryIcon, CommandText, CopyButton, commandPreview } from '../components/ui/ui';
 import { ACCENTS, SEVERITY, SEVERITY_LEVELS } from '../lib/theme';
 import { MODULES } from '../data/modules';
-import { TAGLINE } from '../data/site';
+import { TAGLINE, SITE_NAME } from '../data/site';
 import { timelineEventById } from '../data/timeline';
 
 const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).sort((a, b) => a.data.number - b.data.number);
@@ -27,7 +27,7 @@ const ENTRY_POINTS = [
 ];
 ---
 
-<Base title="ShellGyan" current="scenarios">
+<Base title={SITE_NAME} current="scenarios">
   <div class="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-14 space-y-16">
     <section class="text-center max-w-3xl mx-auto space-y-6">
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-low border border-white/8 label-caps text-on-surface-variant">

@@ -1,7 +1,7 @@
 // Turns a rule-engine analysis into anatomy tokens, using the notes in the command library.
 // Pure and environment-agnostic: lib/anatomy.ts runs it at build time, the Explainer runs it in the browser.
-import type { Analysis, AnalyzedCommand, Word } from '@shellgyan/core';
-import type { Severity } from '@shellgyan/core/severity';
+import type { Analysis, AnalyzedCommand, Word } from '@linux-lab/core';
+import type { Severity } from '@linux-lab/core/severity';
 
 export interface AnatomyToken {
   text: string;

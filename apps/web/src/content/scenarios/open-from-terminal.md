@@ -22,7 +22,7 @@ before:
   zones:
     - title: Terminal
       items:
-        - { text: ~/projects/shellgyan, tone: focus, note: "you are here" }
+        - { text: ~/projects/linux-lab, tone: focus, note: "you are here" }
     - title: File manager
       empty: not open
       items: []
@@ -36,13 +36,13 @@ after:
   zones:
     - title: Terminal
       items:
-        - { text: ~/projects/shellgyan, tone: focus }
+        - { text: ~/projects/linux-lab, tone: focus }
     - title: File manager
       items:
-        - { text: shellgyan, tone: good, note: "xdg-open ." }
+        - { text: linux-lab, tone: good, note: "xdg-open ." }
     - title: Editor
       items:
-        - { text: shellgyan, tone: good, note: "code ." }
+        - { text: linux-lab, tone: good, note: "code ." }
 steps:
   - title: Open this folder in the file manager
     kind: readonly

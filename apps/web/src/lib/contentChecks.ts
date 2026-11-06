@@ -26,9 +26,11 @@
 //   - a scenario runs a program that has no command page
 //   - a command page exists for a program a scenario runs, but doesn't list that scenario under `scenarios`
 //   - a guide isn't linked from any scenario or command page (in either direction)
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { getCollection } from 'astro:content';
-import { maxSeverity, rank } from '@shellgyan/core/severity';
-import type { Severity } from '@shellgyan/core/severity';
+import { maxSeverity, rank } from '@linux-lab/core/severity';
+import type { Severity } from '@linux-lab/core/severity';
 import { buildAnatomy } from './anatomy';
 import { TIMELINE, ERAS, TIMELINE_CATEGORIES, isValidEventDate, eventYear } from '../data/timeline';
 import { PEOPLE } from '../data/people';
@@ -217,6 +219,9 @@ export async function collectContentReport(): Promise<ContentReport> {
   for (const p of PEOPLE) {
     if (personIds.has(p.id)) errors.push(`person ${p.id}: id is used twice`);
     personIds.add(p.id);
+    // Photos are served from public/; the build runs in apps/web.
+    if (p.photo && !existsSync(join(process.cwd(), 'public', p.photo.src))) errors.push(`person ${p.id}: photo ${p.photo.src} isn't in public/`);
+    if (p.photo && (!p.photo.author || !p.photo.license || !/^https?:\/\//.test(p.photo.sourceUrl))) errors.push(`person ${p.id}: photo needs an author, a licence and a source URL for its credit`);
   }
 
   const distroIds = new Set<string>();

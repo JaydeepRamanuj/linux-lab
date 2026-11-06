@@ -1,0 +1,38 @@
+---
+// Every person in data/people.ts as a card with their photo, for the Who's Who chapter (used as <PeopleGallery />
+// in MDX). Ordered roughly as the story meets them: the order of people.ts.
+import { PEOPLE } from '../../data/people';
+import PersonPhoto from './PersonPhoto.astro';
+import PhotoCredits from './PhotoCredits.astro';
+import { Prose } from '../ui/ui';
+---
+
+<figure class="not-prose my-6 space-y-3">
+  <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {
+      PEOPLE.map((p) => (
+        <li class="flex items-start gap-3 rounded-xl bg-surface-low border border-white/5 p-3 min-w-0">
+          <PersonPhoto person={p} size={72} />
+          <div class="min-w-0 space-y-0.5">
+            <div class="flex flex-wrap items-baseline gap-x-2">
+              {p.url ? (
+                <a href={p.url} target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-on-surface hover:text-tertiary">
+                  {p.name}
+                </a>
+              ) : (
+                <span class="text-sm font-semibold text-on-surface">{p.name}</span>
+              )}
+              {p.years && <span class="font-mono text-[11px] text-outline">{p.years}</span>}
+            </div>
+            <p class="text-xs text-on-surface-variant leading-relaxed">
+              <Prose text={p.knownFor} />
+            </p>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+  <figcaption>
+    <PhotoCredits people={PEOPLE} />
+  </figcaption>
+</figure>

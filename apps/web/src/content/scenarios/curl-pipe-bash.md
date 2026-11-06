@@ -85,7 +85,7 @@ steps:
   - title: Run the file you read
     kind: elevated
     command: bash install.sh
-    note: "Now it runs the same script you checked, from the file. ShellGyan rates `bash install.sh` as modifies, because it can't see inside. This step is elevated because you've read the script and know it edits `~/.bashrc`, which runs in every new terminal. It prints `=> Downloading nvm from git to '/home/jd/.nvm'` and `=> Appending nvm source string to /home/jd/.bashrc`."
+    note: "Now it runs the same script you checked, from the file. linux-lab rates `bash install.sh` as modifies, because it can't see inside. This step is elevated because you've read the script and know it edits `~/.bashrc`, which runs in every new terminal. It prints `=> Downloading nvm from git to '/home/jd/.nvm'` and `=> Appending nvm source string to /home/jd/.bashrc`."
   - title: See what it added
     kind: readonly
     command: tail -n 4 ~/.bashrc
@@ -118,7 +118,7 @@ cautions:
 avoid:
   - "`bash <(curl -fsSL URL)` and `sh -c \"$(curl -fsSL URL)\"` are the same thing written differently: the script still runs unseen."
   - "`curl -fsSL URL | bash -s -- --yes` passes `--yes` to the script. Check what flags the script accepts, because `--yes` usually skips its own questions."
-  - "Paste a saved script into ShellGyan's Explain page for a first pass. It flags `sudo`, writes under `/etc` and `~/.bashrc`, and nested downloads. It can't tell you whether the site is trustworthy."
+  - "Paste a saved script into linux-lab's Explain page for a first pass. It flags `sudo`, writes under `/etc` and `~/.bashrc`, and nested downloads. It can't tell you whether the site is trustworthy."
   - "Prefer your package manager (`apt install`, `brew`, `npm i -g`) when it has the program. Use the script when the project's own docs say to."
 related: [heredocs, add-to-path, expansion-quoting, install-deb, command-chaining]
 concepts: [standard-streams, how-sudo-works, what-is-a-package, dns-resolution]

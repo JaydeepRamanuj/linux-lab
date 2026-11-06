@@ -6,6 +6,9 @@ import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import ConceptLinks from '../../components/guide/ConceptLinks.astro';
 import TimelineStrip from '../../components/origins/TimelineStrip.astro';
 import DistroTree from '../../components/origins/DistroTreeCompact.astro';
+import PeopleGallery from '../../components/origins/PeopleGallery.astro';
+import PersonPhoto from '../../components/origins/PersonPhoto.astro';
+import PhotoCredits from '../../components/origins/PhotoCredits.astro';
 import Flow from '../../components/guide/Flow.astro';
 import Layers from '../../components/guide/Layers.astro';
 import Zones from '../../components/guide/Zones.astro';
@@ -76,7 +79,7 @@ const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filte
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-6 items-start">
       <article class="card p-5 sm:p-8 min-w-0">
         <div class="md guide-md origins-md">
-          <Content components={{ Flow, Layers, Zones, DistroTree }} />
+          <Content components={{ Flow, Layers, Zones, DistroTree, PeopleGallery }} />
         </div>
       </article>
 
@@ -109,7 +112,9 @@ const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filte
                 </h2>
                 <ul class="space-y-3">
                   {people.map((p) => (
-                    <li class="space-y-0.5">
+                    <li class="flex items-start gap-3">
+                      <PersonPhoto person={p} size={48} />
+                      <div class="min-w-0 space-y-0.5">
                       <div class="flex flex-wrap items-baseline gap-x-2">
                         {p.url ? (
                           <a href={p.url} target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-on-surface hover:text-tertiary">
@@ -123,9 +128,11 @@ const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filte
                       <p class="text-xs text-on-surface-variant leading-relaxed">
                         <Prose text={p.knownFor} />
                       </p>
+                      </div>
                     </li>
                   ))}
                 </ul>
+                <PhotoCredits people={people} class="pt-1 border-t border-white/5" />
               </section>
             )}
           </aside>

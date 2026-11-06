@@ -1,10 +1,10 @@
 ---
 number: 9
 title: Make a Shortcut with a Symlink
-quote: "I cd into ~/projects/shellgyan/apps/web twenty times a day. Can I make a shortcut?"
+quote: "I cd into ~/projects/linux-lab/apps/web twenty times a day. Can I make a shortcut?"
 module: everyday-rescue
 severity: modifies
-primaryCommand: ln -s ~/projects/shellgyan/apps/web ~/web
+primaryCommand: ln -s ~/projects/linux-lab/apps/web ~/web
 symptoms:
   - symlink
   - symbolic link
@@ -22,7 +22,7 @@ before:
     - title: ~ (home)
       items:
         - { text: projects/, tone: base }
-    - title: ~/projects/shellgyan/apps/web
+    - title: ~/projects/linux-lab/apps/web
       items:
         - { text: astro.config.mjs, tone: base }
         - { text: package.json, tone: base }
@@ -35,8 +35,8 @@ after:
     - title: ~ (home)
       items:
         - { text: projects/, tone: base }
-        - { text: "web → projects/shellgyan/apps/web", tone: good, note: symlink }
-    - title: ~/projects/shellgyan/apps/web
+        - { text: "web → projects/linux-lab/apps/web", tone: good, note: symlink }
+    - title: ~/projects/linux-lab/apps/web
       items:
         - { text: astro.config.mjs, tone: base }
         - { text: package.json, tone: base }
@@ -44,12 +44,12 @@ after:
 steps:
   - title: Create the link
     kind: modifies
-    command: ln -s ~/projects/shellgyan/apps/web ~/web
+    command: ln -s ~/projects/linux-lab/apps/web ~/web
     note: "The order is the same as `cp`: what you link to first, then the new name. `-s` makes a symbolic link. Without it, `ln` makes a hard link, which doesn't work for folders."
   - title: Look at it
     kind: readonly
     command: ls -l ~/web
-    output: "lrwxrwxrwx 1 jd jd 36 Nov  4 07:26 /home/jd/web -> /home/jd/projects/shellgyan/apps/web"
+    output: "lrwxrwxrwx 1 jd jd 36 Nov  4 07:26 /home/jd/web -> /home/jd/projects/linux-lab/apps/web"
     note: "The `l` at the start and the `->` show it's a link. Its permissions are always `rwxrwxrwx`: what counts are the permissions of the folder it points to."
   - title: Use it like the folder
     kind: readonly
@@ -58,7 +58,7 @@ steps:
     note: "`cd ~/web` works too. Anything you change through the link changes the real files: there's only one copy."
   - title: Point it somewhere else
     kind: modifies
-    command: ln -sfn ~/projects/shellgyan-v2/apps/web ~/web
+    command: ln -sfn ~/projects/linux-lab-v2/apps/web ~/web
     note: "`-f` replaces the old link and `-n` treats the existing link as a file, not as the folder it points to. Without `-n`, the new link quietly lands *inside* the old target as `apps/web/web`."
   - title: Remove the link, not the folder
     kind: modifies
@@ -67,11 +67,11 @@ steps:
 replay:
   context: Running the same ln -s twice, then cleaning up.
   commands:
-    - { line: "$ ln -s ~/projects/shellgyan/apps/web ~/web", type: input }
-    - { line: "$ ln -s ~/projects/shellgyan/apps/web ~/web", type: input }
-    - { line: "$ ls ~/projects/shellgyan/apps/web/", type: input }
+    - { line: "$ ln -s ~/projects/linux-lab/apps/web ~/web", type: input }
+    - { line: "$ ln -s ~/projects/linux-lab/apps/web ~/web", type: input }
+    - { line: "$ ls ~/projects/linux-lab/apps/web/", type: input }
     - { line: "astro.config.mjs  package.json  src  web", type: output }
-    - { line: "$ rm ~/projects/shellgyan/apps/web/web", type: input }
+    - { line: "$ rm ~/projects/linux-lab/apps/web/web", type: input }
     - { line: "$ rm ~/web/", type: input }
     - { line: "rm: cannot remove '/home/jd/web/': Is a directory", type: output }
     - { line: "$ rm ~/web", type: input }
@@ -87,7 +87,7 @@ avoid:
 related: [command-not-found, add-to-path, open-from-terminal]
 concepts: [inodes-links]
 anatomy:
-  "~/projects/shellgyan/apps/web": "What the link points to (the target). It must come first."
+  "~/projects/linux-lab/apps/web": "What the link points to (the target). It must come first."
   "~/web": "The new link's name and location."
 ---
 

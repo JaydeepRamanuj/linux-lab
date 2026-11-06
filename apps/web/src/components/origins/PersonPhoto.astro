@@ -1,0 +1,46 @@
+---
+// A person's photo in a square frame, zoomed onto the face (people.ts `focus` and `zoom`). People without a
+// freely licensed photo get their initials. The credit is in the title and in the page's photo credits list.
+import type { Person } from '../../data/people';
+
+interface Props {
+  person: Person;
+  /** Edge length in pixels. */
+  size?: number;
+  class?: string;
+}
+const { person, size = 44, class: className = '' } = Astro.props;
+const p = person.photo;
+const initials = person.name
+  .split(/\s+/)
+  .filter((w) => /^[A-Z]/.test(w))
+  .map((w) => w[0])
+  .slice(0, 2)
+  .join('');
+const style = `width:${size}px;height:${size}px`;
+---
+
+{
+  p ? (
+    <span class:list={['relative block shrink-0 overflow-hidden rounded-xl bg-surface-high border border-white/8', className]} style={style}>
+      <img
+        src={p.src}
+        alt={`Photo of ${person.name}`}
+        title={`${person.name}. Photo: ${p.author}, ${p.license}, via Wikimedia Commons`}
+        loading="lazy"
+        decoding="async"
+        class="absolute inset-0 w-full h-full object-cover"
+        style={`object-position:${p.focus ?? '50% 30%'};transform:scale(${p.zoom ?? 1});transform-origin:${p.focus ?? '50% 30%'}`}
+      />
+    </span>
+  ) : (
+    <span
+      class:list={['shrink-0 rounded-xl bg-surface-high border border-white/8 flex items-center justify-center font-display font-semibold text-on-surface-variant', className]}
+      style={`${style};font-size:${Math.round(size * 0.36)}px`}
+      aria-hidden="true"
+      title={`${person.name}: no freely licensed photo available`}
+    >
+      {initials}
+    </span>
+  )
+}

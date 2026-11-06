@@ -17,9 +17,9 @@ import {
   Undo2
 } from 'lucide-react';
 // Only types from the main entry: the parser loads lazily through lib/browserAnalyzer.
-import type { Analysis, AnalyzedCommand } from '@shellgyan/core';
-import { redact } from '@shellgyan/core/redact';
-import type { Redaction } from '@shellgyan/core/redact';
+import type { Analysis, AnalyzedCommand } from '@linux-lab/core';
+import { redact } from '@linux-lab/core/redact';
+import type { Redaction } from '@linux-lab/core/redact';
 import Anatomy from '../anatomy/Anatomy';
 import { CommandText, CopyButton, Prose, SeverityBadge, commandPreview } from '../ui/ui';
 import { SEVERITY } from '../../lib/theme';

@@ -111,7 +111,7 @@ function analyze(parser: ShellParser, source: string): Analysis {
     allFindings.push({
       ruleId: 'parse-error',
       severity: 'elevated',
-      message: "Part of this couldn't be parsed as shell, so ShellGyan can't be sure what runs.",
+      message: "Part of this couldn't be parsed as shell, so linux-lab can't be sure what runs.",
       commandIndex: null,
       cantVerify: true
     });

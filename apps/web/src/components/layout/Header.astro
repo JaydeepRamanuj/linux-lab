@@ -1,5 +1,5 @@
 ---
-import { SquareTerminal } from 'lucide-react';
+import { SITE_NAME } from '../../data/site';
 import SearchBar from '../search/SearchBar';
 
 interface Props {
@@ -21,12 +21,15 @@ const NAV = [
   <div class="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
     <div class="flex items-center gap-2 sm:gap-6 min-w-0">
       <a href="/" class="flex items-center gap-2.5 group shrink-0">
-        <div class="w-9 h-9 rounded-lg p-px bg-linear-to-br from-primary-container via-primary-deep to-tertiary shadow-[0_0_16px_rgba(128,131,255,0.3)] group-hover:shadow-[0_0_24px_rgba(76,215,246,0.45)] transition">
-          <div class="w-full h-full rounded-[7px] bg-surface-lowest flex items-center justify-center">
-            <SquareTerminal className="h-4.5 w-4.5 text-tertiary" />
-          </div>
-        </div>
-        <span class="font-display text-lg font-semibold tracking-tight text-on-surface hidden sm:inline">ShellGyan</span>
+        <img
+          src="/favicon.svg"
+          alt=""
+          width="36"
+          height="36"
+          class="w-9 h-9 rounded-[10px] shadow-[0_0_16px_rgba(128,131,255,0.3)] group-hover:shadow-[0_0_24px_rgba(76,215,246,0.45)] transition"
+        />
+        <span class="font-mono text-[17px] font-semibold tracking-tight text-on-surface hidden sm:inline">{SITE_NAME}</span>
+        <span class="sr-only sm:hidden">{SITE_NAME}</span>
       </a>
 
       <nav class="flex items-center gap-0.5 sm:gap-1 p-1 rounded-xl bg-surface-low border border-white/5 overflow-x-auto no-scrollbar" aria-label="Main">

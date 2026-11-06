@@ -1,4 +1,4 @@
-// @shellgyan/core: environment-agnostic entry (browser and Node). Node callers can use `@shellgyan/core/node`.
+// @linux-lab/core: environment-agnostic entry (browser and Node). Node callers can use `@linux-lab/core/node`.
 export { createAnalyzer } from './analyze';
 export type { Analysis, AnalyzedCommand, Analyzer } from './analyze';
 export type { ParserSources } from './parse';

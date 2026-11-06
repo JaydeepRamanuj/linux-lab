@@ -134,7 +134,7 @@ When a build or install misbehaves, agents reach for the same reset: delete `nod
 
 ## How it works
 
-**`rm -rf` on generated folders.** `node_modules`, `dist`, `build`, `.next` and `coverage` are rebuilt by your tools, so deleting them loses nothing. ShellGyan rates `rm -rf node_modules` as modifies for that reason. What makes `rm -rf` dangerous is the target: `~`, `/`, `..`, or a variable that turns out to be empty. Read the path, not the flags.
+**`rm -rf` on generated folders.** `node_modules`, `dist`, `build`, `.next` and `coverage` are rebuilt by your tools, so deleting them loses nothing. linux-lab rates `rm -rf node_modules` as modifies for that reason. What makes `rm -rf` dangerous is the target: `~`, `/`, `..`, or a variable that turns out to be empty. Read the path, not the flags.
 
 **`npm ci` vs `npm install`.** `package-lock.json` records the exact version of every package. `npm ci` installs exactly those and fails if the lockfile and `package.json` disagree. `npm install` resolves versions again where it needs to and may rewrite the lockfile.
 

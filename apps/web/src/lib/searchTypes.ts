@@ -1,4 +1,4 @@
-import type { Severity } from '@shellgyan/core/severity';
+import type { Severity } from '@linux-lab/core/severity';
 
 export interface SearchItem {
   type: 'scenario' | 'command' | 'guide' | 'chapter' | 'event' | 'lore';

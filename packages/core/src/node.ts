@@ -9,7 +9,7 @@ export interface NodeAnalyzerOptions {
   /**
    * A file inside this package (or any folder that can resolve its dependencies) to look up the
    * .wasm files from. Defaults to this module. Bundlers move this module, so a bundled caller
-   * passes the package's real location, e.g. `require.resolve('@shellgyan/core/package.json')`.
+   * passes the package's real location, e.g. `require.resolve('@linux-lab/core/package.json')`.
    */
   from?: string;
 }

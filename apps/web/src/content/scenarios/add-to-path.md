@@ -80,7 +80,7 @@ steps:
   - title: Make it permanent
     kind: elevated
     command: 'echo ''export PATH="$HOME/go/bin:$PATH"'' >> ~/.bashrc'
-    note: "`>>` appends one line to the end of `~/.bashrc`, which runs in every new terminal. The single quotes matter: they write `$HOME` and `$PATH` literally, so they're filled in fresh each time. ShellGyan marks this elevated because a broken line here breaks every terminal you open."
+    note: "`>>` appends one line to the end of `~/.bashrc`, which runs in every new terminal. The single quotes matter: they write `$HOME` and `$PATH` literally, so they're filled in fresh each time. linux-lab marks this elevated because a broken line here breaks every terminal you open."
   - title: Check what you wrote
     kind: readonly
     command: grep -n "go/bin" ~/.bashrc

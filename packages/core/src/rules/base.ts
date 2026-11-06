@@ -117,7 +117,7 @@ export function baseSeverity(c: NormalizedCommand): Basis {
 
   if (READONLY.has(p)) return { severity: 'readonly', reason: 'Only reads or inspects.' };
   if (MODIFIES.has(p)) return { severity: 'modifies', reason: 'Changes files in your project or home folder.' };
-  return { severity: 'modifies', reason: `\`${p}\` isn't in ShellGyan's list yet, so it's assumed to change things.` };
+  return { severity: 'modifies', reason: `\`${p}\` isn't in linux-lab's list yet, so it's assumed to change things.` };
 }
 
 // `ip OBJECT VERB`: iproute2 accepts any prefix of a verb, so `ip r a` is `ip route add` and `ip a s` is `ip addr show`.

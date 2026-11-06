@@ -1,7 +1,7 @@
 // The rule engine in the browser. Import this module dynamically (`import('./browserAnalyzer')`) so the parser
 // and its .wasm files load only on pages that need them.
-import { createAnalyzer } from '@shellgyan/core';
-import type { Analysis } from '@shellgyan/core';
+import { createAnalyzer } from '@linux-lab/core';
+import type { Analysis } from '@linux-lab/core';
 import parserWasm from 'web-tree-sitter/web-tree-sitter.wasm?url';
 import bashWasm from 'tree-sitter-bash/tree-sitter-bash.wasm?url';
 import { anatomyFromAnalysis, libraryFromEntries, protectPlaceholders } from './anatomyTokens';

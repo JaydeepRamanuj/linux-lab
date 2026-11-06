@@ -1,0 +1,41 @@
+---
+// Attribution for the photos of the given people, as their Creative Commons licences require: author, licence
+// (linked) and the file's page on Wikimedia Commons. Collapsed by default.
+import type { Person } from '../../data/people';
+
+interface Props {
+  people: Person[];
+  class?: string;
+}
+const { people, class: className = '' } = Astro.props;
+const credited = people.filter((p) => p.photo);
+---
+
+{
+  credited.length > 0 && (
+    <details class:list={['group/credits text-[11px] text-outline', className]}>
+      <summary class="cursor-pointer list-none hover:text-on-surface [&::-webkit-details-marker]:hidden">
+        <span class="inline-block transition group-open/credits:rotate-90 mr-1">›</span>
+        Photo credits
+      </summary>
+      <ul class="mt-2 space-y-1 leading-relaxed">
+        {credited.map((p) => (
+          <li>
+            {p.name}: {p.photo!.author},{' '}
+            {p.photo!.licenseUrl ? (
+              <a href={p.photo!.licenseUrl} target="_blank" rel="noopener noreferrer license" class="underline underline-offset-2 hover:text-tertiary">
+                {p.photo!.license}
+              </a>
+            ) : (
+              p.photo!.license
+            )}
+            ,{' '}
+            <a href={p.photo!.sourceUrl} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 hover:text-tertiary">
+              Wikimedia Commons
+            </a>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@shellgyan/core",
+  "name": "@linux-lab/core",
   "private": true,
   "type": "module",
   "exports": {
