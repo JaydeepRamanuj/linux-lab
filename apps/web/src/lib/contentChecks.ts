@@ -14,7 +14,12 @@
 //   - guides (docs/guides-plan.md): two guides in a track share an `order`; a guide's `prerequisites`,
 //     `commands` or `scenarios` entry doesn't exist; a scenario's or command's `concepts` slug isn't a
 //     published guide; an `observe` command rates above readonly; the body's H2s aren't exactly
-//     "The mental model" then "Under the hood"; the body links to a /s/, /g/ or /c/ page that doesn't exist
+//     "The mental model" then "Under the hood"; the body links to a /s/, /g/, /c/ or /o/ page that doesn't exist
+//   - origins (docs/origins-plan.md §3.5): a timeline event has a duplicate id, a bad date, no source URL, an
+//     unknown category or era, a year outside its era, or an unknown chapter; two people share an id; two chapters
+//     share an `order`; a chapter's `people`, `events`, `guides`, `commands` or `scenarios` entry doesn't exist;
+//     `asOf` isn't an ISO date; the body doesn't start with "The short version" and end with "Why it matters
+//     today"; the body links to a page that doesn't exist
 // Warnings (printed as `[content] …`; the plan's definition of done is zero of them):
 //   - a scenario runs a program that has no command page
 //   - a command page exists for a program a scenario runs, but doesn't list that scenario under `scenarios`
@@ -23,6 +28,8 @@ import { getCollection } from 'astro:content';
 import { maxSeverity, rank } from '@shellgyan/core/severity';
 import type { Severity } from '@shellgyan/core/severity';
 import { buildAnatomy } from './anatomy';
+import { TIMELINE, ERAS, TIMELINE_CATEGORIES, isValidEventDate, eventYear } from '../data/timeline';
+import { PEOPLE } from '../data/people';
 
 export interface ContentReport {
   errors: string[];
@@ -48,6 +55,13 @@ export async function collectContentReport(): Promise<ContentReport> {
   const commandByName = new Map(commands.map((c) => [c.data.name, c]));
   const allGuides = await getCollection('guides');
   const publishedGuides = new Set(allGuides.filter((g) => !g.data.draft).map((g) => g.id));
+  const allChapters = await getCollection('origins');
+  const publishedChapters = new Set(allChapters.filter((c) => !c.data.draft).map((c) => c.id));
+
+  /** Does a site path written in a body (`/s/x`, `/g/x`, `/c/x`, `/o/x`) point at a real page? */
+  const pageExists = (kind: string, slug: string) =>
+    kind === 's' ? published.has(slug) : kind === 'g' ? publishedGuides.has(slug) : kind === 'o' ? publishedChapters.has(slug) : commandByName.has(slug);
+  const bodyLinks = (body: string) => [...body.matchAll(/\]\(\/([scgo])\/([^)#\s/]+)\/?(?:#[^)\s]*)?\)/g)].map((m) => [m[1]!, m[2]!] as const);
 
   // Commands: names, links.
   const seenNames = new Map<string, string>();
@@ -156,10 +170,9 @@ export async function collectContentReport(): Promise<ContentReport> {
       errors.push(`guide ${id}: body H2s must be exactly ${GUIDE_BODY_H2S.map((h) => `"## ${h}"`).join(' then ')}; found ${h2s.length ? h2s.map((h) => `"## ${h}"`).join(', ') : 'none'}`);
     }
 
-    // Site links written in the body or in widget text: [text](/s/slug), (/g/slug), (/c/name).
-    for (const [, kind, slug] of (guide.body ?? '').matchAll(/\]\(\/([scg])\/([^)#\s/]+)\/?(?:#[^)\s]*)?\)/g)) {
-      const ok = kind === 's' ? published.has(slug!) : kind === 'g' ? publishedGuides.has(slug!) : commandByName.has(slug!);
-      if (!ok) errors.push(`guide ${id}: body links to /${kind}/${slug}, which doesn't exist`);
+    // Site links written in the body or in widget text: [text](/s/slug), (/g/slug), (/c/name), (/o/slug).
+    for (const [kind, slug] of bodyLinks(guide.body ?? '')) {
+      if (!pageExists(kind, slug)) errors.push(`guide ${id}: body links to /${kind}/${slug}, which doesn't exist`);
     }
 
     for (const o of g.observe) {
@@ -177,8 +190,71 @@ export async function collectContentReport(): Promise<ContentReport> {
     if (!linked) warnings.push(`guide ${id}: no scenario or command page links to it`);
   }
 
+  // Origins (docs/origins-plan.md §3.5): timeline, people, chapters.
+  const eventIds = new Set<string>();
+  for (const e of TIMELINE) {
+    const where = `timeline event ${e.id}`;
+    if (eventIds.has(e.id)) errors.push(`${where}: id is used twice`);
+    eventIds.add(e.id);
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(e.id)) errors.push(`${where}: id must be kebab-case (it's the anchor on /origins/timeline)`);
+    if (!isValidEventDate(e.date)) errors.push(`${where}: date "${e.date}" isn't YYYY, YYYY-MM or YYYY-MM-DD`);
+    if (!/^https?:\/\/\S+$/.test(e.source)) errors.push(`${where}: source "${e.source}" isn't a URL`);
+    if (!TIMELINE_CATEGORIES.includes(e.category)) errors.push(`${where}: unknown category "${e.category}"`);
+    const era = ERAS.find((x) => x.id === e.era);
+    if (!era) errors.push(`${where}: unknown era "${e.era}"`);
+    else if (isValidEventDate(e.date)) {
+      const y = eventYear(e.date);
+      if (y < era.from || (era.to !== null && y > era.to)) errors.push(`${where}: ${y} is outside the "${era.name}" era (${era.from}–${era.to ?? 'now'})`);
+    }
+    if (e.chapter && !publishedChapters.has(e.chapter)) errors.push(`${where}: chapter "${e.chapter}" doesn't exist (or is a draft)`);
+  }
+
+  const personIds = new Set<string>();
+  for (const p of PEOPLE) {
+    if (personIds.has(p.id)) errors.push(`person ${p.id}: id is used twice`);
+    personIds.add(p.id);
+  }
+
+  const seenChapterOrders = new Map<number, string>();
+  for (const chapter of allChapters) {
+    const c = chapter.data;
+    const id = chapter.id;
+    const where = `origins chapter ${id}`;
+    const other = seenChapterOrders.get(c.order);
+    if (other) errors.push(`${where}: order ${c.order} is already used by ${other}`);
+    seenChapterOrders.set(c.order, id);
+
+    for (const p of c.people) if (!personIds.has(p)) errors.push(`${where}: person "${p}" isn't in data/people.ts`);
+    for (const ev of c.events) if (!eventIds.has(ev)) errors.push(`${where}: timeline event "${ev}" isn't in data/timeline.ts`);
+    for (const g of c.guides) if (!publishedGuides.has(g)) errors.push(`${where}: guide "${g}" doesn't exist (or is a draft)`);
+    for (const cm of c.commands) if (!commandByName.has(cm)) errors.push(`${where}: command "${cm}" doesn't exist`);
+    for (const sc of c.scenarios) if (!published.has(sc)) errors.push(`${where}: scenario "${sc}" doesn't exist (or is a draft)`);
+    if (c.asOf !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(c.asOf)) errors.push(`${where}: asOf "${c.asOf}" isn't an ISO date (YYYY-MM-DD)`);
+
+    if (c.draft) continue;
+
+    const h2s = guideH2s(chapter.body ?? '');
+    if (h2s[0] !== ORIGINS_FIRST_H2) errors.push(`${where}: the body must start with "## ${ORIGINS_FIRST_H2}"; found ${h2s[0] ? `"## ${h2s[0]}"` : 'no H2'}`);
+    if (h2s.at(-1) !== ORIGINS_LAST_H2) errors.push(`${where}: the last H2 must be "## ${ORIGINS_LAST_H2}"; found ${h2s.at(-1) ? `"## ${h2s.at(-1)}"` : 'no H2'}`);
+    if (h2s.includes('Further reading')) errors.push(`${where}: don't write "## Further reading"; the page renders it from \`references\``);
+    if (h2s.length < 3) errors.push(`${where}: needs at least one topic H2 between "${ORIGINS_FIRST_H2}" and "${ORIGINS_LAST_H2}"`);
+
+    for (const [kind, slug] of bodyLinks(chapter.body ?? '')) {
+      if (!pageExists(kind, slug)) errors.push(`${where}: body links to /${kind}/${slug}, which doesn't exist`);
+    }
+    for (const [, path] of (chapter.body ?? '').matchAll(/\]\((\/origins\/[^)#\s]*)/g)) {
+      if (!ORIGINS_PAGES.includes(path!.replace(/\/$/, ''))) errors.push(`${where}: body links to ${path}, which isn't an Origins page`);
+    }
+  }
+
   return { errors, warnings };
 }
+
+/** The first and last H2 of an Origins chapter body (docs/origins-plan.md §3.1). */
+export const ORIGINS_FIRST_H2 = 'The short version';
+export const ORIGINS_LAST_H2 = 'Why it matters today';
+/** Pages under /origins/ that exist in this phase. */
+const ORIGINS_PAGES = ['/origins/timeline'];
 
 /** The H2s a guide's MDX body must have, in order. The page renders the rest from frontmatter. */
 export const GUIDE_BODY_H2S = ['The mental model', 'Under the hood'];

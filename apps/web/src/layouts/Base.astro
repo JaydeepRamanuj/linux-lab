@@ -6,7 +6,7 @@ import { SITE_NAME, TAGLINE, DEFAULT_DESCRIPTION } from '../data/site';
 interface Props {
   title: string;
   description?: string;
-  current?: 'scenarios' | 'library' | 'learn' | 'explain';
+  current?: 'scenarios' | 'library' | 'learn' | 'origins' | 'explain';
 }
 
 const { title, current, description = DEFAULT_DESCRIPTION } = Astro.props;

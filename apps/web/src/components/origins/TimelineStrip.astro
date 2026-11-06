@@ -1,0 +1,49 @@
+---
+// A chapter's own events, as a compact strip near the top of the chapter (docs/origins-plan.md §5.1).
+// Static: each item links to the event on /origins/timeline. Scrolls sideways inside its own box on a phone.
+import { History, ArrowRight } from 'lucide-react';
+import { ACCENTS } from '../../lib/theme';
+import { formatEventDate } from '../../data/timeline';
+import type { ResolvedEvent } from '../../lib/origins';
+import { CATEGORY_ACCENT } from './Timeline';
+import { Prose } from '../ui/ui';
+
+interface Props {
+  events: ResolvedEvent[];
+}
+const { events } = Astro.props;
+---
+
+{
+  events.length > 0 && (
+    <section class="card p-4 sm:p-5 space-y-3" aria-label="On the timeline">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="flex items-center gap-2 label-caps text-on-surface">
+          <History className="h-4 w-4 text-tertiary" />
+          On the timeline
+        </h2>
+        <a href="/origins/timeline" class="group inline-flex items-center gap-1 text-[12px] text-outline hover:text-primary">
+          Full timeline
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition" />
+        </a>
+      </div>
+      <ol class="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
+        {events.map((e) => (
+          <li class="snap-start shrink-0 w-52">
+            <a href={`/origins/timeline#${e.id}`} class="group h-full flex flex-col gap-1.5 rounded-xl bg-surface-low border border-white/5 hover:border-primary-container/40 transition p-3">
+              <span class="flex items-center gap-2">
+                <span class={`w-2 h-2 rounded-full ${ACCENTS[CATEGORY_ACCENT[e.category]].dot}`} aria-hidden="true" />
+                <time datetime={e.date} class="font-mono text-[11px] text-tertiary">
+                  {formatEventDate(e.date)}
+                </time>
+              </span>
+              <span class="text-[13px] leading-snug text-on-surface group-hover:text-white">
+                <Prose text={e.title} />
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}

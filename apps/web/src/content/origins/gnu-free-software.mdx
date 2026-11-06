@@ -1,0 +1,122 @@
+---
+order: 2
+title: GNU and Free Software
+summary: "In 1983 Richard Stallman set out to write a complete free Unix-compatible system. By 1990 GNU had nearly everything but a kernel, along with a licence, the GPL, designed to keep it free. Most of the commands you type on Linux are GNU's."
+readingMinutes: 11
+span: "1983–1998"
+keyFacts:
+  - label: Announced
+    value: 27 September 1983, by Richard Stallman
+  - label: The name
+    value: "GNU's Not Unix, a recursive acronym"
+  - label: Licence
+    value: GPL version 1 in February 1989, version 2 in June 1991, version 3 in 2007
+  - label: What it gave Linux
+    value: GCC, Bash, the C library, coreutils, grep, sed, tar, make, Emacs
+  - label: "Its own kernel"
+    value: The Hurd, on the Mach microkernel. Work started in 1990; it still isn't the usual GNU kernel.
+people: [richard-stallman, eric-raymond, bruce-perens, linus-torvalds]
+events: [gnu-announced, gnu-work-starts, gnu-manifesto, fsf-founded, gcc-1, gpl-v1, hurd-started, gpl-v2, cathedral-bazaar, open-source-coined, osi-founded]
+guides: [shared-libraries, what-is-a-package, pressing-enter]
+commands: [bash, grep, sed, tar, ls, cp]
+references:
+  - label: "Richard Stallman, “The GNU Project”"
+    url: https://www.gnu.org/gnu/thegnuproject.html
+  - label: GNU's initial announcement (27 September 1983)
+    url: https://www.gnu.org/gnu/initial-announcement.html
+  - label: The GNU Manifesto
+    url: https://www.gnu.org/gnu/manifesto.html
+  - label: "What is Free Software? The four freedoms"
+    url: https://www.gnu.org/philosophy/free-sw.html
+  - label: GNU General Public License, version 2 (June 1991)
+    url: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+  - label: "The Hurd's history: an incomplete timeline"
+    url: https://www.gnu.org/software/hurd/history.html
+  - label: "GNU/Linux FAQ, the FSF's case for the name"
+    url: https://www.gnu.org/gnu/gnu-linux-faq.html
+  - label: "Why Open Source Misses the Point, the FSF's view"
+    url: https://www.gnu.org/philosophy/open-source-misses-the-point.html
+  - label: "Open Source Initiative: history of the OSI"
+    url: https://opensource.org/history
+  - label: The Open Source Definition
+    url: https://opensource.org/osd
+  - label: "GNU Coding Standards: command-line interfaces"
+    url: https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html
+  - label: GCC releases, from 0.9 in 1987
+    url: https://gcc.gnu.org/releases.html
+---
+
+## The short version
+
+Richard Stallman worked at the MIT Artificial Intelligence Lab from 1971, in a community where programs were shared and changed freely. By the early 1980s that community had broken up, and the software that replaced it came with licences that forbade sharing. Stallman's answer, announced in September 1983, was GNU: a complete Unix-compatible system that anyone could use, study, change and give away.
+
+Writing all of Unix from scratch took years. GNU produced an editor (Emacs), a compiler (GCC), a debugger, a shell (Bash), the C library and most of the standard commands. It also produced the GNU General Public License, which lets you do anything with the code except take those freedoms away from the next person. By 1990 the only big piece missing was the kernel, and GNU's own, the Hurd, was slow to arrive.
+
+In 1991 Linus Torvalds wrote a kernel, and in 1992 he put it under the GPL. Together with GNU it made a complete free system. That pairing is why the FSF asks for the name GNU/Linux, and why the commands on your machine follow GNU's conventions. In 1998 a different group, wanting to make the case to business, started calling this kind of software open source. The two names describe almost the same set of programs, for different reasons.
+
+## From a sharing community to GNU
+
+Stallman's own account, "The GNU Project", describes the AI Lab of the 1970s as a place where anyone could read and improve the system's code, and where asking for the source of a program you used was normal. In 1981 a spin-off company, Symbolics, hired away nearly all of the lab's hackers, and in 1982 the lab chose a non-free system for its new computer. The modern systems of the day came with non-disclosure agreements, even for a copy of the program. Using a computer, he wrote, now started with a promise not to help your neighbour.
+
+On 27 September 1983 he posted the plan to Usenet. It promised "a complete Unix-compatible software system called GNU (for Gnu's Not Unix)", starting with a kernel and "all the utilities needed to write and run C programs". He chose Unix compatibility, he explained later, so that the system would be portable and Unix users could easily switch to it. Writing everything from scratch, rather than starting from Unix, kept AT&T's code and licence out of it.
+
+In January 1984 Stallman left his job at MIT so that the university couldn't claim the work and stop it being distributed as free software. He started on GNU Emacs that September; by early 1985 it was usable, and he sold copies on tape for $150 to fund the work. The GNU Manifesto, written in 1985, set out the argument and asked for help. Later that year he founded the Free Software Foundation, a charity to pay programmers and run the tape business.
+
+## What "free" means
+
+Free software is about freedom, not price. GNU's definition gives the user four freedoms, numbered from zero:
+
+| Freedom | You may |
+|---|---|
+| 0 | Run the program as you wish, for any purpose |
+| 1 | Study how it works and change it, which needs the source code |
+| 2 | Give copies to others |
+| 3 | Give others copies of your changed version, which also needs the source |
+
+Selling a copy is fine; GNU's own tapes were sold. What isn't free is a program you can't read, change or pass on.
+
+The GPL makes those freedoms stick. Copyright law normally lets an author restrict what you do with their code. The GPL uses that same copyright to grant the four freedoms, on one condition: if you distribute the program, or a changed version of it, you have to pass on the same freedoms, including the source. GNU calls this **copyleft**. Version 1 came out in February 1989, replacing the separate licences of individual GNU programs. Version 2, in June 1991, is the one Linux uses.
+
+Not every GNU program uses the plain GPL. The C library uses the Lesser GPL, which lets programs that aren't free link against it. Stallman called that a matter of strategy, not principle: every proprietary system already came with a C library, so keeping GNU's for free software only would have given free software no advantage, and only discouraged people from using it. The licences chapter later compares the GPL with the permissive licences, such as MIT and BSD, that don't have the copyleft condition.
+
+## What GNU built
+
+GNU had to write every part of a Unix system before any of it was useful on its own, so it started with the tools programmers needed most:
+
+- **GCC**, the GNU C compiler. Its first beta came out in March 1987 and version 1.0 on 23 May 1987. Linux was built with it from the first release.
+- **Bash**, the Bourne Again Shell, written by Brian Fox while he worked for the FSF. It's a free shell compatible with the Bourne shell from Seventh Edition Unix, with features from the C shell and the Korn shell added.
+- **The GNU C library**, written by Roland McGrath of the FSF. Every program on a GNU/Linux system goes through it to ask the kernel for anything: it's the layer between your program and the [system calls](/g/system-calls), and the "libc" in most [shared library errors](/g/shared-libraries).
+- **The commands**: `ls`, `cp`, `mv`, `cat` and the rest (now GNU coreutils), plus `grep`, `sed`, `awk` (as gawk), `tar`, `make`, `diff` and `gdb`.
+
+They weren't copies of the Unix versions. GNU wrote them from scratch to behave the same way, and often added to them. The GNU Coding Standards ask every program to support `--help` and `--version`, and to use long option names like `--recursive` alongside short ones like `-r`. That is why GNU tools take `--help` and the BSD versions on a Mac usually don't.
+
+## The missing kernel
+
+"By 1990, the GNU system was almost complete," Stallman wrote; "the only major missing component was the kernel." GNU had decided on an ambitious design: the Hurd, a set of server processes running on top of the Mach microkernel from Carnegie Mellon, each doing one of the jobs a Unix kernel does in one program. Work was held up for years waiting for Mach to be released as free software, and once it started, the servers, which talk to each other by passing messages, turned out to be very hard to debug.
+
+The Hurd's own history lists its first test release, 0.1, in September 1996, and GNU 0.2 in 1997. By then Linux had been free software for five years. The Hurd is still developed today, and Debian publishes a version of its system that runs on it, but it never became what most GNU systems run.
+
+## GNU/Linux or Linux?
+
+When Linux appeared, Stallman wrote, "combining Linux with the not-quite-complete GNU system resulted in a complete free operating system". The FSF's view is that the system is GNU with Linux as its kernel, so it should be called GNU/Linux. Calling the whole thing Linux, in its view, credits one component and leaves out the project, and the free software ideas, that produced most of the rest.
+
+The other view is that Linux is simply what the system is called, by its users, its distributions and its own kernel developers. People who hold it point out that a modern distribution contains a great deal that isn't GNU: the kernel, systemd, X or Wayland, KDE, Python, Firefox and thousands of other packages. Some systems use the Linux kernel with almost no GNU software at all. Android has its own C library and tools, and Alpine Linux uses musl and BusyBox.
+
+Both views are held in good faith, and both names are in use. Debian calls its system Debian GNU/Linux; most other distributions, and this site, say Linux. Neither changes how anything works.
+
+## Free software and open source
+
+In January 1998 Netscape announced that it would release the source of its browser. A few weeks later, on 3 February, a group meeting in Palo Alto decided that the moment needed a name that businesses would hear more easily than "free software", whose "free" kept being taken to mean price. Christine Peterson suggested "open source". Eric Raymond, whose essay "The Cathedral and the Bazaar" had argued that the Linux way of developing in the open produced better software, and Bruce Perens founded the Open Source Initiative later that month.
+
+The OSI's Open Source Definition was derived from the Debian Free Software Guidelines, which Perens had written for Debian. In practice the two definitions accept almost all the same licences: the GPL, MIT, BSD and Apache licences are free software and open source alike.
+
+The difference is in the reason. The open source case is practical: developing in the open gives better, more reliable software. The FSF's case is ethical: users deserve control over the programs they run, and the FSF argues that open source "misses the point" by leaving that out. Many people use the terms interchangeably, and some say "FOSS" or "FLOSS" (free/libre and open source software) to cover both.
+
+## Why it matters today
+
+The kernel is Linux, but most of what you touch is GNU's or follows GNU's lead:
+
+- When you [press Enter](/g/pressing-enter), the shell reading your line is usually [Bash](/c/bash), GNU's shell.
+- `ls`, `cp`, `mv` and `rm` are GNU coreutils, and [`grep`](/c/grep), [`sed`](/c/sed) and [`tar`](/c/tar) are GNU's too. Their long options and `--help` are GNU conventions; the same commands on macOS or Alpine can behave differently.
+- Programs reach the kernel through the GNU C library, the libc in "[error while loading shared libraries](/g/shared-libraries)".
+- The GPL is why [packages](/g/what-is-a-package) in your distribution's repositories come with their source, and why the distributions themselves can be freely copied and rebuilt.

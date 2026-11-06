@@ -1,0 +1,141 @@
+---
+import { Landmark, History, GitFork, Quote, ArrowRight, Clock, ChevronRight } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import { Prose } from '../../components/ui/ui';
+import { publishedChapters } from '../../lib/origins';
+import { TIMELINE } from '../../data/timeline';
+
+const chapters = await publishedChapters();
+
+// The plan's ten chapters (docs/origins-plan.md §4). Ones not written yet show dimmed, so the reading order is
+// visible from the start; each disappears from this list once its file is published.
+const PLANNED = [
+  { slug: 'unix', title: 'Unix: Where It All Started' },
+  { slug: 'gnu-free-software', title: 'GNU and Free Software' },
+  { slug: 'linux-kernel', title: 'Linus and the Kernel' },
+  { slug: 'standards', title: 'Standards: POSIX, SUS and FHS' },
+  { slug: 'what-is-a-distro', title: 'What a Distribution Really Is' },
+  { slug: 'distro-families', title: 'The Distro Families' },
+  { slug: 'stack-shifts', title: 'The Big Shifts in the Stack' },
+  { slug: 'linux-everywhere', title: 'Linux Everywhere' },
+  { slug: 'licenses', title: 'Licenses in Practice' },
+  { slug: 'whos-who', title: 'Who’s Who' }
+];
+const upcoming = PLANNED.filter((p) => !chapters.some((c) => c.id === p.slug));
+
+const PAGES = [
+  { href: '/origins/timeline', Icon: History, title: 'Timeline', text: `${TIMELINE.length} dates from 1969 on, filterable by Unix, GNU and the kernel, each with its source.`, live: true },
+  { href: null, Icon: GitFork, title: 'Distro family tree', text: 'Which distribution came from which, and how they differ.', live: false },
+  { href: null, Icon: Quote, title: 'Names & lore', text: 'Where grep, awk, bash and daemon got their names, and the jargon around them.', live: false }
+];
+---
+
+<Base
+  title="Where Linux comes from"
+  description="The story behind the system: Unix at Bell Labs, GNU and free software, Linus Torvalds' kernel, distributions and the people who build them."
+  current="origins"
+>
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Origins' }]} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-caution/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 bg-caution/10 border-caution/30">
+          <Landmark className="h-6 w-6 text-caution" />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Origins</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">Where Linux comes from</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">
+            The rest of the site is about using the system. This part is about the system itself: why it looks like Unix, why its tools are
+            GNU's, how a student's hobby kernel became the most widely used one, and who keeps it going. Read the chapters in order, or start
+            from the timeline.
+          </p>
+          <p class="font-mono text-[11px] text-outline pt-1">
+            {chapters.length} of {PLANNED.length} chapters <span class="text-outline-variant mx-1">•</span>
+            {TIMELINE.length} timeline events
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-6 items-start">
+      <section class="space-y-3" aria-labelledby="chapters">
+        <h2 id="chapters" class="label-caps text-on-surface">Chapters</h2>
+        <ol class="space-y-3">
+          {
+            chapters.map((c) => (
+              <li>
+                <a href={`/o/${c.id}`} class="group card card-hover p-5 flex items-start gap-4 min-w-0">
+                  <span class="font-mono text-2xl font-semibold text-outline-variant group-hover:text-caution transition w-9 shrink-0 leading-none pt-0.5">
+                    {String(c.data.order).padStart(2, '0')}
+                  </span>
+                  <div class="flex-1 min-w-0 space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {c.data.span && <span class="font-mono text-[11px] text-tertiary">{c.data.span}</span>}
+                      <span class="inline-flex items-center gap-1 font-mono text-[11px] text-outline">
+                        <Clock className="h-3 w-3" />
+                        {c.data.readingMinutes} min
+                      </span>
+                    </div>
+                    <h3 class="font-display text-[18px] font-semibold text-on-surface group-hover:text-white">{c.data.title}</h3>
+                    <p class="text-sm text-on-surface-variant leading-relaxed">
+                      <Prose text={c.data.summary} />
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 mt-1 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition shrink-0" />
+                </a>
+              </li>
+            ))
+          }
+          {
+            upcoming.map((p) => (
+              <li class="rounded-2xl border border-dashed border-white/8 px-5 py-3.5 flex items-center gap-4 opacity-70">
+                <span class="font-mono text-lg text-outline-variant w-9 shrink-0">{String(PLANNED.indexOf(p) + 1).padStart(2, '0')}</span>
+                <span class="flex-1 min-w-0 text-sm text-on-surface-variant">{p.title}</span>
+                <span class="label-caps text-outline-variant shrink-0">On the way</span>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <aside class="space-y-3" aria-labelledby="explore">
+        <h2 id="explore" class="label-caps text-on-surface">Explore</h2>
+        {
+          PAGES.map((p) =>
+            p.live ? (
+              <a href={p.href} class="group card card-hover p-5 flex items-start gap-4">
+                <div class="w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 bg-tertiary/10 border-tertiary/30">
+                  <p.Icon className="h-5 w-5 text-tertiary" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="flex items-center gap-1.5 font-semibold text-on-surface">
+                    {p.title}
+                    <ArrowRight className="h-3.5 w-3.5 text-outline group-hover:text-primary group-hover:translate-x-0.5 transition" />
+                  </h3>
+                  <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{p.text}</p>
+                </div>
+              </a>
+            ) : (
+              <div class="card p-5 flex items-start gap-4 opacity-70">
+                <div class="w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 bg-surface-high border-white/8">
+                  <p.Icon className="h-5 w-5 text-outline" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="flex flex-wrap items-center gap-2 font-semibold text-on-surface-variant">
+                    {p.title}
+                    <span class="label-caps text-outline-variant">On the way</span>
+                  </h3>
+                  <p class="text-sm text-outline mt-1 leading-relaxed">{p.text}</p>
+                </div>
+              </div>
+            )
+          )
+        }
+      </aside>
+    </div>
+  </div>
+</Base>

@@ -131,4 +131,34 @@ const guides = defineCollection({
   })
 });
 
-export const collections = { scenarios, commands, guides };
+// One chapter per file: src/content/origins/<slug>.mdx (docs/origins-plan.md §3.1). The MDX body starts with
+// "## The short version" and ends with "## Why it matters today"; the page renders the rest from frontmatter.
+const origins = defineCollection({
+  loader: glob({ pattern: '*.mdx', base: './src/content/origins' }),
+  schema: z.object({
+    /** Reading order on /origins. */
+    order: z.number().int().positive(),
+    title: z.string(),
+    /** One or two sentences, for cards and search. */
+    summary: z.string(),
+    readingMinutes: z.number().int().positive(),
+    /** The years the chapter covers, e.g. "1969–1983". Shown on the card. */
+    span: z.string().optional(),
+    /** The sidebar's "At a glance". */
+    keyFacts: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
+    /** Ids from src/data/people.ts. */
+    people: z.array(z.string()).default([]),
+    /** Ids from src/data/timeline.ts, shown as a strip at the top of the chapter. */
+    events: z.array(z.string()).default([]),
+    /** Guide slugs, command names and scenario slugs this chapter is the background to. */
+    guides: z.array(z.string()).default([]),
+    commands: z.array(z.string()).default([]),
+    scenarios: z.array(z.string()).default([]),
+    references: z.array(z.object({ label: z.string(), url: z.url() })).min(1),
+    /** ISO date the present-day facts were checked. */
+    asOf: z.string().optional(),
+    draft: z.boolean().default(false)
+  })
+});
+
+export const collections = { scenarios, commands, guides, origins };

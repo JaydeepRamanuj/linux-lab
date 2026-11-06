@@ -30,7 +30,9 @@ function loadIndex() {
 const GROUPS: { type: SearchItem['type']; label: string; tone: string }[] = [
   { type: 'scenario', label: 'Scenarios', tone: 'text-primary' },
   { type: 'command', label: 'Commands', tone: 'text-tertiary' },
-  { type: 'guide', label: 'Guides', tone: 'text-secondary' }
+  { type: 'guide', label: 'Guides', tone: 'text-secondary' },
+  { type: 'chapter', label: 'Origins', tone: 'text-caution' },
+  { type: 'event', label: 'Timeline', tone: 'text-tertiary' }
 ];
 
 export default function SearchBar({ variant = 'header', hotkey = false }: { variant?: 'header' | 'hero'; hotkey?: boolean }) {
@@ -128,7 +130,7 @@ export default function SearchBar({ variant = 'header', hotkey = false }: { vari
           }}
           onMouseEnter={ensureIndex}
           onKeyDown={handleKeyDown}
-          aria-label="Search scenarios, commands and guides"
+          aria-label="Search scenarios, commands, guides and Origins"
           placeholder={hero ? "Describe your problem: 'port already in use', 'permission denied'…" : 'Search…'}
           className={`w-full bg-surface-low border border-white/8 text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container/60 focus:ring-2 focus:ring-primary-container/20 transition [&::-webkit-search-cancel-button]:hidden ${
             hero

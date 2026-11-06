@@ -1,0 +1,101 @@
+---
+order: 1
+title: "Unix: Where It All Started"
+summary: "Linux contains no Unix code, but almost everything about how it works comes from a small system two Bell Labs researchers wrote in 1969: files, processes, the shell, pipes and the habit of building with small tools."
+readingMinutes: 10
+span: "1969–1983"
+keyFacts:
+  - label: Born
+    value: 1969, at Bell Labs in New Jersey
+  - label: Written by
+    value: Ken Thompson and Dennis Ritchie, with Doug McIlroy, Brian Kernighan and others
+  - label: First written in
+    value: PDP-7 assembly. The kernel was rewritten in C in 1973.
+  - label: Main branches
+    value: Research Unix, BSD from Berkeley, System V from AT&T
+  - label: The name today
+    value: "UNIX® is a trademark of The Open Group, which certifies systems against the Single UNIX Specification"
+people: [ken-thompson, dennis-ritchie, doug-mcilroy, brian-kernighan, bill-joy]
+events: [unix-pdp7, unix-first-manual, unix-pipes, unix-in-c, unix-cacm-paper, bsd-first, unix-v7, bsd-42, unix-turing]
+guides: [everything-is-a-file, standard-streams, pressing-enter, processes-basics, permissions-model]
+commands: [grep, sort, sed, awk, bash]
+scenarios: [command-chaining, redirection]
+references:
+  - label: "Dennis M. Ritchie, “The Evolution of the Unix Time-sharing System” (1979)"
+    url: https://www.nokia.com/bell-labs/about/dennis-m-ritchie/hist.html
+  - label: "Dennis M. Ritchie, “The Development of the C Language”"
+    url: https://www.nokia.com/bell-labs/about/dennis-m-ritchie/chist.html
+  - label: "The Unix Programmer’s Manual, First Edition (3 November 1971)"
+    url: https://www.nokia.com/bell-labs/about/dennis-m-ritchie/1stEdman.html
+  - label: "M. D. McIlroy, “A Research UNIX Reader” (1987)"
+    url: https://www.cs.dartmouth.edu/~doug/reader.pdf
+  - label: The Unix Heritage Society archive (early source code and manuals)
+    url: https://www.tuhs.org/
+  - label: "The Open Group: the UNIX standard and certification"
+    url: https://www.opengroup.org/unix
+  - label: "ACM Turing Award 1983: Ken Thompson and Dennis Ritchie"
+    url: https://amturing.acm.org/award_winners/thompson_4588371.cfm
+---
+
+## The short version
+
+In 1969 Bell Labs pulled out of Multics, a large shared operating system it had been building with MIT and General Electric. Ken Thompson, one of the researchers left without a system to work on, found a little-used PDP-7 and wrote a small one of his own: a filesystem, processes, a few commands and a shell. Dennis Ritchie joined him, and the system got its name, Unix.
+
+Over the next ten years Unix moved to the PDP-11, was rewritten in C, gained pipes, and spread to universities, which AT&T licensed it to cheaply and with source code. The University of California at Berkeley added so much that its version became a branch of its own, BSD. AT&T sold its own commercial version, System V. By the mid-1980s there were dozens of incompatible Unixes, and vendors spent years fighting over which one would win.
+
+Linux comes from none of that code. Linus Torvalds wrote a new kernel in 1991, and the GNU project had written new versions of the tools. But both copied Unix's design closely, on purpose, so that Unix programs and Unix habits would work. That is why a Linux system today has `/etc` and `/dev`, `rwx` permission bits, `fork` and `exec`, `|` and `>`, and man pages in numbered sections.
+
+## A spare PDP-7 and the end of Multics
+
+For computer science at Bell Labs, Ritchie wrote later, 1968 and 1969 were "somewhat unsettled". Multics was late and wasn't delivering a usable system, and the Labs gradually withdrew from it. The people who had worked on it lost the comfortable interactive computing it had given them and wanted something to replace it.
+
+Thompson found a little-used PDP-7 with a good display, first to run a game he had written, Space Travel, and then as the place to try out a filesystem design he, Ritchie and Rudd Canaday had sketched. Around it he wrote what an operating system needed to support itself: a way to run programs as processes, an assembler, an editor and a simple shell. It was well into 1970 before the system had a name: Brian Kernighan suggested Unix, in what Ritchie called a "somewhat treacherous pun" on Multics.
+
+Ritchie described that first filesystem as nearly identical in structure to the one he was using ten years later, and much of it is still in your kernel. Each file was described by an i-node holding its permissions, type, size and blocks. A directory was a file of names, each paired with an i-number, so the name and the file were separate things: that split is why [hard links work the way they do](/g/inodes-links). And devices were special files, there from the start.
+
+## The PDP-11, the manual and C
+
+By 1971 Unix ran on a new PDP-11, and the Labs' patent department became its first real users, preparing patent applications with the `roff` text formatter. The First Edition of the Unix Programmer's Manual is dated 3 November 1971. Each command had a page with the same headings, a layout `man` pages still follow.
+
+The system was still in assembly language. Thompson had written a small language, B, but it was slow and didn't fit the PDP-11's byte-addressed memory. In 1971 Ritchie started extending it into a new language, C, and in 1973 the kernel was rewritten in it. Ritchie called that "the most important watershed": an operating system written in a high-level language could be moved to a different computer by porting the compiler, instead of rewriting everything. The 1974 paper "The UNIX Time-Sharing System", in Communications of the ACM, made the system known well outside Bell Labs.
+
+## Pipes and small tools
+
+The idea most people associate with Unix arrived in 1972, "at the suggestion (or perhaps insistence)" of Doug McIlroy, Ritchie wrote. McIlroy had long argued for connecting programs to each other directly. Once Thompson added pipes to the kernel and the shell, the existing programs were changed, one by one, to read standard input and write standard output so they could be joined up.
+
+McIlroy's history says the arrival of pipes is what raised that design to the status of a "philosophy". `grep` came soon after: Thompson wrote it when someone asked how to search a file too big for the editor, by lifting the regular expression code out of `ed`. It became the model of a software tool. One job, done on whatever text comes in, with the result going out for the next program.
+
+The style is usually summed up like this:
+
+| Unix habit | What it looks like on Linux today |
+|---|---|
+| Small programs that each do one thing | `sort`, `uniq`, `cut`, `wc`, `head`, `tr` |
+| Programs connect through text streams | `ps aux \| grep nginx \| wc -l`, and [stdin, stdout and stderr](/g/standard-streams) |
+| Text as the common format | Config in plain files under `/etc`, logs you can `grep` |
+| Devices and kernel data look like files | `/dev/null`, `/proc`, `/sys`: [everything is a file](/g/everything-is-a-file) |
+| The shell is an ordinary program | Bash is one program among many, and you can [replace it](/g/pressing-enter) |
+
+None of this was a rule. Plenty of Unix programs grew large, and Linux has many that don't follow it. But the tools you reach for first on a Linux machine are the ones built this way.
+
+## Berkeley, AT&T and the Unix wars
+
+AT&T, which owned Bell Labs, was not allowed to go into the computer business at the time because of an agreement with the US government over its telephone monopoly. So it licensed Unix to universities for a small fee, with full source code. A generation of students learned operating systems by reading it.
+
+The University of California at Berkeley did the most with it. Bill Joy and others shipped their improvements as the Berkeley Software Distribution, starting in 1978. The BSD line gave Unix the `vi` editor, the C shell, virtual memory on the VAX and, with 4.2BSD in 1983, TCP/IP networking and the socket API, written with US defence research funding. Every networked program on Linux still uses that API: [ports and sockets](/g/ports-sockets) are BSD's design.
+
+Back at Bell Labs, the Seventh Edition of 1979 was the first one made to be portable. McIlroy calls it the last common ancestor of nearly every Unix that followed. It also brought the Bourne shell, which made shell scripts a real programming language: every `sh` script, and Bash itself, descend from it.
+
+Once AT&T's telephone business was broken up in the early 1980s, it was free to sell Unix commercially, and did so as System V. Vendors built their own systems on one branch or the other: Sun on BSD, then on System V; IBM, HP and others on System V. Each added its own features, and programs written for one often didn't build on another. Industry groups formed to settle on one Unix and then argued with each other. The period is remembered as the Unix wars, and the standards that came out of it are the subject of a later chapter.
+
+Into the early 1990s, AT&T's company for Unix also took Berkeley to court over code in BSD. While that was unresolved, a free BSD was legally uncertain, which is one reason people looking for a free Unix-like system at the time looked at Linux instead.
+
+## Why it matters today
+
+When people call Linux "Unix-like", this is what they mean. Its kernel is new code, written to the same model: processes created with `fork` and `exec`, a single tree of files with devices in it, users and groups with `rwx` bits, signals, pipes. Its tools came from GNU, written to behave like the Unix ones. So a lot of what can look arbitrary on a Linux machine is a design decision from 1970s Bell Labs or Berkeley:
+
+- [Pressing Enter](/g/pressing-enter) starts a new process with `fork` and `exec`, the same calls Unix used, and [every process has a parent](/g/processes-basics).
+- [Permissions](/g/permissions-model) are nine bits for owner, group and others, as in early Unix.
+- [Pipes and redirection](/g/standard-streams) work the way McIlroy's pipes did, which is why `cmd | grep x` runs both programs at once.
+- [Everything is a file](/g/everything-is-a-file) is the PDP-7 filesystem's idea, extended to devices, kernel data and sockets.
+
+The word itself is now a trademark. The Open Group owns the UNIX standard and certifies systems against it. Linux distributions don't go through that certification, which is why they're described as Unix-like rather than as Unix.

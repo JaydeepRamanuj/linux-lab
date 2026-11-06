@@ -1,0 +1,133 @@
+---
+order: 3
+title: Linus and the Kernel
+summary: "A Helsinki student's hobby kernel, announced in 1991, became the most widely used one in the world. How it started, why it went GPL, the argument over its design, how its version numbers work, why it gave us git, and how a new kernel is made every nine or ten weeks."
+readingMinutes: 12
+span: "1991–today"
+keyFacts:
+  - label: Announced
+    value: 25 August 1991, on the comp.os.minix newsgroup
+  - label: Written by
+    value: Linus Torvalds, then a student at the University of Helsinki, and now thousands of contributors
+  - label: Licence
+    value: "GPL version 2 only, with a note that programs using its system calls aren't covered (`GPL-2.0 WITH Linux-syscall-note`)"
+  - label: Design
+    value: Monolithic, with loadable modules
+  - label: Latest release
+    value: 7.3, on 18 October 2026. 7.4-rc1 followed on 1 November.
+  - label: Release cycle
+    value: A two-week merge window, then weekly release candidates, usually up to rc6–rc9
+people: [linus-torvalds, andrew-tanenbaum, richard-stallman, greg-kroah-hartman]
+events: [linux-announced, linux-001, tanenbaum-debate, linux-gpl, linux-1-0, linux-2-0, kernel-bitkeeper, linux-2-6, git-born, linux-3-0]
+guides: [kernel-user-space, kernel-modules, system-calls, boot-sequence]
+references:
+  - label: "Linus Torvalds, “What would you like to see most in minix?” (comp.os.minix, August 1991)"
+    url: https://groups.google.com/g/comp.os.minix/c/dlNtH7RRrGA/m/SwRavCzVE7gJ
+  - label: Release notes for Linux 0.01
+    url: https://www.kernel.org/pub/linux/kernel/Historic/old-versions/RELNOTES-0.01
+  - label: Release notes for Linux 0.12, announcing the move to the GPL
+    url: https://www.kernel.org/pub/linux/kernel/Historic/old-versions/RELNOTES-0.12
+  - label: "“LINUX is obsolete”: the Tanenbaum–Torvalds thread (comp.os.minix, 1992)"
+    url: https://groups.google.com/g/comp.os.minix/c/wlhw16QWltI
+  - label: Kernel archive on kernel.org, every release since 0.01
+    url: https://www.kernel.org/pub/linux/kernel/
+  - label: "“How the development process works”, from the kernel’s own documentation"
+    url: https://www.kernel.org/doc/html/latest/process/2.Process.html
+  - label: "kernel.org: active kernel releases (mainline, stable, longterm)"
+    url: https://www.kernel.org/category/releases.html
+  - label: The kernel's COPYING file
+    url: https://github.com/torvalds/linux/blob/master/COPYING
+  - label: "Pro Git: a short history of git"
+    url: https://git-scm.com/book/en/v2/Getting-Started-A-Short-History-of-Git
+  - label: "git's first commit, 7 April 2005"
+    url: https://github.com/git/git/commit/e83c5163316f89bfbde7d9ab23ca2e25604af290
+asOf: "2026-11-06"
+---
+
+## The short version
+
+In 1991 Linus Torvalds, a student at the University of Helsinki, was running MINIX, a small teaching Unix, on a new 386 PC. He started writing his own kernel to learn how the 386 worked, and in August announced it on the MINIX newsgroup as "just a hobby, won't be big and professional like gnu". The first source release, 0.01, followed that autumn. GNU's tools ran on it, built with GNU's compiler.
+
+His first licence forbade selling it. Early in 1992 he switched to the GNU GPL, which let anyone distribute it, including for money, as long as the source went with it. That made it possible for others to package it with GNU into complete systems, and within a couple of years they did. Linux 1.0 came out in March 1994.
+
+The kernel has grown from a 71-kilobyte archive of source to tens of millions of lines, written by thousands of people a year, and the process has scaled with it. When the proprietary tool the kernel used for its source code was withdrawn in 2005, Torvalds wrote git. Today a new mainline kernel comes out every two to three months, on a published schedule, and older ones are kept patched for years.
+
+## A hobby, on a 386
+
+MINIX was Andrew Tanenbaum's: a Unix-like system he wrote to go with his operating systems textbook, small enough for students to read in full. It was cheap, but its licence limited what people could pass on. A reply in the 1992 thread below put the frustration plainly: people had done good work making MINIX use the 386, but all they could distribute were patches against it, which made setting up a 386 MINIX a big job for anyone new.
+
+Torvalds' post to comp.os.minix on 25 August 1991 asked MINIX users what they would like in a new system:
+
+> I'm doing a (free) operating system (just a hobby, won't be big and professional like gnu) for 386(486) AT clones.
+
+He said he had already ported Bash 1.08 and GCC 1.40, and that "things seem to work". Nothing was taken from MINIX's code: Linux was written from scratch, with MINIX used to develop it.
+
+The release notes for 0.01 are modest. They call it "a free minix-like kernel for i386(+) based AT-machines", for reading more than running: only some PC hardware worked, some system calls were missing, and `mount` wasn't implemented. They suggest building it with GCC 1.40, and the release came with a compiled Bash to test it with.
+
+## From "not for money" to the GPL
+
+The first licence let people copy and change Linux, but not charge for it. The release notes for 0.12, early in 1992, announced a change. A couple of people had asked for it to be compatible with "the GNU copyleft", and Torvalds agreed: unless anyone who had contributed code objected, the GNU licence would take effect "as of the first of February".
+
+The difference mattered more than it looks. Under the old terms, nobody could sell a disk or CD with Linux on it, which is how most people would get software for the next decade. Under the GPL, anyone could, provided they passed on the source and the same freedoms. The companies and projects in the distributions chapter exist because of that change.
+
+The kernel is still on version 2 of the GPL, and only version 2: its `COPYING` file says so. It adds one clarification, the syscall note: a program that only uses the kernel through its [system calls](/g/system-calls) isn't a derived work of the kernel, so it can use any licence it likes. Why the kernel never moved to GPL version 3 belongs to the licences chapter.
+
+## "LINUX is obsolete"
+
+On 29 January 1992 Tanenbaum posted to the same newsgroup under the subject "LINUX is obsolete". His argument had two parts.
+
+The first was design. Linux was a monolithic kernel: one large program in which the filesystem, memory management and drivers all run together with full access to the hardware. MINIX was a microkernel, with a small core and the rest running as separate processes that send each other messages. Among people who designed operating systems, Tanenbaum wrote, "Microkernels have won." The second was portability: Linux was written closely to the 80386, which he expected to be gone before long.
+
+Torvalds replied within hours. His answer, starting "Well, with a subject like this, I'm afraid I'll have to reply", defended the monolithic design as simpler and faster, and pointed out that Linux existed and worked. Others joined on both sides, and the thread ran for weeks.
+
+The debate never had a clean winner. Linux stayed monolithic, but it gained [loadable modules](/g/kernel-modules), so drivers can be added and removed while it runs, and its source tree now has support for around twenty processor architectures, from phones to mainframes. Microkernels found their own places, mostly in embedded and safety-critical systems. And the GNU Hurd, the microkernel-based kernel GNU was waiting for, was still years from a first release.
+
+## Version numbers
+
+For its first twenty years the kernel's version numbers carried meaning; since 2011 they mostly count releases.
+
+| Releases | How the numbers worked |
+|---|---|
+| 0.01 (1991) to 0.99 | Pre-releases. After 0.12 the numbers jumped to 0.95 in March 1992, as 1.0 was expected to be close. |
+| 1.0 (March 1994) to 2.6 | Even minor numbers (1.0, 1.2, 2.0, 2.2, 2.4, 2.6) were stable series for users; odd ones (1.1, 2.1, 2.5) were development series. |
+| 2.6.0 (December 2003) | There was never a 2.7. Development carried on in the 2.6 series itself, with a new 2.6.x every few months. |
+| 3.0 (July 2011) | Marked the kernel's twentieth year, not a big change. 2.6.39 was followed by 3.0. |
+| 4.0 (2015), 5.0 (2019), 6.0 (2022), 7.0 (2026) | The first number goes up when the second one gets large, about every 20 releases. |
+| x.y.z | The third number is a stable update: bug and security fixes for an existing release. |
+
+So a kernel's version tells you its age, not how different it is. 7.0 isn't a bigger step from 6.19 than 6.19 was from 6.18.
+
+## BitKeeper and git
+
+For its first decade the kernel had no version control system at all. Contributors emailed patches, and Torvalds applied them by hand and released tarballs. By 2002 that no longer scaled, and the kernel moved to BitKeeper, a proprietary distributed version control system whose company let kernel developers use it free of charge.
+
+Using a non-free tool for the best-known free software project was controversial from the start, and in 2005 the arrangement broke down and the free licence was withdrawn. Torvalds wrote a replacement. Its first commit, on 7 April 2005, describes it as "the information manager from hell". The goals he set for it, as the Pro Git book lists them, were speed, a simple design, strong support for thousands of parallel branches, being fully distributed, and handling a project the size of the kernel efficiently.
+
+Within months the kernel was developed in git, and Torvalds handed git's maintenance to Junio Hamano. It is now the version control system nearly every software project uses, which makes it, by number of users, probably the most widely used thing Torvalds has written.
+
+## How a kernel is made today
+
+The kernel's own documentation describes the cycle. It repeats every nine or ten weeks:
+
+<Flow spec={{
+  title: 'One kernel release cycle',
+  stages: [
+    { title: 'The merge window opens', tag: '~2 weeks', detail: 'Right after a release, maintainers send Torvalds pull requests with the new features they have collected and tested in their own trees and in linux-next. Only in these two weeks is new code accepted.' },
+    { title: 'rc1', tag: 'merge window closes', detail: 'Torvalds tags the first release candidate, for example 7.4-rc1. From now on, only fixes go in. Features that missed the window wait for the next one.' },
+    { title: 'Weekly release candidates', tag: 'rc2, rc3, ...', detail: 'A new -rc comes out about once a week as testers report regressions and maintainers send fixes. A normal cycle reaches somewhere between rc6 and rc9.' },
+    { title: 'The release', tag: 'mainline', detail: 'When the known regressions are fixed, the final version is tagged, and the next merge window opens the same day.' },
+    { title: 'Stable updates', tag: 'x.y.1, x.y.2, ...', detail: 'The stable team, Greg Kroah-Hartman and Sasha Levin, take over the release and put out fixes that are already in mainline, usually for a little more than one more cycle.' },
+    { title: 'Longterm, for some', tag: 'LTS', detail: 'A few releases are picked as longterm kernels and kept patched for years. Which ones depends on a maintainer having the need and the time; kernel.org lists the current ones.' }
+  ]
+}} />
+
+Code reaches Torvalds through a tree of maintainers. Each subsystem, such as networking, a filesystem or a family of drivers, has maintainers listed in the kernel's `MAINTAINERS` file. They review patches on public mailing lists, collect them in their own git trees, and send them up, sometimes through another maintainer, during the merge window. Torvalds reviews and merges what the top-level maintainers send him, and has the final say over what goes in.
+
+## Why it matters today
+
+The kernel you run is a direct product of this process. `uname -r` prints its version, and the number tells you which mainline release it came from. Your distribution doesn't usually ship a mainline kernel as is: it picks a stable or longterm release and adds its own patches and configuration, which is why Ubuntu's version strings look like `6.8.0-48-generic`.
+
+- What the kernel is responsible for, and what it leaves to programs, is the subject of [kernel space and user space](/g/kernel-user-space).
+- The monolithic design with loadable modules, Torvalds' side of the 1992 debate, is how your drivers load: see [kernel modules and drivers](/g/kernel-modules).
+- Programs talk to it only through [system calls](/g/system-calls), the boundary the syscall note draws the licence around.
+- It is the first thing your bootloader starts: see [the boot sequence](/g/boot-sequence).

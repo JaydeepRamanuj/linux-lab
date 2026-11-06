@@ -294,3 +294,9 @@ details.deeper {
 @media (max-width: 480px) {
   details.deeper > summary::after { content: none; }
 }
+
+/* Origins timeline: the event a link points at (/origins/timeline#linux-announced) is outlined. */
+.timeline-event:target > article {
+  border-color: rgb(76 215 246 / 0.55);
+  box-shadow: 0 0 0 1px rgb(76 215 246 / 0.35), 0 0 24px rgb(76 215 246 / 0.15);
+}

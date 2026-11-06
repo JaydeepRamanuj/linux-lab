@@ -213,6 +213,10 @@ Review H1 before writing more, to settle tone, depth and how the timeline looks.
 
 ## 8. Open questions for Jd
 
+**Answered 2026-11-06 (Phase H1):** 1. **Origins**. 2. **`/o/[slug]`**. 3. Include the major distros (Fedora, Kali, Arch and the like), and the distro chapters must explain how they differ and why so many distributions exist in the first place (H2: `what-is-a-distro` and `distro-families`). 4. **Yes**, a small fourth entry point on the home page.
+
+The original questions:
+
 1. **Name.** "Origins" for the header and `/origins`, or something else ("About Linux", "Story")?
 2. **Chapter route.** `/o/[slug]` matches `/s`, `/c` and `/g`. Fine, or prefer `/origins/[slug]`?
 3. **Distro list.** About 25 distros in the tree. Any you particularly want included (e.g. Kali, Manjaro, elementary, Zorin, Void)?

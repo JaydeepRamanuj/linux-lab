@@ -1,0 +1,47 @@
+---
+import { History } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import Timeline from '../../components/origins/Timeline';
+import { ERAS } from '../../data/timeline';
+import { assertContentValid } from '../../lib/contentChecks';
+import { resolvedEvents } from '../../lib/origins';
+
+await assertContentValid();
+const events = await resolvedEvents();
+const first = events[0]?.date.slice(0, 4);
+const last = events.at(-1)?.date.slice(0, 4);
+---
+
+<Base
+  title="Linux timeline"
+  description="From Unix at Bell Labs in 1969 to GNU, Linus Torvalds' kernel and git: the dates that made Linux, each with its source."
+  current="origins"
+>
+  <div class="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Origins', href: '/origins' }, { label: 'Timeline' }]} back={{ href: '/origins', label: 'Back to Origins' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-tertiary/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 bg-tertiary/10 border-tertiary/30">
+          <History className="h-6 w-6 text-tertiary" />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Origins</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">Timeline</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">
+            The dates behind the system you use, from a spare PDP-7 at Bell Labs to the kernel that runs most of the internet. Each event says
+            why it mattered and links to its source and to the chapter that tells the story.
+          </p>
+          <p class="font-mono text-[11px] text-outline pt-1">
+            {events.length} events <span class="text-outline-variant mx-1">•</span>
+            {first}–{last} <span class="text-outline-variant mx-1">•</span> more eras on the way
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <Timeline events={events} eras={ERAS} client:load />
+  </div>
+</Base>

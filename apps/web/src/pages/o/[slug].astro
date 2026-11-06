@@ -1,0 +1,239 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Clock, CalendarRange, Library, ExternalLink, ArrowLeft, ArrowRight, BookOpen, Users, ListChecks, Wrench, CalendarCheck } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import ConceptLinks from '../../components/guide/ConceptLinks.astro';
+import TimelineStrip from '../../components/origins/TimelineStrip.astro';
+import Flow from '../../components/guide/Flow.astro';
+import Layers from '../../components/guide/Layers.astro';
+import Zones from '../../components/guide/Zones.astro';
+import { CategoryIcon, Prose } from '../../components/ui/ui';
+import { ACCENTS } from '../../lib/theme';
+import { moduleById } from '../../data/modules';
+import { personById } from '../../data/people';
+import type { Person } from '../../data/people';
+import { assertContentValid } from '../../lib/contentChecks';
+import { publishedGuides } from '../../lib/guides';
+import { publishedChapters, chapterLabel, resolvedEvents, formatAsOf } from '../../lib/origins';
+import type { Chapter } from '../../lib/origins';
+
+export async function getStaticPaths() {
+  await assertContentValid();
+  const chapters = await publishedChapters();
+  return chapters.map((chapter) => ({ params: { slug: chapter.id }, props: { chapter } }));
+}
+
+interface Props {
+  chapter: Chapter;
+}
+const { chapter } = Astro.props;
+const c = chapter.data;
+const { Content } = await render(chapter);
+
+const chapters = await publishedChapters();
+const position = chapters.findIndex((x) => x.id === chapter.id);
+const prev = chapters[position - 1];
+const next = chapters[position + 1];
+
+const events = await resolvedEvents(c.events);
+const people = c.people.map(personById).filter((p): p is Person => Boolean(p));
+const guides = (await publishedGuides()).filter((g) => c.guides.includes(g.id));
+const commands = (await getCollection('commands')).filter((x) => c.commands.includes(x.data.name)).sort((a, b) => a.data.name.localeCompare(b.data.name));
+const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filter((s) => c.scenarios.includes(s.id)).sort((a, b) => a.data.number - b.data.number);
+---
+
+<Base title={c.title} description={c.summary.replace(/`/g, '')} current="origins">
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Origins', href: '/origins' }, { label: c.title }]} back={{ href: '/origins', label: 'All chapters' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10 space-y-5">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-caution/10"></div>
+      <div class="relative flex flex-wrap items-center gap-2">
+        <span class="px-2.5 py-1 rounded-full bg-surface-lowest font-mono text-[11px] text-caution">{chapterLabel(c.order)}</span>
+        {
+          c.span && (
+            <span class="inline-flex items-center gap-1 font-mono text-[11px] text-tertiary">
+              <CalendarRange className="h-3.5 w-3.5" />
+              {c.span}
+            </span>
+          )
+        }
+        <span class="inline-flex items-center gap-1 font-mono text-[11px] text-outline">
+          <Clock className="h-3.5 w-3.5" />
+          {c.readingMinutes} min read
+        </span>
+      </div>
+      <div class="relative space-y-3 max-w-3xl">
+        <h1 class="text-3xl sm:text-[2.5rem] font-bold leading-[1.15] tracking-[-0.02em]">{c.title}</h1>
+        <p class="text-base sm:text-lg text-on-surface-variant leading-relaxed"><Prose text={c.summary} /></p>
+      </div>
+    </section>
+
+    <TimelineStrip events={events} />
+
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-6 items-start">
+      <article class="card p-5 sm:p-8 min-w-0">
+        <div class="md guide-md origins-md">
+          <Content components={{ Flow, Layers, Zones }} />
+        </div>
+      </article>
+
+      {
+        (c.keyFacts.length > 0 || people.length > 0) && (
+          <aside class="lg:sticky lg:top-24 space-y-4" aria-label="At a glance">
+            {c.keyFacts.length > 0 && (
+              <section class="card p-5 space-y-3">
+                <h2 class="flex items-center gap-2 label-caps text-on-surface">
+                  <ListChecks className="h-4 w-4 text-caution" />
+                  At a glance
+                </h2>
+                <dl class="space-y-2.5">
+                  {c.keyFacts.map((f) => (
+                    <div class="space-y-0.5">
+                      <dt class="label-caps text-outline">{f.label}</dt>
+                      <dd class="text-sm text-on-surface leading-snug">
+                        <Prose text={f.value} />
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+            {people.length > 0 && (
+              <section class="card p-5 space-y-3">
+                <h2 class="flex items-center gap-2 label-caps text-on-surface">
+                  <Users className="h-4 w-4 text-secondary" />
+                  People
+                </h2>
+                <ul class="space-y-3">
+                  {people.map((p) => (
+                    <li class="space-y-0.5">
+                      <div class="flex flex-wrap items-baseline gap-x-2">
+                        {p.url ? (
+                          <a href={p.url} target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-on-surface hover:text-tertiary">
+                            {p.name}
+                          </a>
+                        ) : (
+                          <span class="text-sm font-semibold text-on-surface">{p.name}</span>
+                        )}
+                        {p.years && <span class="font-mono text-[11px] text-outline">{p.years}</span>}
+                      </div>
+                      <p class="text-xs text-on-surface-variant leading-relaxed">
+                        <Prose text={p.knownFor} />
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </aside>
+        )
+      }
+    </div>
+
+    <ConceptLinks title="The practical side" intro="Guides that explain how the parts of this story work on your machine today." guides={guides} />
+
+    {
+      (commands.length > 0 || scenarios.length > 0) && (
+        <section class="space-y-4">
+          {scenarios.length > 0 && (
+            <div class="space-y-3">
+              <h2 class="flex items-center gap-2 label-caps text-on-surface">
+                <Wrench className="h-4 w-4 text-primary" />
+                Scenarios
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {scenarios.map((s) => {
+                  const m = moduleById(s.data.module)!;
+                  return (
+                    <a href={`/s/${s.id}`} class="group card card-hover p-4 flex items-center gap-3 min-w-0">
+                      <div class="w-9 h-9 rounded-lg bg-surface-high flex items-center justify-center shrink-0">
+                        <CategoryIcon name={m.icon} className={`h-4.5 w-4.5 ${ACCENTS[m.color].text}`} />
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <div class="font-mono text-[11px] text-tertiary">Scenario #{String(s.data.number).padStart(2, '0')}</div>
+                        <div class="font-display font-semibold text-on-surface text-[15px] leading-snug">{s.data.title}</div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {commands.length > 0 && (
+            <div class="space-y-2">
+              <h2 class="flex items-center gap-2 label-caps text-on-surface">
+                <BookOpen className="h-4 w-4 text-tertiary" />
+                Commands
+              </h2>
+              <div class="flex flex-wrap gap-2">
+                {commands.map((x) => (
+                  <a href={`/c/${x.id}`} class="rounded-lg bg-surface-container border border-white/6 hover:border-primary-container/40 transition px-3 py-2 text-[12px]">
+                    <span class="font-mono text-tertiary">{x.data.name}</span>
+                    <span class="text-outline ml-2">{x.data.title}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )
+    }
+
+    <section class="space-y-3">
+      <h2 class="flex items-center gap-2 label-caps text-on-surface">
+        <Library className="h-4 w-4 text-primary" />
+        Further reading
+      </h2>
+      <ul class="space-y-1.5">
+        {
+          c.references.map((r) => (
+            <li>
+              <a href={r.url} rel="noopener noreferrer" target="_blank" class="inline-flex items-start gap-1.5 text-sm text-tertiary hover:underline underline-offset-3">
+                <ExternalLink className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                {r.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {
+      (prev || next) && (
+        <nav class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="More chapters">
+          {prev ? (
+            <a href={`/o/${prev.id}`} class="group card card-hover p-4 flex items-center gap-3">
+              <ArrowLeft className="h-4 w-4 text-outline group-hover:text-primary shrink-0" />
+              <span class="min-w-0">
+                <span class="block label-caps text-outline">{chapterLabel(prev.data.order)}</span>
+                <span class="block font-display font-semibold text-on-surface">{prev.data.title}</span>
+              </span>
+            </a>
+          ) : (
+            <span class="hidden sm:block" />
+          )}
+          {next && (
+            <a href={`/o/${next.id}`} class="group card card-hover p-4 flex items-center justify-end gap-3 text-right">
+              <span class="min-w-0">
+                <span class="block label-caps text-outline">Next: {chapterLabel(next.data.order)}</span>
+                <span class="block font-display font-semibold text-on-surface">{next.data.title}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 text-outline group-hover:text-primary shrink-0" />
+            </a>
+          )}
+        </nav>
+      )
+    }
+
+    {
+      c.asOf && (
+        <p class="flex items-center gap-2 text-xs text-outline">
+          <CalendarCheck className="h-3.5 w-3.5 text-tertiary shrink-0" />
+          Present-day facts in this chapter are as of {formatAsOf(c.asOf)}.
+        </p>
+      )
+    }
+  </div>
+</Base>
