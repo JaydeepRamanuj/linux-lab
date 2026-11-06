@@ -27,4 +27,4 @@
 
 ## Logo and favicon
 
-`apps/web/public/favicon.svg` is a new, original mark: a penguin, the animal most people associate with Linux, whose belly is a terminal showing `>_`. The colours are the site's: an indigo outline, a cyan prompt, an amber beak and feet, on the site's dark tile. It isn't Tux; it's drawn from simple shapes so it stays legible at 16px. The header now shows this SVG with the name in monospace, replacing the old terminal icon.
+`apps/web/public/favicon.svg` is option D of the five you were shown: a `>_` prompt (cyan chevron, light underscore) inside a small terminal window with three window dots, on the site's dark tile with an indigo outline. It replaced a first attempt (a penguin with a terminal belly) that you asked to make classier. The header shows the same SVG with the name in monospace.
