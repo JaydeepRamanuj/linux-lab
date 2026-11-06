@@ -1,0 +1,105 @@
+---
+order: 8
+title: Linux Everywhere
+summary: "Linux lost the desktop war it was expected to fight and won almost everywhere else: servers and the cloud, every one of the world's 500 fastest supercomputers, billions of Android phones, Chromebooks, routers, TVs and cars, and inside Windows itself. And the containers that run modern software are built from two Linux kernel features."
+readingMinutes: 11
+span: "1990s–today"
+keyFacts:
+  - label: Supercomputers
+    value: "All 500 on the TOP500 list run Linux, on every list since November 2017 (latest: June 2026)"
+  - label: Phones
+    value: Android runs on the Linux kernel, with Google's own userland instead of GNU
+  - label: Containers
+    value: "Built from namespaces (what a process can see) and cgroups (what it can use). cgroups arrived in Linux 2.6.24, January 2008."
+  - label: On Windows
+    value: WSL 2 runs a real Linux kernel in a lightweight virtual machine
+  - label: Orchestration
+    value: Kubernetes, 1.0 in July 2015, given to the Cloud Native Computing Foundation
+people: [linus-torvalds, solomon-hykes]
+events: [android-first, cgroups-merged, docker-released, user-namespaces, kubernetes-1, wsl, top500-all-linux]
+guides: [processes-basics, proc-sys, kernel-user-space, mounts-devices, system-calls]
+commands: [ps, top, htop]
+references:
+  - label: "TOP500: operating system family Linux, every list"
+    url: https://www.top500.org/statistics/details/osfam/1/
+  - label: "Android: its history"
+    url: https://www.android.com/history/
+  - label: "Android: the kernel (Android common kernels and GKI)"
+    url: https://source.android.com/docs/core/architecture/kernel
+  - label: "namespaces(7): overview of Linux namespaces"
+    url: https://man7.org/linux/man-pages/man7/namespaces.7.html
+  - label: "cgroups(7): Linux control groups"
+    url: https://man7.org/linux/man-pages/man7/cgroups.7.html
+  - label: "LXC: what Linux containers are built from"
+    url: https://linuxcontainers.org/lxc/introduction/
+  - label: "Kubernetes: the history of Kubernetes and the community behind it"
+    url: https://kubernetes.io/blog/2018/07/20/the-history-of-kubernetes-the-community-behind-it/
+  - label: "Microsoft: what is WSL?"
+    url: https://learn.microsoft.com/en-us/windows/wsl/about
+  - label: "Microsoft: comparing WSL 1 and WSL 2"
+    url: https://learn.microsoft.com/en-us/windows/wsl/compare-versions
+asOf: "2026-11-06"
+---
+
+## The short version
+
+For years people predicted "the year of the Linux desktop", and on desktops and laptops Linux has stayed a small minority. Meanwhile it took over nearly everything else. The internet's servers mostly run it, and so do most cloud virtual machines. Every computer on the TOP500 list of the world's fastest supercomputers runs Linux, and has since November 2017. Android, the most common operating system on phones, is built on the Linux kernel, as are ChromeOS, most home routers, smart TVs, car dashboards and countless embedded devices.
+
+Several things made that happen. Linux was free to use and to change, so companies could fit it to their hardware without asking permission or paying per copy. It ran on many processor architectures. And because it was a Unix-like system, people who knew Unix could use it immediately, while it ran on cheap PC hardware instead of expensive Unix workstations.
+
+The last big shift was containers. Two kernel features, namespaces and control groups, let a process run with its own view of the system and limits on what it can use. Docker, in 2013, made those features easy to use, and Kubernetes made it possible to run thousands of containers across many machines. Today a large share of software is packaged and run that way, on Linux.
+
+## Servers and the cloud
+
+Linux arrived on servers in the late 1990s, replacing commercial Unix on machines that cost a fraction as much. Web servers were the first big use: Linux with Apache, MySQL and PHP or Perl (the "LAMP" stack) ran a large part of the early web. Red Hat and SUSE sold the support contracts and certifications businesses needed, and IBM, HP, Dell and Oracle certified their hardware and software on it.
+
+The cloud built on that. A cloud provider needs an operating system it can run on hundreds of thousands of machines, change freely, and offer to customers without paying per copy. Linux fits all three, so the hosts behind the big clouds largely run it, and Linux images are the default choice for virtual machines and the base for nearly all containers. Even Microsoft, whose Azure cloud also sells Windows, ships its own Linux distribution for its infrastructure.
+
+## Supercomputers
+
+The TOP500 list ranks the world's fastest computers twice a year. In the 1990s, it was dominated by commercial Unix and custom systems. Linux clusters, built from many ordinary servers, moved up the list through the 2000s. From the November 2017 list onwards, **all 500** systems have run Linux, and the latest list, from June 2026, is no different.
+
+The reasons are practical: the kernel's source can be tuned for each machine's network and scheduler, there's no per-node licence to pay for thousands of nodes, and the scientific software is developed on Linux in the first place.
+
+## Phones, laptops and things
+
+**Android**, first released on a phone in 2008, uses the Linux kernel with Google's own user space on top. It has no GNU tools and no X or Wayland: it has its own C library (Bionic), its own init and its own Java-based application framework. Google maintains Android Common Kernels based on Linux's long-term releases, so the same kernel changes eventually reach both your phone and your server. Android is the clearest example of Linux being a kernel and not a whole operating system: by number of devices, it's the most common way people use Linux, mostly without knowing it.
+
+**ChromeOS**, on Chromebooks since 2011, is a Linux system built with Gentoo's tools, shipped as a sealed image that updates itself. It can also run a Debian container for Linux apps.
+
+**Embedded Linux** is everywhere a device needs networking, a screen or a file system, but not a full PC: routers, network storage, smart TVs, set-top boxes, cameras, car infotainment systems, industrial controllers, and the base stations of mobile networks. Projects such as Yocto and Buildroot build small, custom Linux systems for such hardware, and BusyBox replaces the GNU tools with one small program.
+
+**Desktops and laptops** are the exception. Linux has a small share there, though larger among developers, and the Steam Deck brought a Linux-based system to a large number of gamers through SteamOS.
+
+## Linux inside Windows: WSL
+
+Microsoft's **Windows Subsystem for Linux** first appeared in 2016. WSL 1 translated Linux system calls into Windows ones, which ran most command-line programs but not all. WSL 2 changed approach: it runs a real Linux kernel inside a lightweight virtual machine and runs each distribution as an isolated container inside it, which gives full system call compatibility and, now, systemd. Microsoft made WSL itself open source. Many developers' first Linux system today is Ubuntu under WSL.
+
+## Containers: namespaces and cgroups
+
+A container isn't a virtual machine. It's an ordinary process, on the host's own kernel, that the kernel shows a different view of the system and limits in what it may use. Two kernel features do the work:
+
+<Layers spec={{
+  title: 'What a container is made of',
+  pathLabel: 'One containerised process',
+  layers: [
+    { name: 'Your app', detail: 'An ordinary Linux process, started from the files in an image.', chips: ['nginx', 'python'], tone: 'user', highlight: true },
+    { name: 'Image files', detail: 'A read-only filesystem, made of layers, mounted as the process’s root directory.', chips: ['overlayfs', 'pivot_root'], tone: 'user', highlight: true },
+    { name: 'Namespaces: what it can see', detail: 'Its own PIDs (it is PID 1), its own network interfaces and ports, its own mounts, hostname and user IDs.', chips: ['pid', 'net', 'mnt', 'uts', 'ipc', 'user', 'cgroup'], tone: 'kernel', highlight: true },
+    { name: 'cgroups: what it can use', detail: 'Limits and accounting for CPU, memory, I/O and number of processes.', chips: ['cpu', 'memory', 'io', 'pids'], tone: 'kernel', highlight: true, edge: 'the same kernel for every container' },
+    { name: 'The host kernel', detail: 'One Linux kernel, shared by the host and all its containers.', chips: ['linux'], tone: 'kernel' }
+  ]
+}} />
+
+Both features came in stages. The idea goes back to `chroot`, in Seventh Edition Unix, and to FreeBSD's jails. Linux added namespaces one kind at a time: mount namespaces first, then UTS, IPC, PID and network namespaces, with user namespaces complete in Linux 3.8 in 2013, which made unprivileged containers possible. Control groups, from engineers at Google, were merged in Linux 2.6.24 in January 2008; a redesigned version, cgroups v2, became official in 4.5.
+
+**LXC** (2008) was the first widely used tool to combine them. **Docker**, released in 2013, made it easy: a simple image format, layered filesystems, a registry to share images, and one command to build and run them. Its image and runtime formats became open standards under the Open Container Initiative, so tools like Podman run the same images. **Kubernetes**, which Google released in 2014 based on its internal systems, schedules containers across many machines; it reached 1.0 in July 2015 and was given to the new Cloud Native Computing Foundation.
+
+Because every container shares the host's kernel, a Linux container needs a Linux kernel. On macOS and Windows, Docker Desktop runs a small Linux virtual machine to provide one.
+
+## Why it matters today
+
+- **Containers are processes.** On the host, `ps aux` shows a container's programs like any others. Inside, they see their own PID 1. The [processes guide](/g/processes-basics) and [`/proc`](/g/proc-sys) explain both views: `ls -l /proc/self/ns` shows the namespaces your shell is in.
+- **Limits come from cgroups.** A container killed for using too much memory was killed by the kernel's OOM killer inside its cgroup, the same mechanism systemd uses for services.
+- **The kernel is shared.** A container can't run a different kernel or load its own modules. What's inside is a userland: a distribution without a kernel. See [kernel and user space](/g/kernel-user-space).
+- **Your phone, router and laptop run the same kernel family.** What you learn about processes, files and permissions on a server applies, with different userlands on top.

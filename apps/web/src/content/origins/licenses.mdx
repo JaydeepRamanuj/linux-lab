@@ -1,0 +1,100 @@
+---
+order: 9
+title: Licenses in Practice
+summary: "Every package on your system comes with a licence, and the licence decides what you may do with it. The GPL's copyleft, the LGPL's exception for libraries, and the permissive MIT, BSD and Apache licences, compared side by side, plus why the kernel stayed on GPL version 2."
+readingMinutes: 10
+span: "1989–today"
+keyFacts:
+  - label: The kernel
+    value: "GPL version 2 only, with the syscall note: `GPL-2.0 WITH Linux-syscall-note`"
+  - label: GPL versions
+    value: v1 February 1989, v2 June 1991, v3 29 June 2007
+  - label: Two kinds
+    value: Copyleft (GPL, LGPL, AGPL, MPL) passes the same freedoms on; permissive (MIT, BSD, Apache) asks mainly for credit
+  - label: Labels
+    value: "SPDX identifiers, such as `MIT` or `GPL-2.0-or-later`, are the standard short names"
+  - label: Not legal advice
+    value: This chapter explains the common cases. For a real decision, read the licence and ask a lawyer.
+people: [richard-stallman, eben-moglen, linus-torvalds]
+events: [gpl-v1, gpl-v2, gplv3]
+guides: [what-is-a-package, shared-libraries, system-calls]
+commands: [apt, dpkg]
+references:
+  - label: GNU General Public License, version 3
+    url: https://www.gnu.org/licenses/gpl-3.0.html
+  - label: GNU General Public License, version 2
+    url: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+  - label: "GNU: frequently asked questions about the GPL"
+    url: https://www.gnu.org/licenses/gpl-faq.html
+  - label: "GNU: why you shouldn't use the Lesser GPL for your next library"
+    url: https://www.gnu.org/licenses/why-not-lgpl.html
+  - label: The kernel's COPYING file
+    url: https://github.com/torvalds/linux/blob/master/COPYING
+  - label: "The kernel's licensing rules (SPDX identifiers in every file)"
+    url: https://github.com/torvalds/linux/blob/master/Documentation/process/license-rules.rst
+  - label: The MIT License
+    url: https://opensource.org/license/mit
+  - label: Apache License 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  - label: SPDX License List
+    url: https://spdx.org/licenses/
+  - label: The Open Source Definition
+    url: https://opensource.org/osd
+---
+
+## The short version
+
+Copyright law gives the author of a program control over who may copy, change and distribute it. A licence is the author's permission to do those things, with conditions. Free and open source licences all allow anyone to use, study, change and share the program; they differ in what they ask in return.
+
+They fall into two families. **Copyleft** licences, led by the GNU GPL, require that if you distribute the program or a changed version, you pass on the same freedoms, including the source code. **Permissive** licences, such as MIT, BSD and Apache, ask little more than that you keep the copyright notice: you can build a closed, proprietary product on the code. In between, the LGPL and the MPL apply copyleft to the library or file itself, but not to the programs that use it.
+
+Linux is GPL version 2 only. When GPL version 3 came out in 2007 with new terms against locked-down devices and about patents, the kernel didn't move, and practically couldn't: every contributor would have had to agree.
+
+## The two families
+
+The question that separates them is what happens when someone builds on the code and distributes the result.
+
+With **copyleft**, the result has to be under the same licence. If a company changes a GPL program and ships it in a product, it has to offer the source of its changes, under the GPL, to whoever receives the product. That's how the code stays free as it spreads, and why router makers publish their Linux kernel sources.
+
+With a **permissive** licence, the result can be under any licence, including a proprietary one. Apple's macOS includes code from FreeBSD; Sony's PlayStation systems are built on FreeBSD; neither has to publish its changes. Permissive licences favour adoption: companies can use the code with almost no obligations, so they often do, and many contribute back anyway.
+
+Neither restricts what you do privately. You can change any of these programs on your own machine without sharing anything. Obligations start when you **distribute** it, and for the AGPL, when you let people use it over a network.
+
+## The licences, side by side
+
+| Licence | Kind | You must | You may | Notable |
+|---|---|---|---|---|
+| **GPL-2.0** | Strong copyleft | Pass on source and the same licence when you distribute | Sell it, change it, use it commercially | The kernel, Git, many older GNU programs |
+| **GPL-3.0** | Strong copyleft | As GPL-2.0, plus give installation information for consumer devices; patent licence for your contributions | As GPL-2.0 | Bash, GCC, coreutils and most GNU programs today |
+| **LGPL** | Weak copyleft, for libraries | Share changes to the library itself; let users swap in a changed library | Link a proprietary program to it | glibc |
+| **AGPL-3.0** | Network copyleft | As GPL-3.0, and also offer source to people who use it over a network | Run it as a service, if you publish the source | Servers whose authors want cloud providers to share changes |
+| **MPL-2.0** | File-level copyleft | Share changes to the MPL-licensed files | Combine them with proprietary files | Firefox |
+| **Apache-2.0** | Permissive | Keep notices; state changes; no use of trademarks | Anything, including closed products | Explicit patent grant; Kubernetes, Android's user space |
+| **MIT** | Permissive | Keep the copyright and licence notice | Anything | Short and very common; X11, Node.js packages |
+| **BSD-2/3-Clause** | Permissive | Keep notices (3-clause: don't use the authors' names to endorse) | Anything | The BSDs, many libraries |
+
+The short names in the first column are **SPDX identifiers**, a standard list of names for licences. The kernel puts one at the top of every source file, such as `// SPDX-License-Identifier: GPL-2.0`, so tools can check licences automatically. `GPL-2.0-only` and `GPL-2.0-or-later` are different licences in practice: "or later" lets anyone choose a newer GPL version.
+
+## Why the kernel stayed on GPLv2
+
+GPL version 3, published on 29 June 2007 after a public drafting process led by Stallman and the FSF's lawyer Eben Moglen, added two things the kernel developers disagreed about:
+
+- **"Tivoization".** TiVo's video recorders ran GPL software, published its source, but only booted software signed by TiVo, so users couldn't run changed versions on their own device. GPLv3 requires anyone shipping GPLv3 software on a consumer product to provide the keys or information needed to install changed versions. Torvalds argued that the GPL should cover the source code, not what a company does with its hardware, and that the requirement would push companies away from Linux.
+- **Patents.** GPLv3 includes an explicit patent licence from contributors and rules against patent deals that protect only some users. Supporters saw this as essential protection; some companies saw it as a risk.
+
+There was also a practical obstacle. Early on, Linux's licence was made "version 2 only", not "version 2 or later", and the kernel has thousands of copyright holders. Moving to version 3 would have meant every one of them agreeing, including many who couldn't be found. So the kernel stays on GPLv2, while most GNU programs moved to GPLv3. Both are free software licences, and a GPLv2-only program and a GPLv3 program can run side by side on the same system without any conflict; what they can't do is be combined into one program.
+
+The kernel's **syscall note** adds one clarification: a program that only uses the kernel through its [system calls](/g/system-calls) isn't covered by the kernel's licence. That's why proprietary programs can run on Linux, and why the licence question for drivers is different: a module that loads into the kernel is part of it, which is the root of long-running arguments about proprietary graphics drivers.
+
+## Which licence does a program use?
+
+On a Debian or Ubuntu system, every package records its licences in `/usr/share/doc/<package>/copyright`, and most source code has a `LICENSE` or `COPYING` file at the top. Distributions check licences before accepting packages: Debian's Free Software Guidelines decide what goes in `main` and what is kept apart in `non-free`. The [packages guide](/g/what-is-a-package) shows where these files come from.
+
+For a library, the licence affects how you can use it. Linking a proprietary program to a GPL library is, in the FSF's view, making a combined work that must be GPL; linking to an LGPL library like glibc isn't. The [shared libraries guide](/g/shared-libraries) explains what linking means at run time.
+
+## Why it matters today
+
+- **Using software** never requires anything from you under any of these licences. The conditions are about distributing it.
+- **Shipping a product** with Linux inside means offering the kernel's source and that of other GPL components you ship, which is why devices come with a "source code available" notice.
+- **Writing software:** a permissive licence lets anyone use your code anywhere; a copyleft licence keeps derivatives open. Pick deliberately, put an SPDX identifier in each file, and keep a `LICENSE` file at the top of the project.
+- **"Open source" doesn't mean "any licence that shows the source."** Licences that forbid commercial use or restrict who may run the program don't meet the Open Source Definition or the free software definition, however open the code looks.

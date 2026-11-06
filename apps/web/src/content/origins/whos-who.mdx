@@ -1,0 +1,106 @@
+---
+order: 10
+title: Who’s Who
+summary: "The people behind the system, from Thompson and Ritchie to the maintainers of today's kernel, and the organisations that fund, host and steer it: the Linux Foundation, the FSF, kernel.org, Debian, Canonical, Red Hat and SUSE. Who pays whom, and who decides what."
+readingMinutes: 9
+span: "1969–today"
+keyFacts:
+  - label: Who decides what goes in the kernel
+    value: Linus Torvalds, through a tree of subsystem maintainers listed in the MAINTAINERS file
+  - label: Who pays kernel developers
+    value: Mostly companies that depend on Linux; Torvalds and Greg Kroah-Hartman are Linux Foundation fellows
+  - label: Who owns Linux
+    value: Nobody. Each contributor keeps the copyright on their code; the Linux trademark is Linus Torvalds'
+  - label: Biggest commercial distributors
+    value: Red Hat (part of IBM since 2019), Canonical, SUSE
+people: [ken-thompson, dennis-ritchie, richard-stallman, linus-torvalds, greg-kroah-hartman, ian-murdock, lennart-poettering, mark-shuttleworth]
+events: [gnu-announced, linux-announced, debian-begins, red-hat-founded, ubuntu-first]
+guides: [what-is-a-package, kernel-modules]
+references:
+  - label: "Linux Foundation: about"
+    url: https://www.linuxfoundation.org/about
+  - label: "Free Software Foundation: about"
+    url: https://www.fsf.org/about/
+  - label: "Debian: about Debian"
+    url: https://www.debian.org/intro/about
+  - label: "Ubuntu: about Canonical and Ubuntu"
+    url: https://ubuntu.com/about
+  - label: "Red Hat: about the company"
+    url: https://www.redhat.com/en/about/company
+  - label: "SUSE: company history"
+    url: https://www.suse.com/company/history/
+  - label: "Open Source Initiative: history"
+    url: https://opensource.org/history
+  - label: "The kernel's development process: who does what"
+    url: https://www.kernel.org/doc/html/latest/process/2.Process.html
+asOf: "2026-11-06"
+---
+
+## The short version
+
+Linux has no owner. Its code belongs to the thousands of people and companies who wrote it, each keeping the copyright on their part and licensing it under the GPL. What exists instead is a set of people with recognised roles and a set of organisations that pay for things.
+
+On the kernel, Linus Torvalds still has the final say on what goes into mainline, as he has since 1991, but almost all code reaches him through subsystem maintainers who review it first. Most kernel developers are paid by companies that depend on Linux, such as chip makers, cloud providers and distributors. The Linux Foundation, a non-profit funded by those companies, employs Torvalds and the stable kernel maintainer Greg Kroah-Hartman so that neither works for any one of them.
+
+Around the kernel, each big project has its own structure: the FSF for GNU, a volunteer constitution for Debian, companies for Ubuntu, RHEL and SUSE. The [whole timeline](/origins/timeline) shows when each came along; this chapter is the directory.
+
+## The people
+
+The sidebar lists the people this chapter covers most. In the order the story met them:
+
+| Person | Known for | Chapter |
+|---|---|---|
+| Ken Thompson, Dennis Ritchie | Unix, C, the Bell Labs years | [Unix](/o/unix) |
+| Doug McIlroy, Brian Kernighan | Pipes and the tools style; naming Unix; awk | [Unix](/o/unix) |
+| Bill Joy | BSD, vi, the C shell | [Unix](/o/unix) |
+| Stephen Bourne | The Bourne shell | [Stack shifts](/o/stack-shifts) |
+| Richard Stallman | GNU, the FSF, the GPL | [GNU](/o/gnu-free-software) |
+| Brian Fox | Bash | [GNU](/o/gnu-free-software) |
+| Andrew Tanenbaum | MINIX, the 1992 debate | [The kernel](/o/linux-kernel) |
+| Linus Torvalds | The kernel, git | [The kernel](/o/linux-kernel) |
+| Ian Murdock | Debian | [What a distro is](/o/what-is-a-distro) |
+| Patrick Volkerding | Slackware, since 1993 | [Distro families](/o/distro-families) |
+| Marc Ewing, Bob Young | Red Hat | [Distro families](/o/distro-families) |
+| Eric Raymond, Bruce Perens, Christine Peterson | "Open source" and the OSI | [GNU](/o/gnu-free-software) |
+| Matthias Ettrich, Miguel de Icaza | KDE, GNOME | [Stack shifts](/o/stack-shifts) |
+| Judd Vinet | Arch Linux | [Distro families](/o/distro-families) |
+| Mark Shuttleworth | Canonical and Ubuntu | [Distro families](/o/distro-families) |
+| Greg Kroah-Hartman | Stable and long-term kernels | [The kernel](/o/linux-kernel) |
+| Lennart Poettering | systemd | [Stack shifts](/o/stack-shifts) |
+| Kristian Høgsberg | Wayland | [Stack shifts](/o/stack-shifts) |
+| Solomon Hykes | Docker | [Linux everywhere](/o/linux-everywhere) |
+| Eben Moglen | GPL version 3 | [Licenses](/o/licenses) |
+
+Many more names belong here: Theodore Ts'o and Alan Cox among the kernel's early developers, the maintainers of every subsystem, the packagers of every distribution, and the people who write documentation, triage bugs and answer questions on forums. A kernel release typically credits around two thousand people.
+
+## The kernel's own structure
+
+Kernel development has no foundation in charge and no vote. It works like this:
+
+- **Torvalds** maintains the mainline tree, opens the merge window and tags each release. He pulls from maintainers he trusts and can refuse anything.
+- **Maintainers** are listed per subsystem in the kernel's `MAINTAINERS` file: networking, memory management, each filesystem, each family of drivers. They review patches on public mailing lists, decide what goes into their tree, and send it up during the merge window. Some maintain trees that feed other maintainers' trees.
+- **The stable team**, Greg Kroah-Hartman and Sasha Levin, backports fixes to released kernels; some releases become longterm kernels.
+- **kernel.org** hosts the git trees and release archives. It's run by volunteers with Linux Foundation support.
+- **The Linux trademark** is owned by Linus Torvalds and administered by the Linux Foundation's Linux Mark Institute, which is why products sold as "Linux" have a trademark notice.
+
+## The organisations
+
+| Organisation | What it is | What it does |
+|---|---|---|
+| **Linux Foundation** | Non-profit, funded by member companies; formed in 2007 | Pays Torvalds and Kroah-Hartman, supports kernel.org, and hosts hundreds of other projects, including the CNCF (Kubernetes) and the FHS |
+| **Free Software Foundation** | Charity, founded by Stallman in 1985 | Steward of GNU and the GPL; holds copyright on many GNU programs; campaigns for software freedom |
+| **Open Source Initiative** | Non-profit, founded in 1998 | Maintains the Open Source Definition and approves which licences meet it |
+| **Debian Project** | Volunteers with a constitution and an elected leader | Builds Debian; its money and trademarks are held by Software in the Public Interest |
+| **Canonical** | Company, founded in 2004 by Mark Shuttleworth | Makes Ubuntu and sells support, Ubuntu Pro and cloud services |
+| **Red Hat** | Company, founded 1993; owned by IBM since 2019 | Makes RHEL, sponsors Fedora and CentOS Stream; among the largest contributors to the kernel, GNOME, systemd and GCC |
+| **SUSE** | Company, founded in Germany in 1992 | Makes SUSE Linux Enterprise; sponsors openSUSE |
+| **freedesktop.org** | Hosting and coordination for desktop projects | Home of Wayland, Mesa, PipeWire and the shared desktop specifications (the XDG standards) |
+| **Software Freedom Conservancy** | Non-profit for free software projects | Gives projects a legal home and enforces the GPL for some of them |
+
+The pattern is that most money comes from companies, and most decisions are made by the people who do the work in each project. A company gets influence by employing those people, not by paying a foundation. That's why it matters which companies employ a project's maintainers, and why projects such as Debian, which takes no company's direction, guard their independence.
+
+## Why it matters today
+
+- **When something breaks, it belongs to someone.** A kernel bug goes to the subsystem's maintainers (`scripts/get_maintainer.pl` in the kernel source finds them), a package bug to your distribution, a desktop bug to KDE or GNOME. The [packages guide](/g/what-is-a-package) explains where your distribution sits in that chain.
+- **Support comes from companies.** If you need a guaranteed fix or certified hardware, that's what Red Hat, Canonical and SUSE sell, on top of software you could get for free.
+- **Nobody can take Linux away.** With copyright spread across thousands of contributors under the GPL, no company or foundation can relicense the kernel or close it.

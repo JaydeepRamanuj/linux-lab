@@ -1,0 +1,112 @@
+---
+order: 7
+title: The Big Shifts in the Stack
+summary: "The parts of a Linux system have been replaced more than once, and each change started an argument: SysV init to Upstart to systemd, X11 to Wayland, KDE against GNOME, sh to Bash to zsh and fish, glibc and musl. What changed, why, and what each side said."
+readingMinutes: 12
+span: "1979–today"
+keyFacts:
+  - label: Init
+    value: "SysV init → Upstart (from 2006) → systemd (announced April 2010). Almost every major distribution now uses systemd."
+  - label: Display
+    value: "X11 (1987, from the 1984 X Window System) → Wayland (started 2008), now the default session on GNOME and KDE"
+  - label: Desktops
+    value: "KDE (1996, Qt) and GNOME (1997, GTK), plus forks such as Cinnamon and MATE"
+  - label: Shells
+    value: "Bourne shell (1979) → Bash (1989) as the Linux default; zsh and fish as popular alternatives; dash as `/bin/sh` on Debian and Ubuntu"
+  - label: C library
+    value: glibc almost everywhere; musl on Alpine and in small static binaries
+people: [lennart-poettering, kristian-hogsberg, matthias-ettrich, miguel-de-icaza, stephen-bourne, brian-fox]
+events: [x-window, kde-started, gnome-started, wayland-started, systemd-announced, debian-systemd]
+guides: [systemd-units, journald-logs, shell-startup-files, shared-libraries, boot-sequence]
+commands: [systemctl, journalctl, bash]
+scenarios: [system-service, persistent-alias]
+references:
+  - label: "Lennart Poettering, “Rethinking PID 1” (30 April 2010)"
+    url: http://0pointer.de/blog/projects/systemd.html
+  - label: systemd project documentation
+    url: https://systemd.io/
+  - label: "Debian technical committee: default init system for jessie (11 February 2014)"
+    url: https://lists.debian.org/debian-devel-announce/2014/02/msg00005.html
+  - label: "Wayland: what it is"
+    url: https://wayland.freedesktop.org/
+  - label: X.Org Foundation
+    url: https://www.x.org/wiki/
+  - label: "GNOME: the GNOME story"
+    url: https://www.gnome.org/about/
+  - label: KDE announcements, from the first
+    url: https://kde.org/announcements/
+  - label: zsh
+    url: https://www.zsh.org/
+  - label: fish shell
+    url: https://fishshell.com/
+  - label: musl libc
+    url: https://musl.libc.org/
+asOf: "2026-11-06"
+---
+
+## The short version
+
+A Linux system is assembled from parts made by different projects, so any part can be replaced, and several big ones have been. Each time the new part solved real problems, broke some habits, and started an argument about whether the change was worth it.
+
+The biggest was the init system, the first program the kernel starts. For most of Linux's history it was SysV init, a set of shell scripts run in order. Ubuntu replaced it with Upstart in 2006. In 2010 Lennart Poettering proposed systemd, which went much further, and by 2015 nearly every major distribution had adopted it, Debian only after its technical committee voted. On the graphics side, the X Window System, designed in the 1980s for terminals on a network, is being replaced by Wayland, where the compositor is the display server. Desktops split early into KDE and GNOME, and the shell went from the Bourne shell to Bash, with zsh and fish as popular alternatives.
+
+None of these shifts erased the old way completely, which is why you still meet `/etc/init.d` scripts, `DISPLAY=:0` and `#!/bin/sh`.
+
+## Init: SysV, Upstart, systemd
+
+When the kernel finishes booting, it starts one program as process 1, and that program starts everything else. Linux distributions inherited the System V approach: `/sbin/init` read `/etc/inittab`, picked a runlevel, and ran the shell scripts in `/etc/rc3.d` (or similar) one after another, in the order of their file names. It was simple and transparent: every service was a script you could read. It was also slow, because everything started one at a time, and blind, because once a script had started a daemon, init didn't track whether it stayed up.
+
+**Upstart**, written for Ubuntu and first used in 2006, made init event-based: jobs started when the events they waited for happened, such as "filesystem mounted" or "network up". By 2010, Poettering wrote, it had "found its way into all major distributions", including RHEL 6 and ChromeOS.
+
+On 30 April 2010 Poettering published "Rethinking PID 1", announcing **systemd**, written with Kay Sievers. His argument was that starting things in reaction to events was backwards: init should know what each service needs and start everything else in parallel, opening services' sockets in advance so clients could connect before the service was even running. systemd replaced scripts with declarative unit files, tracked every service in its own control group so nothing could escape supervision, and took on jobs around the edges of init: logging (the journal), device events (udev was merged in), logins, timers, network configuration, DNS resolution and more.
+
+Fedora shipped it first, in 2011. The hard decision was Debian's, which supports several kernels and many architectures and had people strongly on every side. After months of debate, its technical committee ruled on 11 February 2014 that systemd would be the default init for Debian 8, "jessie". Ubuntu switched from its own Upstart soon after. A group unhappy with the decision forked Debian as **Devuan**, and distributions such as Gentoo (OpenRC by default), Void (runit), Alpine (OpenRC) and Slackware still use something else.
+
+The arguments are worth knowing because both sides were partly right:
+
+| Critics said | Supporters said |
+|---|---|
+| It does far too much for one project and breaks the Unix idea of small tools | Its pieces are separate programs, and the things it replaced were never small or consistent |
+| Binary logs in the journal are harder to read with ordinary tools | `journalctl` can filter by service, boot and priority, and logs can still be forwarded to plain text |
+| Other software started depending on it, so opting out got harder | Distributions gained one consistent way to start, stop and supervise services |
+| It changed a lot quickly, and some changes broke existing setups | Boots got faster and services stopped dying silently |
+
+The [systemd units guide](/g/systemd-units) and [journald guide](/g/journald-logs) cover how it works day to day; the [boot sequence](/g/boot-sequence) shows where PID 1 fits.
+
+## Display: X11 and Wayland
+
+The X Window System began at MIT in 1984, and its eleventh protocol version, X11, from 1987, is still the one in use. Its design reflects its time: an X server owns the screen, keyboard and mouse, and programs, called clients, connect to it, possibly over the network, and ask it to draw. That network transparency was a great feature for university terminals. On a modern desktop, where a compositor draws every window into a buffer with the GPU, most of X's drawing features go unused, and the server sits in the middle adding complexity and security gaps: any X client can read every other client's keystrokes and screen contents.
+
+**Wayland**, started in 2008 by Kristian Høgsberg, describes itself as "a replacement for the X11 window system protocol and architecture". In Wayland, the compositor is the display server. Each application draws its own window and hands the finished buffer to the compositor, which puts it on screen and passes input only to the window that should get it. GNOME's Mutter and KDE's KWin are both Wayland compositors, and both now default to Wayland sessions. Programs that only speak X11 still run through **XWayland**, an X server that runs as a Wayland client.
+
+The change took more than a decade because so much depended on X: screen sharing, remote desktop, global hotkeys, colour pickers, accessibility tools and NVIDIA's drivers all had to find new ways to work. The X.Org server itself is now mostly maintained rather than developed. If something on your desktop works under X but not under Wayland, a missing protocol for that feature is the usual reason, and `echo $XDG_SESSION_TYPE` tells you which one you're in.
+
+## Desktops: KDE and GNOME
+
+In 1996 Matthias Ettrich proposed KDE, a consistent desktop for Unix built on **Qt**, a toolkit from the Norwegian company Trolltech. Qt wasn't free software at the time, which worried people who wanted a completely free desktop. In 1997 Miguel de Icaza and Federico Mena founded **GNOME**, built on GTK, the toolkit written for the GIMP image editor. Qt was later relicensed under the GPL, removing the original objection, but by then the two desktops had their own communities, and both continued.
+
+They have taken different approaches ever since. KDE Plasma offers many settings and lets you rearrange almost anything. GNOME favours fewer options and a single design. When GNOME 3 replaced its traditional desktop in 2011, the reaction led to forks and alternatives that kept the older style: **MATE** continued GNOME 2, and **Cinnamon** was made by Linux Mint. Lighter desktops such as **Xfce** and **LXQt** target older hardware, and newer ones such as COSMIC, from System76, are written for Wayland from the start.
+
+Your distribution picks a default, but any desktop can usually be installed on any distribution.
+
+## Shells: sh, Bash, zsh, fish
+
+The **Bourne shell**, written by Stephen Bourne for Seventh Edition Unix in 1979, defined the shell language: variables, `if`, `for`, `case`, functions and here-documents. Bill Joy's **C shell** at Berkeley added history and job control with a C-like syntax, and David Korn's **Korn shell** combined the two.
+
+GNU needed a free shell, so in 1989 Brian Fox wrote **Bash**, the Bourne Again SHell: compatible with the Bourne shell and POSIX, with history, job control and editing added. It became the default login shell on almost every Linux distribution, which is why most shell advice online, and this site, assumes Bash.
+
+The alternatives are about interactive comfort. **zsh** is largely compatible with Bash and adds powerful completion and theming, and became the default on macOS in 2019. **fish** deliberately isn't POSIX-compatible, in exchange for autosuggestions, syntax highlighting and settings that work without configuration. Under the hood, Debian and Ubuntu run `#!/bin/sh` scripts with **dash**, a small, fast POSIX shell, rather than Bash. That's why a script that uses Bash features can work when run with `bash script.sh` and fail when run as `./script.sh` with a `#!/bin/sh` line. The [shell startup files guide](/g/shell-startup-files) covers which shell reads what.
+
+## C libraries: glibc and musl
+
+Almost every Linux program calls the kernel through a C library. On nearly every distribution that's the GNU C Library, **glibc**: complete, fast, and with decades of compatibility. It's also large, and it expects to be linked dynamically.
+
+**musl**, started by Rich Felker, is a smaller implementation of the C standard library built on the Linux system call API, written to be "lightweight, fast, simple, free" and correct. Alpine Linux and Void (in one of its variants) use it, and it's a common choice for fully static binaries that run on any Linux. The catch is that programs compiled against glibc don't run on musl without being rebuilt, which is the usual cause of "not found" errors for a binary that plainly exists on an Alpine container. The [shared libraries guide](/g/shared-libraries) explains how a program finds its C library.
+
+## Why it matters today
+
+- **Service commands** are `systemctl` almost everywhere, but `/etc/init.d/` scripts and `service nginx restart` still work on many systems, through compatibility layers. If a guide uses `rc-service` or `sv`, it's for a distribution without systemd.
+- **Logs** are in the journal first: `journalctl -u nginx`. Plain-text files under `/var/log` exist only where a syslog daemon still writes them.
+- **Display problems** often depend on X11 versus Wayland. Check `XDG_SESSION_TYPE` before following advice that assumes one or the other.
+- **Shell scripts:** write `#!/bin/bash` if you use Bash features, or stick to POSIX if the script says `#!/bin/sh`.
+- **Containers:** an Alpine image has musl and BusyBox, not glibc and GNU coreutils, so binaries and command options can differ from the rest of your system.

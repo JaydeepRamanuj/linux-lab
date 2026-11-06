@@ -87,6 +87,100 @@ export const PEOPLE: Person[] = [
     knownFor: 'Wrote the Open Source Definition from the Debian guidelines and co-founded the OSI.',
     years: 'b. 1958',
     url: 'https://perens.com/'
+  },
+  {
+    id: 'stephen-bourne',
+    name: 'Stephen Bourne',
+    knownFor: 'Wrote the Bourne shell for Seventh Edition Unix, the ancestor of every `sh` and of Bash.'
+  },
+  {
+    id: 'brian-fox',
+    name: 'Brian Fox',
+    knownFor: 'Wrote Bash for the Free Software Foundation, as well as GNU Readline.'
+  },
+  {
+    id: 'christine-peterson',
+    name: 'Christine Peterson',
+    knownFor: 'Suggested the term “open source” in February 1998.',
+    url: 'https://opensource.org/history'
+  },
+  {
+    id: 'eben-moglen',
+    name: 'Eben Moglen',
+    knownFor: 'The FSF’s long-time lawyer, who led the drafting of GPL version 3 with Stallman.'
+  },
+  {
+    id: 'ian-murdock',
+    name: 'Ian Murdock',
+    knownFor: 'Founded Debian in 1993; the “ian” in its name.',
+    years: '1973–2015',
+    url: 'https://www.debian.org/intro/about'
+  },
+  {
+    id: 'patrick-volkerding',
+    name: 'Patrick Volkerding',
+    knownFor: 'Has maintained Slackware since 1993, the longest anyone has run a distribution.',
+    url: 'https://www.slackware.com/'
+  },
+  {
+    id: 'marc-ewing',
+    name: 'Marc Ewing',
+    knownFor: 'Created Red Hat Linux and co-founded Red Hat.'
+  },
+  {
+    id: 'bob-young',
+    name: 'Bob Young',
+    knownFor: 'Co-founded Red Hat and ran its business side through the 1999 stock market listing.'
+  },
+  {
+    id: 'judd-vinet',
+    name: 'Judd Vinet',
+    knownFor: 'Created Arch Linux and its package manager, pacman.',
+    url: 'https://wiki.archlinux.org/title/Arch_Linux'
+  },
+  {
+    id: 'mark-shuttleworth',
+    name: 'Mark Shuttleworth',
+    knownFor: 'Founded Canonical and Ubuntu in 2004, with a team of Debian developers.',
+    url: 'https://ubuntu.com/about'
+  },
+  {
+    id: 'lennart-poettering',
+    name: 'Lennart Poettering',
+    knownFor: 'Started systemd (with Kay Sievers), PulseAudio and Avahi.',
+    url: 'http://0pointer.de/blog/projects/systemd.html'
+  },
+  {
+    id: 'matthias-ettrich',
+    name: 'Matthias Ettrich',
+    knownFor: 'Started the KDE desktop project in 1996; earlier wrote LyX.'
+  },
+  {
+    id: 'miguel-de-icaza',
+    name: 'Miguel de Icaza',
+    knownFor: 'Co-founded GNOME with Federico Mena in 1997; later Mono and Xamarin.',
+    url: 'https://www.gnome.org/about/'
+  },
+  {
+    id: 'kristian-hogsberg',
+    name: 'Kristian Høgsberg',
+    knownFor: 'Started Wayland in 2008 while working on X at Red Hat.',
+    url: 'https://wayland.freedesktop.org/'
+  },
+  {
+    id: 'theodore-tso',
+    name: 'Theodore Ts’o',
+    knownFor: 'One of the first kernel developers outside Finland; maintains ext4 and wrote much of ext2 and ext3.'
+  },
+  {
+    id: 'alan-cox',
+    name: 'Alan Cox',
+    knownFor: 'Wrote much of early Linux networking and ran the main stable branch through the 2.2 era.'
+  },
+  {
+    id: 'solomon-hykes',
+    name: 'Solomon Hykes',
+    knownFor: 'Created Docker, which made Linux containers a mainstream tool.'
   }
 ];
 

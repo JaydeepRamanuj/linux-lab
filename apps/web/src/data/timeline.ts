@@ -516,7 +516,159 @@ export const TIMELINE: TimelineEvent[] = [
     source: 'https://www.debian.org/releases/'
   },
 
-  // Later kernel milestones told in chapter 3. The rest of era 5 comes with Phase H3.
+  // The stack, Linux everywhere and licences (chapters 7 to 9)
+  {
+    id: 'x-window',
+    date: '1984',
+    title: 'The X Window System starts at MIT',
+    why: 'The network-transparent graphics system that Unix and Linux desktops ran on for the next forty years.',
+    category: 'ecosystem',
+    era: 'gnu',
+    chapter: 'stack-shifts',
+    source: 'https://www.x.org/wiki/'
+  },
+  {
+    id: 'kde-started',
+    date: '1996',
+    title: 'KDE is started',
+    why: 'Matthias Ettrich proposes a consistent, easy desktop for Unix, built on the Qt toolkit.',
+    category: 'ecosystem',
+    era: 'kernel-born',
+    chapter: 'stack-shifts',
+    source: 'https://kde.org/announcements/'
+  },
+  {
+    id: 'gnome-started',
+    date: '1997',
+    title: 'GNOME is founded',
+    why: 'Miguel de Icaza and Federico Mena start a completely free desktop, partly because of Qt’s licence at the time.',
+    category: 'ecosystem',
+    era: 'kernel-born',
+    chapter: 'stack-shifts',
+    source: 'https://www.gnome.org/about/'
+  },
+  {
+    id: 'gplv3',
+    date: '2007-06-29',
+    title: 'GPL version 3',
+    why: 'Adds patent terms and rules against locked-down devices. The kernel stays on version 2.',
+    category: 'gnu',
+    era: 'everywhere',
+    chapter: 'licenses',
+    source: 'https://www.gnu.org/licenses/gpl-3.0.html'
+  },
+  {
+    id: 'cgroups-merged',
+    date: '2008-01-24',
+    title: 'Control groups arrive in Linux 2.6.24',
+    why: 'Limits on CPU, memory and I/O for groups of processes: half of what a container is.',
+    category: 'kernel',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://man7.org/linux/man-pages/man7/cgroups.7.html'
+  },
+  {
+    id: 'android-first',
+    date: '2008',
+    title: 'The first Android phone',
+    why: 'A Linux kernel with Google’s own userland on top: no GNU, no X. Now the most common way people use Linux.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://www.android.com/history/'
+  },
+  {
+    id: 'wayland-started',
+    date: '2008',
+    title: 'Wayland is started',
+    why: 'Kristian Høgsberg’s simpler replacement for the X11 protocol, where the compositor is the display server.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'stack-shifts',
+    source: 'https://wayland.freedesktop.org/'
+  },
+  {
+    id: 'systemd-announced',
+    date: '2010-04-30',
+    title: '“Rethinking PID 1”: systemd is announced',
+    why: 'Lennart Poettering’s blog post proposes an init system built on socket activation and dependencies.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'stack-shifts',
+    source: 'http://0pointer.de/blog/projects/systemd.html'
+  },
+  {
+    id: 'docker-released',
+    date: '2013',
+    title: 'Docker is released',
+    why: 'Namespaces and cgroups made easy: an image format and one command to run a container.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://www.docker.com/company/'
+  },
+  {
+    id: 'user-namespaces',
+    date: '2013',
+    title: 'User namespaces complete in Linux 3.8',
+    why: 'Unprivileged users can create namespaces, which rootless containers depend on.',
+    category: 'kernel',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://man7.org/linux/man-pages/man7/namespaces.7.html'
+  },
+  {
+    id: 'debian-systemd',
+    date: '2014-02-11',
+    title: 'Debian chooses systemd',
+    why: 'The technical committee rules systemd the default init for Debian 8, after a long and bitter debate.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'stack-shifts',
+    source: 'https://lists.debian.org/debian-devel-announce/2014/02/msg00005.html'
+  },
+  {
+    id: 'kubernetes-1',
+    date: '2015-07',
+    title: 'Kubernetes 1.0 and the CNCF',
+    why: 'Google’s container orchestrator reaches 1.0 and is given to the new Cloud Native Computing Foundation.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://kubernetes.io/blog/2018/07/20/the-history-of-kubernetes-the-community-behind-it/'
+  },
+  {
+    id: 'wsl',
+    date: '2016',
+    title: 'Windows Subsystem for Linux',
+    why: 'Linux programs run unmodified on Windows. WSL 2 later moved to a real Linux kernel in a lightweight VM.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://learn.microsoft.com/en-us/windows/wsl/compare-versions'
+  },
+  {
+    id: 'top500-all-linux',
+    date: '2017-11',
+    title: 'Every TOP500 supercomputer runs Linux',
+    why: 'From the November 2017 list onwards, all 500 of the world’s fastest computers run Linux.',
+    category: 'ecosystem',
+    era: 'everywhere',
+    chapter: 'linux-everywhere',
+    source: 'https://www.top500.org/statistics/details/osfam/1/'
+  },
+  {
+    id: 'rust-in-kernel',
+    date: '2022-12',
+    title: 'Rust support in Linux 6.1',
+    why: 'The first language besides C and assembly accepted into the kernel, starting with infrastructure for drivers.',
+    category: 'kernel',
+    era: 'everywhere',
+    chapter: 'linux-kernel',
+    source: 'https://github.com/torvalds/linux/tree/master/Documentation/rust'
+  },
+
+  // Later kernel milestones told in chapter 3.
   {
     id: 'kernel-bitkeeper',
     date: '2002',
