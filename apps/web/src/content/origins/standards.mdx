@@ -1,0 +1,99 @@
+---
+order: 4
+title: "Standards: POSIX, SUS and FHS"
+summary: "What “Unix-like” actually promises. POSIX defines the interface a program can rely on, the Single UNIX Specification decides who may use the UNIX name, and the Filesystem Hierarchy Standard says where files go. Linux follows all three closely and is certified against none of them."
+readingMinutes: 8
+span: "1988–today"
+keyFacts:
+  - label: POSIX
+    value: "IEEE Std 1003.1, the Portable Operating System Interface. First published 1988; current edition POSIX.1-2024."
+  - label: Single UNIX Specification
+    value: The Open Group's standard. Its core volumes are POSIX; passing its tests is what earns the UNIX trademark.
+  - label: Certified today
+    value: "IBM AIX and z/OS, HPE HP-UX and SCO's UnixWare and OpenServer are on the register. macOS was certified for years and isn't listed now."
+  - label: FHS
+    value: "Filesystem Hierarchy Standard. 2.3 in January 2004, 3.0 in June 2015, kept by the Linux Foundation."
+  - label: LSB
+    value: "Linux Standard Base: a binary compatibility standard for distributions, now dormant."
+people: [richard-stallman]
+events: [posix-1, unix-certification, fhs-2-3, fhs-3, posix-2024]
+guides: [filesystem-layout, system-calls, shell-startup-files, pressing-enter]
+commands: [ls, find]
+references:
+  - label: "The Open Group: the UNIX standard and certification"
+    url: https://www.opengroup.org/unix
+  - label: The Register of UNIX Certified Products
+    url: https://www.opengroup.org/openbrand/register/
+  - label: "The Open Group Base Specifications, Issue 8 (POSIX.1-2024), free to read online"
+    url: https://pubs.opengroup.org/onlinepubs/9799919799/
+  - label: Filesystem Hierarchy Standard, all versions
+    url: https://refspecs.linuxfoundation.org/fhs.shtml
+  - label: FHS 3.0
+    url: https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html
+  - label: Linux Standard Base specifications
+    url: https://refspecs.linuxfoundation.org/lsb.shtml
+asOf: "2026-11-06"
+---
+
+## The short version
+
+By the late 1980s there were dozens of Unix systems, and a program written for one often didn't build on another. Vendors and users agreed on a common standard for the interface between programs and the system: POSIX, first published by the IEEE in 1988. It says which system calls, library functions, shell syntax and commands a conforming system provides, and how they behave.
+
+The Single UNIX Specification grew out of the same effort. Its core is POSIX, and The Open Group, which owns the UNIX trademark, lets a system be called UNIX only once it passes the tests. That certification costs money and is renewed for each product, so it mostly appeals to vendors who sell to customers that ask for it.
+
+Linux was written to follow POSIX from the start, so programs written to the standard build on it with few or no changes. But no major Linux distribution goes through certification, so Linux is "Unix-like" rather than UNIX. A third standard, the Filesystem Hierarchy Standard, is Linux's own: it is why `/etc`, `/usr/bin` and `/var/log` are in the same place on almost every distribution.
+
+## POSIX: the interface
+
+POSIX stands for Portable Operating System Interface. It doesn't describe how a kernel works inside. It describes what a program can count on from outside:
+
+| Part | What it covers | Where you meet it |
+|---|---|---|
+| System interfaces | `open`, `read`, `fork`, `exec`, `kill`, signals, threads | The [system calls](/g/system-calls) and C library functions every program uses |
+| Shell and utilities | The `sh` language, and commands such as `ls`, `grep`, `sed`, `awk`, `find` with their standard options | Scripts that start with `#!/bin/sh` and use only portable features |
+| Base definitions | Regular expressions, environment variables, file permissions, the meaning of a path | Why `PATH`, `HOME` and `rwx` mean the same thing everywhere |
+
+The name came from Richard Stallman, who suggested it when the IEEE committee was looking for something easier to say than "IEEE-IX". The standard has been revised several times. The current edition, POSIX.1-2024, is published jointly by the IEEE and The Open Group, and the full text is free to read online.
+
+POSIX describes the minimum, not everything. GNU tools add many options POSIX doesn't have, and Linux has system calls POSIX doesn't mention, such as `epoll` and the ones behind containers. A script that uses `[[ ]]`, arrays or `${var,,}` works in Bash but isn't POSIX shell, which is why it may fail when run by `sh` on Debian, where `/bin/sh` is the smaller dash shell. The [startup files guide](/g/shell-startup-files) covers which shell reads what.
+
+## The Single UNIX Specification and the UNIX name
+
+POSIX says what an interface looks like. The Single UNIX Specification is a larger standard that includes POSIX as its core and adds more: extra interfaces, the X/Open curses library and more utilities. Its versions are known by the names on the certificates, such as UNIX 95, UNIX 98, UNIX 03 and UNIX V7.
+
+UNIX, written in capitals, is a registered trademark of The Open Group. A vendor may call its product UNIX only after the product passes The Open Group's test suites and is listed on its register. Formal certification started in 1995, and all the major Unix vendors of the time certified their systems.
+
+As of November 2026, the register lists IBM's AIX and z/OS, HPE's HP-UX and SCO's UnixWare and OpenServer. Apple's macOS was certified against UNIX 03 for many years, which is why it could be described as a real UNIX while Linux couldn't; it isn't listed on the current register. Certification has always been about the product and the paperwork, not the code. macOS's kernel is a mix of Mach and BSD, and z/OS is a mainframe system that looks nothing like Unix inside.
+
+Linux isn't listed. Nothing stops a distribution from certifying, and The Open Group notes that a Linux distribution has done so (Huawei's EulerOS was certified in the 2010s). But the tests cost money, have to be repeated for each release, and certify one exact build, while most distributions change constantly and have customers who don't ask for the trademark. In practice, "POSIX-compatible" is what matters to programs, and Linux is close enough that the difference rarely shows.
+
+## FHS: where the files go
+
+POSIX says nothing about where files live. Early Linux distributions each made their own choices, so in 1993 a group started writing a standard for the Linux filesystem layout, FSSTND, which became the Filesystem Hierarchy Standard. FHS 2.3 came out in January 2004, and 3.0, the current version, in June 2015, maintained by the Linux Foundation.
+
+It is why these hold on almost any distribution:
+
+| Path | FHS says |
+|---|---|
+| `/etc` | Host-specific configuration, as text files |
+| `/usr/bin`, `/usr/lib` | Programs and libraries installed by the distribution, shareable and read-only |
+| `/usr/local` | Software installed by the local administrator, kept apart from the distribution's |
+| `/var` | Data that changes: logs in `/var/log`, caches, spools, package databases |
+| `/home` | Users' own files |
+| `/run` | Runtime data since boot, such as PID files and sockets. Added in 3.0. |
+| `/opt` | Add-on software packages that keep everything in one folder |
+
+The [filesystem layout guide](/g/filesystem-layout) walks through the whole tree as it looks today. Distributions still differ at the edges. Most have now merged `/bin` into `/usr/bin` and left `/bin` as a link to it (the "usr merge"), and NixOS keeps almost nothing in the FHS locations at all, putting every package under `/nix/store`.
+
+## LSB: the standard that faded
+
+The Linux Standard Base, started in 1998 under what became the Linux Foundation, aimed further: a binary standard, so that one package from a software vendor would install on any certified distribution. It specified a set of libraries, the RPM package format for third-party software, the `lsb_release` command and init script conventions. It was also published as an ISO standard.
+
+It never became what was hoped. Debian-based distributions didn't adopt RPM, vendors kept building separate packages per distribution anyway, and the distributions moved faster than the standard. The last version, LSB 5.0, came out in 2015, and Debian dropped its LSB support soon after. What survives is mostly `lsb_release -a`, still a common way to ask which distribution you're on, and `/etc/os-release`, the systemd-era file that does the job better. The problem LSB tried to solve was later approached a different way, by shipping an app with its own libraries: Flatpak, Snap and AppImage, covered in the distribution chapters.
+
+## Why it matters today
+
+- **Portable scripts:** if a script must run on any Unix-like system, including macOS, Alpine or a BSD, write it for POSIX `sh` and POSIX options. If it only has to run on your Linux machines, Bash and GNU options are fine, but say so in the `#!` line.
+- **"Works on Linux, fails on a Mac":** usually a GNU option (`sed -i` without a suffix, `grep -P`, `ls --color`) that isn't POSIX, and that the BSD tools on macOS don't have.
+- **Finding things:** FHS is why config is in `/etc`, logs are in `/var/log` and your own installs belong in `/usr/local` or `/opt`. When a distribution differs, it usually documents the difference against FHS.
+- **What you can rely on:** the [system calls](/g/system-calls) and shell behaviour that POSIX fixes are the parts that won't change under you. Linux-only features are fine to use, but they're where portability ends.

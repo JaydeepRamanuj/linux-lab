@@ -1,0 +1,107 @@
+---
+order: 5
+title: What a Distribution Really Is
+summary: "Nobody installs “Linux”. You install a distribution: a kernel, GNU or other userland tools, an init system, a package manager, thousands of packages and a set of choices about how they fit together and when they change. Why there are hundreds of them, and why most are built from a handful."
+readingMinutes: 11
+span: "1992–today"
+keyFacts:
+  - label: What it contains
+    value: Kernel, C library and core tools, init system, package manager, the packages themselves, installer and defaults
+  - label: First complete distributions
+    value: "1992–1993: SLS, then Slackware and Debian"
+  - label: How many exist
+    value: Hundreds, but most are built from a few bases such as Debian, Fedora/RHEL, Arch, SUSE and Gentoo
+  - label: Release models
+    value: Fixed releases (Debian, Ubuntu, Fedora), rolling (Arch, Tumbleweed), long-term support (RHEL, Ubuntu LTS)
+  - label: Debian stable
+    value: "Debian 13 “trixie”, released 9 August 2025; latest point release 13.7 (September 2026)"
+people: [linus-torvalds, richard-stallman]
+events: [debian-begins, debian-social-contract, ubuntu-lts, debian-13]
+guides: [what-is-a-package, boot-sequence, shared-libraries, app-formats, systemd-units]
+commands: [apt, dpkg, apt-cache]
+scenarios: [install-deb, which-package, fix-broken-install]
+references:
+  - label: "Debian: about Debian and how it started"
+    url: https://www.debian.org/intro/about
+  - label: Debian releases (stable, testing, unstable)
+    url: https://www.debian.org/releases/
+  - label: The Debian Social Contract and Free Software Guidelines
+    url: https://www.debian.org/social_contract
+  - label: "Ubuntu: where it began, and the origin of LTS"
+    url: https://ubuntu.com/about
+  - label: "Red Hat: what CentOS Stream is (upstream and downstream of RHEL)"
+    url: https://www.redhat.com/en/topics/linux/what-is-centos-stream
+  - label: "Void Linux: an independent distribution"
+    url: https://voidlinux.org/
+asOf: "2026-11-06"
+---
+
+## The short version
+
+Linus Torvalds' kernel on its own doesn't do anything you could use: it needs a C library, a shell, commands, an init process to start everything else, and some way to install and update programs. In 1991 you assembled those yourself from separate downloads. Within a year people started packaging them together, compiled to work with each other and installable from a set of floppy disks. Those bundles are distributions.
+
+A distribution is more than a pile of software. It's a set of choices: which versions of thousands of programs to ship, how to configure them, which init system and package format to use, how often to release and how long to support each release. Those choices, more than the software itself, are what make Debian different from Fedora or Arch.
+
+Because all of the software is free to copy and change, anyone who disagrees with those choices can make their own distribution. Hundreds of people have. But building and maintaining tens of thousands of packages is a huge job, so most new distributions start from an existing one and change only what they care about. That is why there are hundreds of distributions and only a handful of families.
+
+## What's in the box
+
+Every general-purpose distribution has the same layers. They differ in which piece they pick at each layer, and in how they're glued together:
+
+<Layers spec={{
+  title: 'A typical Linux distribution, bottom to top',
+  layers: [
+    { name: 'Desktop and applications', detail: 'GNOME, KDE Plasma or another desktop; a browser, an office suite. Optional on servers.', chips: ['GNOME', 'KDE', 'Firefox'], tone: 'user' },
+    { name: 'Package manager and repositories', detail: 'The tool that installs, updates and removes software, and the signed archive it downloads from. The biggest difference between families.', chips: ['apt / .deb', 'dnf / .rpm', 'pacman', 'zypper'], tone: 'user', highlight: true },
+    { name: 'Services and init', detail: 'PID 1 starts and supervises everything else: networking, logging, logins.', chips: ['systemd', 'OpenRC', 'runit'], tone: 'user' },
+    { name: 'Userland: shell, commands, C library', detail: 'Mostly GNU: bash, coreutils, glibc. Some distributions use BusyBox and musl instead.', chips: ['bash', 'coreutils', 'glibc', 'musl'], tone: 'user', edge: 'system calls' },
+    { name: 'Kernel', detail: 'Linux itself, built with the distribution’s configuration and patches, plus its modules.', chips: ['linux', 'modules', 'firmware'], tone: 'kernel', edge: 'drivers' },
+    { name: 'Bootloader and hardware', detail: 'GRUB or systemd-boot loads the kernel; UEFI firmware loads them.', chips: ['GRUB', 'UEFI'], tone: 'hardware' }
+  ]
+}} />
+
+Around those layers come the parts you don't see listed: an installer, default configuration for every package, security updates, documentation, a bug tracker, build servers, mirrors, signing keys, and the people who decide what goes in. The [boot sequence guide](/g/boot-sequence) follows the bottom layers in order; [what a package is](/g/what-is-a-package) covers the layer that defines a family.
+
+## Upstream and downstream
+
+A distribution mostly doesn't write the software it ships. GNU writes coreutils, the GNOME project writes GNOME, Mozilla writes Firefox. Those projects are **upstream**. The distribution takes their releases, builds them, and passes the result **downstream** to its users. Distributions can be upstream of each other too: Debian is upstream of Ubuntu, which is upstream of Linux Mint.
+
+Packagers sit in between. They write the build recipe, choose compile options, split the program into packages (`libfoo`, `libfoo-dev`), add patches that fit it to the distribution, and fix bugs, ideally by sending the fix upstream so everyone gets it. When you file a bug, it matters which side it belongs to: a crash in GNOME itself goes upstream, a missing dependency in Ubuntu's package goes to Ubuntu.
+
+The Red Hat family shows the chain clearly. Red Hat describes Fedora as the upstream where future RHEL versions start, CentOS Stream as the place the next RHEL minor version is developed in the open, and RHEL as the product built from it.
+
+## Release models
+
+How often a distribution changes is its most important choice for most users:
+
+| Model | What it means | Examples | Good for |
+|---|---|---|---|
+| **Fixed release** | A set of versions is frozen, tested together and released. Within a release, only fixes go in. | Debian stable, Fedora, Ubuntu | Predictable systems; you choose when to upgrade |
+| **Long-term support (LTS)** | A fixed release that gets security fixes for years, often five or ten. | RHEL, Ubuntu LTS, SUSE Linux Enterprise, Rocky, Alma | Servers and anything that must not change under you |
+| **Rolling release** | No versions: packages are updated as upstream releases them, continuously. | Arch, openSUSE Tumbleweed, Void, Debian unstable | The newest software, at the cost of more frequent change |
+
+Debian runs all three at once: stable, the frozen release; testing, where the next stable is assembled; and unstable, which rolls. Ubuntu introduced the term LTS in 2006, when it decided every fourth release, one every two years, would get long-term support.
+
+A fixed release still needs fixes, which is where **backports** come in. A distribution that ships version 2.4 of a program for five years can't just jump to 2.9 when a security hole is found, because 2.9 might change behaviour people depend on. So its maintainers take the fix from upstream and apply it to 2.4. That is why a version number from a stable distribution, like `openssl 3.0.13-0ubuntu3.4`, can be older than upstream's latest and still not be vulnerable: the suffix after the upstream version counts the distribution's own changes.
+
+## Why are there so many?
+
+Partly because there can be. The GPL and similar licences let anyone copy, change and redistribute everything, so a distribution is never anyone's to control: if you disagree with one, you're free to make your own. But "can" doesn't explain why people bother. The reasons that recur:
+
+- **Different goals.** A server wants nothing to change for ten years; a developer wants this month's compiler; a security tester wants hundreds of specialist tools ready to use; a Raspberry Pi needs firmware a PC doesn't. No single set of choices fits all of these, so Kali, RHEL, Fedora and Raspberry Pi OS make different ones.
+- **Different values.** Debian has a social contract and its own test for what counts as free software, and keeps non-free firmware in a separate section. Some distributions include only software the FSF approves; others ship proprietary drivers by default because users want hardware to work.
+- **Different ideas about how a system should work.** Gentoo compiles everything from source to the owner's settings. NixOS describes a whole machine in one file and can roll it back. Alpine replaces glibc and GNU tools with musl and BusyBox to stay tiny. Void avoids systemd. Each is an argument about design that could only be made by building a distribution.
+- **Disagreements and changes of course.** Ubuntu began in 2004 as Debian with a fixed six-month schedule and a company behind it. When Red Hat moved CentOS to CentOS Stream in December 2020, CentOS's original founder started Rocky Linux and another group started AlmaLinux, so people relying on a free RHEL rebuild had one again.
+- **A friendlier front end.** Many derivatives keep almost everything from their parent and change the parts a new user sees: an installer, a desktop, a theme, preinstalled codecs. Linux Mint, elementary OS, Zorin OS, Manjaro and EndeavourOS are mostly this.
+- **Companies and hardware.** System76 makes Pop!_OS for its own computers, Valve makes SteamOS for the Steam Deck, and Google builds ChromeOS. Each wants control over the whole system it ships.
+
+The cost of starting from scratch keeps the families few. A distribution like Debian maintains tens of thousands of source packages with hundreds of volunteers, plus build servers for many architectures and a security team. A derivative reuses all of that and maintains only its differences, which is why so many distributions are "based on Ubuntu" or "based on Arch". Fully independent distributions, like Void, are rare enough that they say so on their front page.
+
+The overlap also means the differences are smaller than the number of names suggests. Two distributions in the same family share packages, package format, repositories (often directly) and documentation. Moving between Ubuntu and Linux Mint is a change of desktop; moving from Ubuntu to Fedora is a change of package manager and some paths; the commands, the kernel and almost every program are the same.
+
+## Why it matters today
+
+- **Instructions online are written for a family.** "Run `sudo apt install`" means Debian or Ubuntu; `dnf` means Fedora or RHEL; `pacman` means Arch. Knowing your family tells you which answers apply. `cat /etc/os-release` says which distribution you're on and, in `ID_LIKE`, which it's based on.
+- **Packages come from your distribution.** That's why [installing a .deb](/s/install-deb) from a website can break things, and why [what a package is](/g/what-is-a-package) matters: the distribution has already matched every package's libraries to the rest of the system. Formats like Flatpak and Snap, in the [app formats guide](/g/app-formats), exist to ship one build to every distribution.
+- **Version numbers in a stable release look old on purpose.** Backports keep them safe; check the distribution's security tracker, not upstream's latest version.
+- **Choosing a distribution is mostly choosing a release model and a family.** The next chapter compares the families.

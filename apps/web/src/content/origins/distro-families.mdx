@@ -1,0 +1,148 @@
+---
+order: 6
+title: The Distro Families
+summary: "Debian and Ubuntu, Fedora and RHEL, Arch, SUSE, Slackware, Gentoo and the independents like Alpine and NixOS: where each family came from, what its members share, how they differ, and how to choose one."
+readingMinutes: 12
+span: "1993–today"
+keyFacts:
+  - label: Oldest still maintained
+    value: Slackware, first beta in April 1993
+  - label: Largest family
+    value: Debian, through Ubuntu and its derivatives
+  - label: Enterprise
+    value: Red Hat Enterprise Linux and SUSE Linux Enterprise, plus the free RHEL rebuilds Rocky Linux and AlmaLinux
+  - label: Rolling
+    value: Arch, openSUSE Tumbleweed, Gentoo, Void, Kali
+  - label: In containers
+    value: "Alpine, Debian and Ubuntu images are the common bases"
+people: [linus-torvalds]
+events: [suse-founded, red-hat-founded, slackware-beta, arch-first, rhel-fedora-split, ubuntu-first, linux-mint-first, kali-first, tumbleweed, centos-stream-shift]
+guides: [what-is-a-package, app-formats, systemd-units, filesystem-layout]
+commands: [apt, dpkg, apt-cache]
+scenarios: [install-deb, remove-package, apt-lock, which-package]
+references:
+  - label: "Debian: about Debian"
+    url: https://www.debian.org/intro/about
+  - label: "Ubuntu: about Ubuntu and Canonical"
+    url: https://ubuntu.com/about
+  - label: "Linux Mint: about"
+    url: https://linuxmint.com/about.php
+  - label: "Kali Linux: what is Kali?"
+    url: https://www.kali.org/docs/introduction/what-is-kali-linux/
+  - label: "Red Hat: what CentOS Stream is"
+    url: https://www.redhat.com/en/topics/linux/what-is-centos-stream
+  - label: "Rocky Linux: its history"
+    url: https://rockylinux.org/about
+  - label: "Arch Linux: the project's history"
+    url: https://wiki.archlinux.org/title/Arch_Linux
+  - label: "openSUSE Tumbleweed portal"
+    url: https://en.opensuse.org/Portal:Tumbleweed
+  - label: "SUSE: company history"
+    url: https://www.suse.com/company/history/
+  - label: "Slackware: what is Slackware?"
+    url: https://www.slackware.com/info/
+  - label: "Gentoo: about Gentoo and Portage"
+    url: https://www.gentoo.org/get-started/about/
+  - label: "Alpine Linux: about"
+    url: https://alpinelinux.org/about/
+  - label: NixOS
+    url: https://nixos.org/
+asOf: "2026-11-06"
+---
+
+## The short version
+
+Almost every distribution belongs to one of a few families, each started in the 1990s or early 2000s around a different idea and a different package manager. **Debian** (1993) is a volunteer project with strict free software rules; Ubuntu built a friendlier, scheduled distribution on top of it, and dozens more build on Ubuntu. **Red Hat** (1993) made Linux a business and invented RPM; today its family runs from Fedora, through CentOS Stream, to Red Hat Enterprise Linux and its free rebuilds. **Arch** (2002) is a minimal rolling release you assemble yourself. **SUSE** (1992) is the German enterprise family. **Slackware** (1993) is the oldest survivor; **Gentoo** compiles everything from source.
+
+Members of a family share a package format, a package manager, usually repositories, and most of their documentation. That's why the family matters more than the name: instructions for Ubuntu nearly always work on Mint, and what you learn on Fedora carries over to RHEL.
+
+Choosing one is mostly about two questions: how often do you want things to change, and how much do you want to set up yourself?
+
+## The tree
+
+Every card is a family; indented distributions are built from the one above. Click a name for its details on the full tree page.
+
+<DistroTree />
+
+## Debian and its descendants
+
+Ian Murdock started Debian in August 1993 as a distribution "made openly, in the spirit of Linux and GNU". The name joins his own and his wife Debra's. It has no company behind it: it's run by its developers, who elect a project leader, and bound by the Debian Social Contract, whose Free Software Guidelines later became the Open Source Definition. Its package format, `.deb`, and its tools, `dpkg` and APT, are the most widely used in Linux.
+
+Debian releases a new stable version every two years or so, when it's ready rather than on a date, and supports each for years. Its conservatism made it the base for others:
+
+- **Ubuntu** (2004) was started by Mark Shuttleworth and a team of Debian developers who founded Canonical. It added a release every six months and, from 2006, a long-term support release every two years. It became the default desktop for many and the most common image in the cloud. Canonical also adds its own pieces, such as Snap packages.
+- **Linux Mint**, **Pop!_OS**, **elementary OS** and **Zorin OS** build on Ubuntu's LTS releases and change the desktop, the defaults and the first impression.
+- **Kali Linux** (2013, formerly BackTrack) tracks Debian testing and adds hundreds of security tools. It's built for penetration testing and forensics, not as an everyday system: its tools assume you know what they do, and running them against systems you don't have permission to test is illegal in most places.
+- **Raspberry Pi OS** is Debian for Raspberry Pi boards.
+
+## Red Hat: Fedora, RHEL and the rebuilds
+
+Red Hat was founded in 1993 and released Red Hat Linux the next year. It created the RPM package format and proved that a company could sell support, certification and services around software anyone could copy.
+
+In 2003 it split its distribution in two. **Red Hat Enterprise Linux** (RHEL), first released in 2002, is the paid product: a major release every few years, each supported for ten years or more, certified by hardware and software vendors. **Fedora** is the community distribution where new work lands first, with a release about every six months. Fedora is usually first to adopt big changes, such as systemd, Wayland by default and PipeWire.
+
+Because RHEL's source code is available, others rebuilt it without the trademarks and gave it away. **CentOS** (2004) was the best known, and ran on a huge number of servers. In December 2020 Red Hat announced that it would stop CentOS Linux in favour of **CentOS Stream**, a continuously updated preview of the next RHEL minor version that sits between Fedora and RHEL. Users who wanted a free copy of RHEL itself moved to two new rebuilds: **Rocky Linux**, started by CentOS's original founder Gregory Kurtzer, and **AlmaLinux**. The episode is a good example of the "disagreement" reason for new distributions in the previous chapter.
+
+The family's commands are `dnf` (which replaced `yum`) and `rpm`. Fedora and RHEL also use SELinux by default and `firewalld` for the firewall.
+
+## Arch and the rolling releases
+
+Judd Vinet released Arch Linux 0.1 in March 2002, inspired by the simplicity of Slackware and CRUX. Arch gives you a minimal base and a terminal, and you install and configure the rest yourself, following the ArchWiki, which has become a reference for every distribution. It's a rolling release: there are no versions, `pacman -Syu` brings everything to the latest packaged release. The Arch User Repository (AUR) holds recipes contributed by users for software Arch doesn't package.
+
+Its derivatives mostly make that start easier. **Manjaro** has a graphical installer and holds packages back for a short testing period; **EndeavourOS** stays closer to plain Arch with an installer and helpers. Valve's **SteamOS 3**, on the Steam Deck, is built on Arch but shipped as a read-only image that updates as a whole.
+
+## SUSE
+
+S.u.S.E. was founded in Germany in 1992 and began by translating Slackware into German, before building its own distribution around the YaST setup tool. SUSE describes itself as the first provider of an enterprise Linux distribution; **SUSE Linux Enterprise** is RHEL's main commercial rival, strong in Europe and in SAP and mainframe deployments.
+
+The community side is **openSUSE**, in two editions: **Leap**, a fixed release built from the same sources as SUSE Linux Enterprise, and **Tumbleweed**, a rolling release in its current form since November 2014, an idea Greg Kroah-Hartman put into action. The package manager is `zypper`, with RPM packages.
+
+## Slackware and Gentoo
+
+**Slackware**, by Patrick Volkerding, had its first beta in April 1993 and has been maintained ever since, which makes it the oldest distribution still alive. It aims to be the most "UNIX-like" Linux: packages are plain archives, the package tools don't resolve dependencies for you, and services are started by simple BSD-style scripts. Releases come years apart.
+
+**Gentoo** takes a different approach to software: Portage downloads source code and compiles it on your machine, with USE flags deciding which optional features each program is built with. You get exactly the system you asked for, at the cost of compile time. Gentoo's build tools are also used, out of sight, to build **ChromeOS**.
+
+## The independents
+
+Some distributions are built from nothing else, usually to make a point about how a system should work:
+
+- **Alpine Linux** uses musl instead of glibc and BusyBox instead of GNU coreutils. A minimal container needs no more than 8 MB, which made Alpine a common base for Docker images. Programs built for glibc don't always run on it, which is the main thing to know.
+- **NixOS** describes the whole system in one configuration file. Nix builds every package in isolation into `/nix/store`, so a configuration can be reproduced exactly on another machine and any change can be rolled back.
+- **Void Linux** has its own package manager (XBPS), uses runit instead of systemd, and comes in glibc and musl versions.
+
+## How they differ, at a glance
+
+| | Debian / Ubuntu | Fedora / RHEL | Arch | openSUSE / SLE | Alpine |
+|---|---|---|---|---|---|
+| Packages | `.deb` | `.rpm` | `.pkg.tar.zst` | `.rpm` | `.apk` |
+| Install a package | `apt install` | `dnf install` | `pacman -S` | `zypper install` | `apk add` |
+| Release model | Fixed; Ubuntu also LTS | Fedora fixed; RHEL long-term | Rolling | Leap fixed; Tumbleweed rolling | Fixed, every six months |
+| Init | systemd | systemd | systemd | systemd | OpenRC |
+| C library | glibc | glibc | glibc | glibc | musl |
+| Known for | Stability, huge archive | New technology first; enterprise support | Control, the ArchWiki | YaST, tested rolling snapshots | Tiny, containers |
+
+## How to choose
+
+There's no best distribution, only one that fits what you're doing:
+
+| If you want | Look at |
+|---|---|
+| A desktop that works with little setup | Linux Mint, Ubuntu, Fedora Workstation, Pop!_OS |
+| Help when things go wrong | Ubuntu or Fedora: most guides online, including this site's, assume one of them |
+| A server that doesn't change for years | Debian stable, Ubuntu LTS, Rocky Linux, AlmaLinux, RHEL |
+| The newest software, and you're happy to fix things | Arch, openSUSE Tumbleweed, Fedora |
+| To learn how a Linux system fits together | Arch (by building it) or Debian (by reading it) |
+| Small containers | Alpine, or Debian's slim images when glibc matters |
+| Security testing, in a VM or on a separate machine | Kali Linux |
+| A machine you can rebuild exactly from one file | NixOS |
+
+Whatever you pick, almost everything on this site applies: the kernel, the shell, systemd and the command line are the same across families. Where they differ is mainly in packages, so the scenarios that install software note the Fedora and Arch equivalents.
+
+## Why it matters today
+
+- **Know your family** before following instructions: `cat /etc/os-release` shows `ID` and `ID_LIKE`, for example `ID=linuxmint` and `ID_LIKE="ubuntu debian"`.
+- **Package commands are the main difference.** [What a package is](/g/what-is-a-package) explains what `apt` and `dnf` are doing under the hood, and why mixing packages from another distribution [can break things](/s/install-deb).
+- **Release models decide upgrade pain.** A fixed release asks you to upgrade every year or two; a rolling one asks for small upgrades all the time.
+- **Universal formats** (Flatpak, Snap, AppImage) cut across families. The [app formats guide](/g/app-formats) covers when to use them.
+- **The full [distro family tree](/origins/distros)** has filters by family, release model and status.

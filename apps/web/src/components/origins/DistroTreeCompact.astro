@@ -1,0 +1,8 @@
+---
+// MDX entry point for the compact distro tree in a chapter. Static: no JavaScript ships for it; every distro
+// links to its details on /origins/distros. The data comes from data/distros.ts, so chapters pass nothing.
+import DistroTree from './DistroTree';
+import { DISTROS } from '../../data/distros';
+---
+
+<DistroTree distros={DISTROS} compact />

@@ -5,6 +5,7 @@ import Base from '../../layouts/Base.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import ConceptLinks from '../../components/guide/ConceptLinks.astro';
 import TimelineStrip from '../../components/origins/TimelineStrip.astro';
+import DistroTree from '../../components/origins/DistroTreeCompact.astro';
 import Flow from '../../components/guide/Flow.astro';
 import Layers from '../../components/guide/Layers.astro';
 import Zones from '../../components/guide/Zones.astro';
@@ -75,7 +76,7 @@ const scenarios = (await getCollection('scenarios', (s) => !s.data.draft)).filte
     <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-6 items-start">
       <article class="card p-5 sm:p-8 min-w-0">
         <div class="md guide-md origins-md">
-          <Content components={{ Flow, Layers, Zones }} />
+          <Content components={{ Flow, Layers, Zones, DistroTree }} />
         </div>
       </article>
 

@@ -320,7 +320,203 @@ export const TIMELINE: TimelineEvent[] = [
     source: 'https://opensource.org/history'
   },
 
-  // Later kernel milestones told in chapter 3. The rest of eras 4 and 5 come with Phases H2 and H3.
+  // Standards (chapter 4)
+  {
+    id: 'posix-1',
+    date: '1988',
+    title: 'POSIX.1, the first POSIX standard',
+    why: 'IEEE’s definition of the system interface a Unix-like system must offer, so programs can move between vendors.',
+    category: 'unix',
+    era: 'gnu',
+    chapter: 'standards',
+    source: 'https://www.opengroup.org/unix'
+  },
+  {
+    id: 'unix-certification',
+    date: '1995',
+    title: 'Formal UNIX certification begins',
+    why: 'Only systems tested against the Single UNIX Specification may use the UNIX name. All the big Unix vendors certified.',
+    category: 'unix',
+    era: 'kernel-born',
+    chapter: 'standards',
+    source: 'https://www.opengroup.org/unix'
+  },
+
+  // Era 4: distros and business
+  {
+    id: 'suse-founded',
+    date: '1992',
+    title: 'S.u.S.E. is founded in Germany',
+    why: 'Later SUSE, which calls itself the first provider of an enterprise Linux distribution.',
+    category: 'distros',
+    era: 'kernel-born',
+    chapter: 'distro-families',
+    source: 'https://www.suse.com/company/history/'
+  },
+  {
+    id: 'red-hat-founded',
+    date: '1993',
+    title: 'Red Hat is founded',
+    why: 'The company that showed a business could be built on a free operating system.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'distro-families',
+    source: 'https://www.redhat.com/en/about/company'
+  },
+  {
+    id: 'slackware-beta',
+    date: '1993-04',
+    title: 'Slackware’s first beta',
+    why: 'Patrick Volkerding’s distribution, the oldest one still maintained today.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'distro-families',
+    source: 'https://www.slackware.com/info/'
+  },
+  {
+    id: 'debian-begins',
+    date: '1993-08',
+    title: 'Ian Murdock starts Debian',
+    why: 'A distribution “made openly, in the spirit of Linux and GNU”, run by volunteers rather than a company.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'what-is-a-distro',
+    source: 'https://www.debian.org/intro/about'
+  },
+  {
+    id: 'debian-social-contract',
+    date: '1997',
+    title: 'The Debian Social Contract and Free Software Guidelines',
+    why: 'Debian’s promises to its users and its test for what counts as free. The guidelines became the Open Source Definition.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'what-is-a-distro',
+    source: 'https://www.debian.org/social_contract'
+  },
+  {
+    id: 'arch-first',
+    date: '2002-03',
+    title: 'Arch Linux 0.1',
+    why: 'Judd Vinet’s simple, rolling distribution, built around pacman.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'distro-families',
+    source: 'https://wiki.archlinux.org/title/Arch_Linux'
+  },
+  {
+    id: 'rhel-fedora-split',
+    date: '2003',
+    title: 'Red Hat Linux ends; Fedora begins',
+    why: 'Red Hat split its distribution into a paid enterprise product (RHEL) and a fast-moving community one (Fedora Core).',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'distro-families',
+    source: 'https://fedoraproject.org/'
+  },
+  {
+    id: 'fhs-2-3',
+    date: '2004-01-29',
+    title: 'Filesystem Hierarchy Standard 2.3',
+    why: 'The version that described where things go on a Linux system for the next eleven years.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'standards',
+    source: 'https://refspecs.linuxfoundation.org/fhs.shtml'
+  },
+  {
+    id: 'ubuntu-first',
+    date: '2004-10',
+    title: 'Ubuntu 4.10',
+    why: 'Mark Shuttleworth’s Debian derivative, with a release every six months on a fixed schedule.',
+    category: 'distros',
+    era: 'distros-business',
+    chapter: 'distro-families',
+    source: 'https://ubuntu.com/about'
+  },
+
+  // Era 5: distro and standards events told in chapters 4 to 6
+  {
+    id: 'ubuntu-lts',
+    date: '2006',
+    title: 'Ubuntu’s first long-term support release',
+    why: 'Every fourth release, one every two years, would be supported for years: the origin of the term LTS.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'what-is-a-distro',
+    source: 'https://ubuntu.com/about'
+  },
+  {
+    id: 'linux-mint-first',
+    date: '2006',
+    title: 'Linux Mint',
+    why: 'Clement Lefebvre’s Ubuntu derivative, built from what its community asked for.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'distro-families',
+    source: 'https://linuxmint.com/about.php'
+  },
+  {
+    id: 'kali-first',
+    date: '2013',
+    title: 'Kali Linux replaces BackTrack',
+    why: 'A Debian-based distribution built for one job: security testing.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'distro-families',
+    source: 'https://www.kali.org/docs/introduction/what-is-kali-linux/'
+  },
+  {
+    id: 'tumbleweed',
+    date: '2014-11-04',
+    title: 'openSUSE Tumbleweed becomes one rolling release',
+    why: 'A rolling distribution of the latest stable software, an idea Greg Kroah-Hartman put into action.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'distro-families',
+    source: 'https://en.opensuse.org/Portal:Tumbleweed'
+  },
+  {
+    id: 'fhs-3',
+    date: '2015-06-03',
+    title: 'Filesystem Hierarchy Standard 3.0',
+    why: 'The first update in eleven years, now kept by the Linux Foundation. Added `/run`.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'standards',
+    source: 'https://refspecs.linuxfoundation.org/fhs.shtml'
+  },
+  {
+    id: 'centos-stream-shift',
+    date: '2020-12-08',
+    title: 'Red Hat moves CentOS to CentOS Stream',
+    why: 'The free RHEL rebuild many servers ran on would end. Rocky Linux and AlmaLinux started in response.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'distro-families',
+    source: 'https://rockylinux.org/about'
+  },
+  {
+    id: 'posix-2024',
+    date: '2024',
+    title: 'POSIX.1-2024 (Issue 8)',
+    why: 'The current edition of the standard, which is also the core of the Single UNIX Specification.',
+    category: 'unix',
+    era: 'everywhere',
+    chapter: 'standards',
+    source: 'https://pubs.opengroup.org/onlinepubs/9799919799/'
+  },
+  {
+    id: 'debian-13',
+    date: '2025-08-09',
+    title: 'Debian 13 “trixie”',
+    why: 'The current stable Debian, and so the base a large part of the Linux world builds on.',
+    category: 'distros',
+    era: 'everywhere',
+    chapter: 'what-is-a-distro',
+    source: 'https://www.debian.org/releases/'
+  },
+
+  // Later kernel milestones told in chapter 3. The rest of era 5 comes with Phase H3.
   {
     id: 'kernel-bitkeeper',
     date: '2002',

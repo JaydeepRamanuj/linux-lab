@@ -1,0 +1,47 @@
+---
+import { GitFork } from 'lucide-react';
+import Base from '../../layouts/Base.astro';
+import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
+import DistroTree from '../../components/origins/DistroTree';
+import { DISTROS, DISTRO_FAMILIES } from '../../data/distros';
+import { assertContentValid } from '../../lib/contentChecks';
+import { formatAsOf } from '../../lib/origins';
+
+await assertContentValid();
+const families = DISTRO_FAMILIES.filter((f) => DISTROS.some((d) => d.family === f)).length;
+---
+
+<Base
+  title="Distro family tree"
+  description="Which Linux distribution is built from which: Debian, Ubuntu, Fedora, RHEL, Arch, SUSE, Slackware, Gentoo and the independents, with package formats, release models and init systems."
+  current="origins"
+>
+  <div class="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 flex flex-col gap-8">
+    <Breadcrumbs items={[{ label: 'Origins', href: '/origins' }, { label: 'Distro family tree' }]} back={{ href: '/origins', label: 'Back to Origins' }} />
+
+    <section class="card relative overflow-hidden p-6 sm:p-10">
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full blur-3xl pointer-events-none bg-tertiary/10"></div>
+      <div class="relative flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 bg-tertiary/10 border-tertiary/30">
+          <GitFork className="h-6 w-6 text-tertiary" />
+        </div>
+        <div class="space-y-2 min-w-0">
+          <span class="label-caps text-outline">Origins</span>
+          <h1 class="text-3xl sm:text-4xl font-bold">Distro family tree</h1>
+          <p class="text-on-surface-variant max-w-2xl leading-relaxed">
+            Hundreds of distributions exist, but most are built from a handful of bases. Each card is a family; indented names are built from
+            the one above them. Pick one to see how it packages software, how it releases and what it's for. The background is in
+            <a href="/o/what-is-a-distro" class="text-tertiary underline underline-offset-3">What a Distribution Really Is</a> and
+            <a href="/o/distro-families" class="text-tertiary underline underline-offset-3">The Distro Families</a>.
+          </p>
+          <p class="font-mono text-[11px] text-outline pt-1">
+            {DISTROS.length} distributions <span class="text-outline-variant mx-1">•</span>
+            {families} families <span class="text-outline-variant mx-1">•</span> as of {formatAsOf(DISTROS[0]!.asOf)}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <DistroTree distros={DISTROS} client:load />
+  </div>
+</Base>

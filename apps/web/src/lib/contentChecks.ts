@@ -19,7 +19,8 @@
 //     unknown category or era, a year outside its era, or an unknown chapter; two people share an id; two chapters
 //     share an `order`; a chapter's `people`, `events`, `guides`, `commands` or `scenarios` entry doesn't exist;
 //     `asOf` isn't an ISO date; the body doesn't start with "The short version" and end with "Why it matters
-//     today"; the body links to a page that doesn't exist
+//     today"; the body links to a page that doesn't exist; a distro has a duplicate id, an unknown family or
+//     parent, a parent founded after it, or a parent chain that loops
 // Warnings (printed as `[content] …`; the plan's definition of done is zero of them):
 //   - a scenario runs a program that has no command page
 //   - a command page exists for a program a scenario runs, but doesn't list that scenario under `scenarios`
@@ -30,6 +31,7 @@ import type { Severity } from '@shellgyan/core/severity';
 import { buildAnatomy } from './anatomy';
 import { TIMELINE, ERAS, TIMELINE_CATEGORIES, isValidEventDate, eventYear } from '../data/timeline';
 import { PEOPLE } from '../data/people';
+import { DISTROS, DISTRO_FAMILIES } from '../data/distros';
 
 export interface ContentReport {
   errors: string[];
@@ -215,6 +217,35 @@ export async function collectContentReport(): Promise<ContentReport> {
     personIds.add(p.id);
   }
 
+  const distroIds = new Set<string>();
+  for (const d of DISTROS) {
+    const where = `distro ${d.id}`;
+    if (distroIds.has(d.id)) errors.push(`${where}: id is used twice`);
+    distroIds.add(d.id);
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(d.id)) errors.push(`${where}: id must be kebab-case (it's used in /origins/distros#distro=…)`);
+    if (!DISTRO_FAMILIES.includes(d.family)) errors.push(`${where}: unknown family "${d.family}"`);
+    if (!/^https?:\/\/\S+$/.test(d.url)) errors.push(`${where}: url "${d.url}" isn't a URL`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.asOf)) errors.push(`${where}: asOf "${d.asOf}" isn't an ISO date`);
+  }
+  for (const d of DISTROS) {
+    if (!d.parent) continue;
+    const parent = DISTROS.find((x) => x.id === d.parent);
+    if (!parent) {
+      errors.push(`distro ${d.id}: parent "${d.parent}" isn't in data/distros.ts`);
+      continue;
+    }
+    if (parent.founded > d.founded) errors.push(`distro ${d.id}: founded ${d.founded}, before its parent ${parent.id} (${parent.founded})`);
+    // Walk up the parents; coming back to d, or taking more steps than there are distros, means a cycle.
+    let cur: string | undefined = d.parent;
+    for (let steps = 0; cur; steps++) {
+      if (cur === d.id || steps > DISTROS.length) {
+        errors.push(`distro ${d.id}: its parent chain loops back on itself`);
+        break;
+      }
+      cur = DISTROS.find((x) => x.id === cur)?.parent;
+    }
+  }
+
   const seenChapterOrders = new Map<number, string>();
   for (const chapter of allChapters) {
     const c = chapter.data;
@@ -254,7 +285,7 @@ export async function collectContentReport(): Promise<ContentReport> {
 export const ORIGINS_FIRST_H2 = 'The short version';
 export const ORIGINS_LAST_H2 = 'Why it matters today';
 /** Pages under /origins/ that exist in this phase. */
-const ORIGINS_PAGES = ['/origins/timeline'];
+const ORIGINS_PAGES = ['/origins/timeline', '/origins/distros'];
 
 /** The H2s a guide's MDX body must have, in order. The page renders the rest from frontmatter. */
 export const GUIDE_BODY_H2S = ['The mental model', 'Under the hood'];
